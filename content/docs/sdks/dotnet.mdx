@@ -1,0 +1,23 @@
+---
+title: .NET SDK
+description: Instrumentation for .NET services
+---
+
+## Install
+
+```bash
+dotnet add package Obtrace.SDK
+```
+
+## Configuration
+
+```csharp
+var client = ObtraceSdk.InitSDK(new ObtraceConfig {
+  ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
+  IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL"),
+  TenantId = Environment.GetEnvironmentVariable("OBTRACE_TENANT_ID"),
+  ProjectId = Environment.GetEnvironmentVariable("OBTRACE_PROJECT_ID"),
+  ServiceName = "dotnet-api",
+  AppId = "dotnet-api"
+});
+```

@@ -1,4 +1,16 @@
 {
   "title": "Integrations",
-  "pages": ["k8s", "railway", "vercel", "supabase", "cloudflare"]
+  "pages": [
+    "overview",
+    "k8s",
+    "docker",
+    "vercel",
+    "railway",
+    "supabase",
+    "cloudflare",
+    "aws-lambda",
+    "gcp-cloud-run",
+    "azure-container-apps",
+    "github-actions"
+  ]
 }

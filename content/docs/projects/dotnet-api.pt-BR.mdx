@@ -1,0 +1,21 @@
+---
+title: Blueprint Dotnet api
+description: Setup recomendado para projetos Dotnet api
+---
+
+## Escopo
+
+Este blueprint define a instrumentação mínima para serviços Dotnet api.
+
+## Saídas obrigatórias
+
+1. Logs de request/response com correlação.
+2. Métricas de latência e taxa de erro.
+3. Spans em DB e chamadas HTTP externas.
+
+## Checklist de deploy
+
+1. Configure variáveis e secrets.
+2. Inicialize o SDK no bootstrap.
+3. Valide uma transação ponta a ponta.
+4. Adicione alertas para erro de ingestão.

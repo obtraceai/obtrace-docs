@@ -3,19 +3,7 @@
 @tailwind utilities;
 @import "fumadocs-ui/style.css";
 
-:root {
-  --bg: hsl(210 40% 98%);
-  --fg: hsl(222 47% 11%);
-}
-
-.dark {
-  --bg: hsl(222 47% 7%);
-  --fg: hsl(210 40% 96%);
-}
-
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
 }

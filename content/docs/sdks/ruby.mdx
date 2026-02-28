@@ -1,0 +1,23 @@
+---
+title: Ruby SDK
+description: Instrumentation for Ruby services
+---
+
+## Install
+
+```bash
+bundle add obtrace-sdk
+```
+
+## Configuration
+
+```ruby
+client = Obtrace::SDK.init_sdk(
+  api_key: ENV['OBTRACE_API_KEY'],
+  ingest_base_url: ENV['OBTRACE_INGEST_BASE_URL'],
+  tenant_id: ENV['OBTRACE_TENANT_ID'],
+  project_id: ENV['OBTRACE_PROJECT_ID'],
+  service_name: 'ruby-api',
+  app_id: 'ruby-api'
+)
+```

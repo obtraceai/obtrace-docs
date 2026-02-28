@@ -1,0 +1,23 @@
+---
+title: Project Blueprints
+description: Recommended project-level rollout patterns
+---
+
+Use these blueprints when onboarding new services.
+
+## Available blueprints
+
+- [Next.js](/docs/projects/nextjs)
+- [NestJS](/docs/projects/nestjs)
+- [FastAPI](/docs/projects/fastapi)
+- [Spring Boot](/docs/projects/spring-boot)
+- [Laravel](/docs/projects/laravel)
+- [.NET API](/docs/projects/dotnet-api)
+- [Go API](/docs/projects/go-api)
+
+## Shared rollout policy
+
+1. Enable telemetry in one environment first.
+2. Validate auth + ingestion.
+3. Expand by service tier.
+4. Enforce key rotation and runtime-specific hardening.

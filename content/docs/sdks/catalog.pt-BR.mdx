@@ -1,0 +1,34 @@
+---
+title: Catálogo de SDKs
+description: Cobertura dos SDKs oficiais e planejados
+---
+
+Esta página consolida o escopo de SDKs por runtime.
+
+## SDKs oficiais
+
+| SDK | Status | Runtime principal | Docs |
+|---|---|---|---|
+| JavaScript Browser | GA | Browser | [Abrir](/pt-BR/docs/sdks/browser) |
+| JavaScript Node/Bun | GA | Node.js / Bun | [Abrir](/pt-BR/docs/sdks/node-bun) |
+| Python | GA | CPython | [Abrir](/pt-BR/docs/sdks/python) |
+| Go | GA | Go 1.21+ | [Abrir](/pt-BR/docs/sdks/go) |
+| Java | GA | JVM 17+ | [Abrir](/pt-BR/docs/sdks/java) |
+| .NET | GA | .NET 8+ | [Abrir](/pt-BR/docs/sdks/dotnet) |
+| PHP | GA | PHP 8.2+ | [Abrir](/pt-BR/docs/sdks/php) |
+| Ruby | GA | Ruby 3.2+ | [Abrir](/pt-BR/docs/sdks/ruby) |
+
+## Planejados / Em validação
+
+| SDK | Status | Observações |
+|---|---|---|
+| Rust | Planejamento Beta | Transporte core e API de tracing em validação. |
+| Kotlin | Planejamento Beta | Foco em compatibilidade com Ktor e Spring. |
+| Swift | Planejamento Beta | Foco em telemetria iOS e buffer offline. |
+
+## Convenções entre SDKs
+
+1. Modelo de auth compartilhado (`API_KEY`, `INGEST_BASE_URL`, IDs de tenant/projeto).
+2. Primitivas padrão: log, métrica, span e flush/shutdown.
+3. Comportamento de fila/retry documentado por runtime.
+4. Playbook de troubleshooting consistente (auth, transporte, volume, latência).

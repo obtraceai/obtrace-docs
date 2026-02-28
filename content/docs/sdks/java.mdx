@@ -1,0 +1,22 @@
+---
+title: Java SDK
+description: Instrumentation for JVM services
+---
+
+## Install
+
+```bash
+./mvnw dependency:get -Dartifact=ai.obtrace:sdk-java:latest
+```
+
+## Configuration
+
+```java
+var client = Obtrace.initSDK(new ObtraceConfig()
+  .setApiKey(System.getenv("OBTRACE_API_KEY"))
+  .setIngestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
+  .setTenantId(System.getenv("OBTRACE_TENANT_ID"))
+  .setProjectId(System.getenv("OBTRACE_PROJECT_ID"))
+  .setServiceName("java-api")
+  .setAppId("java-api"));
+```

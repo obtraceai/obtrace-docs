@@ -1,0 +1,34 @@
+---
+title: SDK Catalog
+description: Coverage of official and planned SDKs
+---
+
+This page tracks the SDK surface across runtimes.
+
+## Official SDKs
+
+| SDK | Status | Primary Runtime | Docs |
+|---|---|---|---|
+| JavaScript Browser | GA | Browser | [Open](/docs/sdks/browser) |
+| JavaScript Node/Bun | GA | Node.js / Bun | [Open](/docs/sdks/node-bun) |
+| Python | GA | CPython | [Open](/docs/sdks/python) |
+| Go | GA | Go 1.21+ | [Open](/docs/sdks/go) |
+| Java | GA | JVM 17+ | [Open](/docs/sdks/java) |
+| .NET | GA | .NET 8+ | [Open](/docs/sdks/dotnet) |
+| PHP | GA | PHP 8.2+ | [Open](/docs/sdks/php) |
+| Ruby | GA | Ruby 3.2+ | [Open](/docs/sdks/ruby) |
+
+## Planned / In Validation
+
+| SDK | Status | Notes |
+|---|---|---|
+| Rust | Beta Planning | Core transport and tracing API under validation. |
+| Kotlin | Beta Planning | Focus on Ktor and Spring compatibility. |
+| Swift | Beta Planning | Focus on iOS telemetry and offline buffering. |
+
+## Conventions across SDKs
+
+1. Shared auth model (`API_KEY`, `INGEST_BASE_URL`, tenant/project IDs).
+2. Standard telemetry primitives: log, metric, span, flush/shutdown.
+3. Queueing and retry behavior documented per runtime.
+4. Consistent troubleshooting playbooks (auth, transport, volume, latency).

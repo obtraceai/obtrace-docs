@@ -1,0 +1,43 @@
+---
+title: Python SDK
+description: Backend instrumentation for Python services
+---
+
+## Install
+
+```bash
+pip install obtrace-sdk
+```
+
+## Configuration
+
+```python
+from obtrace import init_sdk
+
+client = init_sdk(
+    api_key=os.getenv("OBTRACE_API_KEY"),
+    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+    tenant_id=os.getenv("OBTRACE_TENANT_ID"),
+    project_id=os.getenv("OBTRACE_PROJECT_ID"),
+    service_name="python-api",
+    app_id="python-api",
+)
+```
+
+## Quick start
+
+1. Initialize SDK on app startup.
+2. Emit one log, one metric, and one span.
+3. Flush on graceful shutdown.
+
+## Production hardening
+
+1. Keep keys in secret manager.
+2. Configure bounded queue and retry.
+3. Validate volume and error rate after deploy.
+
+## Troubleshooting
+
+- `401/403`: invalid key or wrong tenant/project.
+- No data: startup path not initializing SDK.
+- Event drops: queue saturation or worker crash.

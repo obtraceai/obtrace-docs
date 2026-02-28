@@ -1,0 +1,29 @@
+---
+title: SDK Go
+description: Guia de instrumentação para serviços Go
+---
+
+## Instalação
+
+```bash
+go get github.com/obtraceai/obtrace-sdk-go
+```
+
+## Configuração
+
+```go
+client := obtrace.InitSDK(obtrace.Config{
+  APIKey: os.Getenv("OBTRACE_API_KEY"),
+  IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+  TenantID: os.Getenv("OBTRACE_TENANT_ID"),
+  ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
+  ServiceName: "go-api",
+  AppID: "go-api",
+})
+```
+
+## Início rápido
+
+1. Inicialize uma vez no início do processo.
+2. Emita log/métrica/span no pipeline de request.
+3. Chame shutdown no SIGTERM.

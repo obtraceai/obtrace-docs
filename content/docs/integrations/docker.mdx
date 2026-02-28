@@ -1,0 +1,22 @@
+---
+title: Docker Integration
+description: Operational setup and validation checklist
+---
+
+## Setup
+
+1. Configure OBTRACE_API_KEY and ingest endpoint.
+2. Inject tenant/project/env variables.
+3. Initialize SDK before handling requests/jobs.
+
+## Validation
+
+1. Emit synthetic request.
+2. Confirm logs, metrics, and spans in backend.
+3. Verify no auth or transport errors.
+
+## Production controls
+
+- Key rotation policy.
+- Retry and backoff policy.
+- Alert on ingestion failures.

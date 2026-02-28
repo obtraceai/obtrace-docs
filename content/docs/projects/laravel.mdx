@@ -1,0 +1,21 @@
+---
+title: Laravel Blueprint
+description: Recommended setup for Laravel projects
+---
+
+## Scope
+
+This blueprint defines minimum instrumentation for Laravel services.
+
+## Required outputs
+
+1. Request/response logs with correlation IDs.
+2. Service metrics for latency and error rate.
+3. Spans across DB and outbound HTTP.
+
+## Deployment checklist
+
+1. Configure env vars and secrets.
+2. Initialize SDK at process bootstrap.
+3. Validate one end-to-end transaction.
+4. Add alerts for ingestion errors.

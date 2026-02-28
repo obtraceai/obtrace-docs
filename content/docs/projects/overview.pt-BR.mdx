@@ -1,0 +1,23 @@
+---
+title: Blueprints de Projeto
+description: Padrões recomendados de rollout por projeto
+---
+
+Use estes blueprints ao onboardar novos serviços.
+
+## Blueprints disponíveis
+
+- [Next.js](/pt-BR/docs/projects/nextjs)
+- [NestJS](/pt-BR/docs/projects/nestjs)
+- [FastAPI](/pt-BR/docs/projects/fastapi)
+- [Spring Boot](/pt-BR/docs/projects/spring-boot)
+- [Laravel](/pt-BR/docs/projects/laravel)
+- [.NET API](/pt-BR/docs/projects/dotnet-api)
+- [Go API](/pt-BR/docs/projects/go-api)
+
+## Política compartilhada de rollout
+
+1. Habilite telemetria primeiro em um ambiente.
+2. Valide auth + ingestão.
+3. Expanda por tier de serviço.
+4. Aplique rotação de chave e hardening por runtime.

@@ -1,0 +1,23 @@
+---
+title: PHP SDK
+description: Instrumentation for PHP services
+---
+
+## Install
+
+```bash
+composer require obtrace/sdk-php
+```
+
+## Configuration
+
+```php
+$client = Obtrace\SDK::initSDK([
+  'apiKey' => getenv('OBTRACE_API_KEY'),
+  'ingestBaseUrl' => getenv('OBTRACE_INGEST_BASE_URL'),
+  'tenantId' => getenv('OBTRACE_TENANT_ID'),
+  'projectId' => getenv('OBTRACE_PROJECT_ID'),
+  'serviceName' => 'php-api',
+  'appId' => 'php-api',
+]);
+```

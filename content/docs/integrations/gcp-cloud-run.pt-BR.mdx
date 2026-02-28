@@ -1,0 +1,22 @@
+---
+title: Integração Gcp cloud run
+description: Setup operacional e checklist de validação
+---
+
+## Setup
+
+1. Configure OBTRACE_API_KEY e endpoint de ingestão.
+2. Injete variáveis de tenant/projeto/ambiente.
+3. Inicialize SDK antes de atender requests/jobs.
+
+## Validação
+
+1. Emita requisição sintética.
+2. Confirme logs, métricas e spans no backend.
+3. Verifique ausência de erros de auth/transporte.
+
+## Controles de produção
+
+- Política de rotação de chave.
+- Política de retry e backoff.
+- Alerta para falhas de ingestão.

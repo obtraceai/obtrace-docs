@@ -1,4 +1,17 @@
 {
   "title": "SDKs",
-  "pages": ["browser", "node-bun"]
+  "pages": [
+    "catalog",
+    "browser",
+    "node-bun",
+    "python",
+    "go",
+    "java",
+    "dotnet",
+    "php",
+    "ruby",
+    "rust",
+    "kotlin",
+    "swift"
+  ]
 }
