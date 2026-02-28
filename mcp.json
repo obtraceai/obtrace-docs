@@ -5,6 +5,9 @@
   "resources": [
     { "id": "readme", "path": "README.md", "description": "Service overview" },
     { "id": "docs-home", "path": "content/docs/index.mdx", "description": "Docs home content" },
+    { "id": "docs-auth", "path": "content/docs/auth.mdx", "description": "Authentication setup" },
+    { "id": "docs-how-to-use", "path": "content/docs/how-to-use.mdx", "description": "Recommended rollout flow" },
+    { "id": "docs-mcp", "path": "content/docs/mcp.mdx", "description": "MCP documentation page" },
     { "id": "requirements", "path": "../docs/requirements-docs-service-v1.md", "description": "Normative requirements" }
   ]
 }

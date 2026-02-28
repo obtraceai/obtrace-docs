@@ -1,0 +1,16 @@
+{
+  "title": "Documentação",
+  "root": true,
+  "pages": [
+    "index",
+    "intro",
+    "why-obtrace",
+    "auth",
+    "how-to-use",
+    "sdks",
+    "integrations",
+    "mcp",
+    "reference",
+    "downloads"
+  ]
+}

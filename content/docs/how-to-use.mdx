@@ -1,0 +1,18 @@
+---
+title: How to use
+description: Recommended sequence for rollout, validation, and hardening
+---
+
+Follow this order.
+
+1. Configure [Authentication](/docs/auth).
+2. Instrument one SDK first ([Browser](/docs/sdks/browser) or [Node/Bun](/docs/sdks/node-bun)).
+3. Validate ingestion and event consistency.
+4. Add integrations by deployment platform.
+5. Apply production hardening (sampling, queue, retry, key rotation).
+
+## Acceptance checklist
+
+- Telemetry is visible in backend without gaps.
+- No `401/403` or rejected submissions.
+- Event volume is stable under expected load.

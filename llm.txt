@@ -1,17 +1,27 @@
 Obtrace Docs Service
 
 Purpose:
-- Public documentation portal for Obtrace SDKs.
+- Public documentation portal for Obtrace SDKs and integrations.
 
 Tech:
 - Next.js service
-- Fumadocs-required baseline (framework target)
+- Fumadocs runtime
+- MDX docs source
+
+Languages:
+- English (`en`)
+- Portuguese (Brazil) (`pt-BR`)
 
 Primary sections:
-- JS Browser SDK
-- JS Node/Bun SDK
-- Kubernetes integration
-- Railway integration
+- Introduction
+- Why Obtrace
+- Authentication
+- How to Use
+- SDKs (JavaScript Browser, JavaScript Node/Bun)
+- Integrations (Kubernetes, Railway, Vercel, Supabase, Cloudflare)
+- MCP
+- Reference
+- Downloads
 
-Notes:
-- Designed as independent service/repository.
+Machine context:
+- `mcp.json` provides stable docs resource pointers.

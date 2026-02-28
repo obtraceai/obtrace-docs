@@ -1,6 +1,6 @@
 ---
-title: JS Browser SDK
-description: Frontend instrumentation with replay, recipes, vitals and propagation
+title: JavaScript Browser SDK
+description: Frontend instrumentation for replay, metrics, and propagation
 ---
 
 ## Install
@@ -24,7 +24,7 @@ const sdk = initBrowserSDK({
 });
 ```
 
-## Quickstart
+## Quick start
 
 ```ts
 const obFetch = sdk.instrumentFetch();
@@ -33,15 +33,15 @@ sdk.log("info", "page.loaded");
 await sdk.shutdown();
 ```
 
-## Production Hardening
+## Production hardening
 
-1. Use scoped API keys by environment.
+1. Use environment-scoped keys.
 2. Mask sensitive fields before custom attributes.
-3. Keep replay sampling controlled by env.
-4. Validate ingestion with `/v1/logs` and `/v1/replay/index`.
+3. Control replay sampling via env vars.
+4. Validate ingestion in `/v1/logs` and `/v1/replay/index`.
 
 ## Troubleshooting
 
-- Missing data: verify `OBTRACE_INGEST_BASE_URL` and CORS on ingest edge.
-- No replay events: ensure initialization happens in browser runtime.
-- Debug with SDK console logs in non-production.
+- No data: verify `OBTRACE_INGEST_BASE_URL` and CORS.
+- No replay: confirm initialization in browser runtime.
+- Enable debug logs in non-production environments.

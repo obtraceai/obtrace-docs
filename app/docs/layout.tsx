@@ -2,7 +2,17 @@ import type { ReactNode } from "react";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { source } from "../../lib/source";
 import { baseOptions } from "../../lib/layout.shared";
+import { DocsI18nProvider } from "../components/docs-i18n-provider";
+import { i18n } from "../../lib/i18n";
 
 export default function Layout({ children }: { children: ReactNode }) {
-  return <DocsLayout tree={source.pageTree} {...baseOptions()}>{children}</DocsLayout>;
+  const tree = source.pageTree[i18n.defaultLanguage];
+
+  return (
+    <DocsI18nProvider locale={i18n.defaultLanguage}>
+      <DocsLayout tree={tree} {...baseOptions()}>
+        {children}
+      </DocsLayout>
+    </DocsI18nProvider>
+  );
 }

@@ -1,5 +1,5 @@
 ---
-title: JS Node/Bun SDK
+title: JavaScript Node/Bun SDK
 description: Backend instrumentation for Node.js and Bun
 ---
 
@@ -27,7 +27,7 @@ const sdk = initNodeSDK({
 });
 ```
 
-## Quickstart
+## Quick start
 
 ```ts
 sdk.log("info", "service.started");
@@ -36,15 +36,15 @@ sdk.span("db.query");
 await sdk.shutdown();
 ```
 
-## Production Hardening
+## Production hardening
 
-1. Keep API keys in secret manager only.
-2. Set bounded queue and flush intervals based on latency budget.
-3. Validate telemetry in Query Gateway after deploy.
-4. Enable retries with fail-open behavior for app continuity.
+1. Store keys only in secret managers.
+2. Tune queue and flush settings by latency budget.
+3. Validate telemetry after each deploy.
+4. Use retry with fail-open behavior.
 
 ## Troubleshooting
 
-- 401/403 on ingest: rotate and validate API key.
-- Queue dropping data: increase `maxQueueSize` conservatively.
-- Use debug mode in non-prod for transport diagnostics.
+- `401/403`: validate key and tenant/project mapping.
+- Dropped events: review `maxQueueSize` and flush configuration.
+- Use debug mode in non-production.

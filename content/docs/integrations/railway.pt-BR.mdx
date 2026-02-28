@@ -1,0 +1,36 @@
+---
+title: Integração Railway
+description: Configuração prática do SDK em serviços Railway
+---
+
+## Instalação
+
+Use templates de `sdk/integrations/railway`.
+
+## Configuração
+
+Defina no serviço:
+
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+- `OBTRACE_ENV`
+
+## Início rápido
+
+1. Configure variáveis.
+2. Faça deploy com SDK inicializado.
+3. Gere tráfego mínimo (API + frontend) e valide ingestão.
+
+## Hardening de produção
+
+1. Separe chaves por ambiente/serviço.
+2. Não exponha chave de backend no cliente.
+3. Monitore latência e retry após deploy.
+
+## Solução de problemas
+
+- Sem evento de browser: confira env no build/runtime.
+- Backend negado: valide chave e ingest URL.
+- Falha intermitente: revise egress e timeout.

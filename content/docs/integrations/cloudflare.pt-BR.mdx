@@ -1,0 +1,39 @@
+---
+title: Integração Cloudflare
+description: Configuração do SDK para Workers e Pages
+---
+
+## Instalação
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+## Configuração
+
+Bindings necessários:
+
+- `OBTRACE_API_KEY` (secret)
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+- `OBTRACE_ENV`
+
+## Início rápido
+
+Em Workers, use `ObtraceClient`:
+
+```ts
+import { ObtraceClient } from "@obtrace/sdk-js";
+```
+
+## Hardening de produção
+
+1. Use API key apenas como secret.
+2. Separe secrets por ambiente.
+3. Valide conectividade de ingest no edge.
+
+## Solução de problemas
+
+- Incompatibilidade de runtime: não use entrypoint Node em Workers.
+- Bindings ausentes: revise `wrangler` e nomes dos secrets.

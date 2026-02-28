@@ -1,0 +1,26 @@
+---
+title: Autenticação
+description: Como configurar chaves e variáveis de ambiente com segurança
+---
+
+Todos os SDKs da Obtrace usam API key para autenticação no ingest.
+
+## Variáveis obrigatórias
+
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+
+## Regras mínimas de segurança
+
+1. Nunca exponha chave de servidor no cliente.
+2. Use chaves separadas por ambiente e por serviço.
+3. Guarde chaves apenas em secret manager.
+4. Rode validação de ingestão após cada rotação.
+
+## Sinais de configuração errada
+
+- `401/403` no envio.
+- Telemetria parcial entre serviços.
+- Dados chegando em tenant/projeto incorreto.

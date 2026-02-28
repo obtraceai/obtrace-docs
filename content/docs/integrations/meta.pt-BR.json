@@ -1,0 +1,4 @@
+{
+  "title": "Integrações",
+  "pages": ["k8s", "railway", "vercel", "supabase", "cloudflare"]
+}

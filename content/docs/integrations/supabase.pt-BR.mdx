@@ -1,17 +1,17 @@
 ---
-title: Supabase Integration
-description: SDK usage for Edge Functions and frontend apps
+title: Integração Supabase
+description: Uso do SDK em Edge Functions e frontend
 ---
 
-## Install
+## Instalação
 
 ```bash
 npm install @obtrace/sdk-js
 ```
 
-## Configuration
+## Configuração
 
-Edge Function secrets:
+Edge Function (secrets):
 
 - `OBTRACE_API_KEY`
 - `OBTRACE_INGEST_BASE_URL`
@@ -26,9 +26,9 @@ Frontend:
 - `VITE_OBTRACE_TENANT_ID`
 - `VITE_OBTRACE_PROJECT_ID`
 
-## Quick start
+## Início rápido
 
-Use `ObtraceClient` in Deno runtime:
+Em Deno (Edge Functions), use `ObtraceClient`:
 
 ```ts
 import { ObtraceClient } from "@obtrace/sdk-js";
@@ -41,13 +41,13 @@ const client = new ObtraceClient({
 });
 ```
 
-## Production hardening
+## Hardening de produção
 
-1. Keep keys only in function secrets.
-2. Rotate keys per environment.
-3. Validate logs/replay after deployment.
+1. Mantenha chaves só em secrets da função.
+2. Rotacione por ambiente.
+3. Valide logs/replay após deploy.
 
-## Troubleshooting
+## Solução de problemas
 
-- Deno runtime issue: avoid Node entrypoint.
-- Missing secrets: validate `Deno.env.get(...)` values.
+- Erro de runtime Deno: não use entrypoint Node.
+- Secrets ausentes: valide retorno de `Deno.env.get(...)`.

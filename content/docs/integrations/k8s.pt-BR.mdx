@@ -1,0 +1,39 @@
+---
+title: Integração Kubernetes
+description: Padrão de deploy e configuração com Secrets/ConfigMaps
+---
+
+## Instalação
+
+Use templates de `sdk/integrations/k8s`.
+
+```bash
+helm upgrade --install obtrace-sdk-integration \
+  ./deploy/helm/obtrace-sdk-integration \
+  -n observability --create-namespace \
+  -f ./deploy/helm/obtrace-sdk-integration/values-dev.yaml
+```
+
+## Configuração
+
+- Secret `obtrace-sdk` com `OBTRACE_API_KEY`
+- ConfigMap `obtrace-sdk-config` com URL de ingestão e IDs de tenant/projeto
+
+## Início rápido
+
+1. Aplique Secret e ConfigMap.
+2. Injete variáveis no deployment.
+3. Inicialize SDK no bootstrap da aplicação.
+
+## Hardening de produção
+
+1. Rotacione chaves com rollout controlado.
+2. Segmente chaves por namespace/projeto.
+3. Mantenha readiness/liveness probes.
+4. Valide ingestão após deploy.
+
+## Solução de problemas
+
+- Sem telemetria: valide env injection e policy de rede.
+- `429`: confira quotas de tenant/projeto.
+- Latência alta: ajuste flush e caminho de rede.

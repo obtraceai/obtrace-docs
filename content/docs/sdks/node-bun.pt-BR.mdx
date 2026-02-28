@@ -1,0 +1,50 @@
+---
+title: SDK JavaScript Node/Bun
+description: Instrumentação backend para Node.js e Bun
+---
+
+## Instalação
+
+```bash
+npm install @obtrace/sdk-js
+# ou
+bun add @obtrace/sdk-js
+```
+
+## Configuração
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  tenantId: process.env.OBTRACE_TENANT_ID,
+  projectId: process.env.OBTRACE_PROJECT_ID,
+  env: process.env.OBTRACE_ENV,
+  appId: "api",
+  serviceName: "api"
+});
+```
+
+## Início rápido
+
+```ts
+sdk.log("info", "service.started");
+sdk.metric("request.count", 1);
+sdk.span("db.query");
+await sdk.shutdown();
+```
+
+## Hardening de produção
+
+1. Armazene chave apenas em secret manager.
+2. Configure fila e flush conforme budget de latência.
+3. Valide telemetria após cada deploy.
+4. Use retry com fail-open para não bloquear aplicação.
+
+## Solução de problemas
+
+- `401/403`: valide chave e tenant/projeto.
+- Queda de eventos: revise `maxQueueSize` e flush.
+- Use debug em não-produção para diagnóstico.

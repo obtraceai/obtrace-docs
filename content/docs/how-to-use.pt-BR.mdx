@@ -1,0 +1,18 @@
+---
+title: Como usar
+description: Sequência recomendada de implantação, validação e hardening
+---
+
+Siga esta ordem.
+
+1. Configure [Autenticação](/pt-BR/docs/auth).
+2. Instrumente um SDK primeiro ([Browser](/pt-BR/docs/sdks/browser) ou [Node/Bun](/pt-BR/docs/sdks/node-bun)).
+3. Valide ingestão e consistência de eventos.
+4. Adicione integrações conforme a plataforma de deploy.
+5. Aplique hardening de produção (sampling, fila, retry e rotação de chave).
+
+## Checklist de aceite
+
+- Telemetria aparece no backend sem lacunas.
+- Não há `401/403` nem rejeições por configuração.
+- Volume de eventos é estável sob carga esperada.

@@ -1,21 +1,27 @@
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
-import { source } from "../../../lib/source";
-import { getMDXComponents } from "../../../mdx-components";
-import { i18n } from "../../../lib/i18n";
+import { source } from "../../../../lib/source";
+import { getMDXComponents } from "../../../../mdx-components";
+import { isSupportedLocale } from "../../../../lib/i18n";
 
 type Props = {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ lang: string; slug?: string[] }>;
 };
 
-export default async function DocsSlugPage({ params }: Props) {
+export default async function LocalizedDocsSlugPage({ params }: Props) {
   const p = await params;
-  const page = source.getPage(p.slug, i18n.defaultLanguage);
+
+  if (!isSupportedLocale(p.lang)) {
+    notFound();
+  }
+
+  const page = source.getPage(p.slug, p.lang);
+
   if (!page) {
     notFound();
   }
-  const mdxPage = page as any;
 
+  const mdxPage = page as any;
   const MDX = mdxPage.data.body;
 
   return (
@@ -30,7 +36,5 @@ export default async function DocsSlugPage({ params }: Props) {
 }
 
 export function generateStaticParams() {
-  return source.generateParams("slug", "lang").filter((item) => item.lang === i18n.defaultLanguage).map((item) => ({
-    slug: item.slug
-  }));
+  return source.generateParams("slug", "lang");
 }

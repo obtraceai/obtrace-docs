@@ -1,6 +1,6 @@
 ---
 title: Cloudflare Integration
-description: Use Obtrace SDK with Cloudflare Workers/Pages
+description: SDK configuration for Workers and Pages
 ---
 
 ## Install
@@ -11,32 +11,29 @@ npm install @obtrace/sdk-js
 
 ## Configuration
 
-Configure Worker bindings (vars/secrets):
+Required bindings:
+
 - `OBTRACE_API_KEY` (secret)
 - `OBTRACE_INGEST_BASE_URL`
 - `OBTRACE_TENANT_ID`
 - `OBTRACE_PROJECT_ID`
 - `OBTRACE_ENV`
 
-References:
-- https://developers.cloudflare.com/workers/configuration/environment-variables/
-- https://developers.cloudflare.com/workers/configuration/secrets/
+## Quick start
 
-## Quickstart
-
-Cloudflare Workers should use core `ObtraceClient`:
+Use `ObtraceClient` in Workers:
 
 ```ts
 import { ObtraceClient } from "@obtrace/sdk-js";
 ```
 
-## Production Hardening
+## Production hardening
 
-1. Store API keys as Worker secrets only.
-2. Separate preview/production secrets.
-3. Validate ingest connectivity from edge.
+1. Keep API keys only as secrets.
+2. Separate secrets by environment.
+3. Validate ingest connectivity from edge runtime.
 
 ## Troubleshooting
 
-- Runtime compatibility: avoid `@obtrace/sdk-js/node` in Workers.
-- Missing bindings: check Wrangler env bindings and secret names.
+- Runtime incompatibility: avoid Node entrypoint in Workers.
+- Missing bindings: verify Wrangler config and secret names.

@@ -1,15 +1,15 @@
 ---
-title: Vercel Integration
-description: Obtrace SDK setup for Next.js on Vercel
+title: Integração Vercel
+description: Setup do Obtrace SDK em aplicações Next.js na Vercel
 ---
 
-## Install
+## Instalação
 
 ```bash
 npm install @obtrace/sdk-js
 ```
 
-## Configuration
+## Configuração
 
 Server:
 
@@ -26,9 +26,9 @@ Client:
 - `NEXT_PUBLIC_OBTRACE_TENANT_ID`
 - `NEXT_PUBLIC_OBTRACE_PROJECT_ID`
 
-## Quick start
+## Início rápido
 
-Server (Node runtime):
+Servidor (Node runtime):
 
 ```ts
 import { initNodeSDK } from "@obtrace/sdk-js/node";
@@ -41,19 +41,19 @@ export const obtrace = initNodeSDK({
 });
 ```
 
-Client:
+Cliente:
 
 ```ts
 import { initBrowserSDK } from "@obtrace/sdk-js/browser";
 ```
 
-## Production hardening
+## Hardening de produção
 
-1. Never expose server keys to browser bundles.
-2. Isolate preview and production keys.
-3. Restrict ingest origin allowlist.
+1. Nunca use chave de servidor no browser.
+2. Separe chaves de preview e produção.
+3. Restrinja origem permitida no ingest.
 
-## Troubleshooting
+## Solução de problemas
 
-- No client telemetry: verify `NEXT_PUBLIC_*` variables.
-- No server telemetry: validate runtime and server env vars.
+- Cliente sem telemetria: valide `NEXT_PUBLIC_*`.
+- Servidor sem telemetria: confirme env vars e runtime.
