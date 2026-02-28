@@ -24,4 +24,4 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: NODE_OPTIONS='--max-old-space-size=512' npm audit --audit-level=high
+      - run: npm audit --audit-level=high
