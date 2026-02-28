@@ -6,4 +6,10 @@
 body {
   margin: 0;
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  background: hsl(var(--fd-background));
+  color: hsl(var(--fd-foreground));
+}
+
+html.dark {
+  color-scheme: dark;
 }

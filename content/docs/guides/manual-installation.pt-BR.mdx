@@ -1,0 +1,50 @@
+---
+title: Instalação Manual
+description: Checklist de rollout manual com segurança para produção
+icon: Wrench
+---
+
+Use este caminho quando você precisa de controle explícito sobre fases de rollout.
+
+## 1. Preparação de Ambiente
+
+- Crie chaves separadas por ambiente (`dev`, `staging`, `prod`).
+- Defina endpoint de ingest e identificadores de tenant/projeto.
+- Armazene segredos no seu secret manager (nunca no código).
+
+## 2. Instalação do SDK
+
+Escolha o SDK pelo runtime:
+
+- [SDK Browser](/pt-BR/docs/sdks/browser)
+- [SDK Node/Bun](/pt-BR/docs/sdks/node-bun)
+- [SDK Python](/pt-BR/docs/sdks/python)
+- [SDK Go](/pt-BR/docs/sdks/go)
+
+Aplique instrumentação primeiro em um serviço.
+
+## 3. Validação de Baseline
+
+Confirme:
+
+- Dados chegando de forma contínua.
+- Tags consistentes (`service`, `env`, `version`).
+- Vínculo entre erro e trace preservado.
+
+## 4. Expansão por Topologia
+
+- Adicione correlação de frontend.
+- Adicione workers assíncronos.
+- Adicione runtimes edge/serverless.
+
+## 5. Hardening de Integrações
+
+- Configure integração de runtime ([Integrações](/pt-BR/docs/integrations/overview)).
+- Inclua metadados de deploy do CI/CD.
+- Monitore erros de ingestão e eventos descartados.
+
+## 6. Operação
+
+- Defina playbooks de incidente.
+- Defina ownership de alerta/triagem.
+- Ative fluxos de IA (`Ask AI`, MCP).

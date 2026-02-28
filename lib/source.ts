@@ -2,7 +2,7 @@ import { loader } from "fumadocs-core/source";
 import { docs } from "../.source";
 import { i18n } from "./i18n";
 import { createElement } from "react";
-import { BookOpen, Code2, Boxes, PlugZap, Rocket, Info, KeyRound, Route, Sparkles } from "lucide-react";
+import { BookOpen, Code2, Boxes, PlugZap, Rocket, Info, KeyRound, Route, Sparkles, Compass, Scale, Wrench } from "lucide-react";
 
 const docsCollection = docs as any;
 const iconMap = {
@@ -14,7 +14,10 @@ const iconMap = {
   Info,
   KeyRound,
   Route,
-  Sparkles
+  Sparkles,
+  Compass,
+  Scale,
+  Wrench
 } as const;
 
 export const source = loader({

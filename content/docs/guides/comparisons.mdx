@@ -1,0 +1,42 @@
+---
+title: Comparisons
+description: How Obtrace compares by workflow instead of vendor checklists
+icon: Scale
+---
+
+Comparison should be done by operational workflow, not by feature count.
+
+## Incident Workflow Comparison
+
+### Traditional Stack
+
+- Alerts fired by one tool
+- Traces inspected in another
+- Logs queried in another
+- Deploy context fetched manually
+- Fix planned with fragmented evidence
+
+### Obtrace Workflow
+
+- Detection, correlation, and context in a unified flow
+- Service/env/release metadata attached to incident timeline
+- AI-assisted diagnosis directly on observed telemetry
+- Shared human + machine-readable context (`Ask AI`, MCP, `llm.txt`)
+
+## Decision Criteria
+
+Use these criteria when evaluating tooling:
+
+1. Correlation quality across signals and services.
+2. Time-to-triage under real production incidents.
+3. Deployment/change context in incident timeline.
+4. Reliability of ingestion and sampling strategy.
+5. Security posture and key management model.
+6. Team adoption friction and rollout complexity.
+
+## Migration Strategy
+
+1. Instrument Obtrace in parallel for one critical service.
+2. Compare MTTR and triage time for 2-4 incidents.
+3. Validate alert quality and context completeness.
+4. Expand only if measurable operational gains are confirmed.

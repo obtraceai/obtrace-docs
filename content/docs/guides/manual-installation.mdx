@@ -1,0 +1,50 @@
+---
+title: Manual Installation
+description: Production-safe manual rollout checklist for SDK and integrations
+icon: Wrench
+---
+
+Use this path when you need explicit control over rollout phases.
+
+## 1. Environment Setup
+
+- Create separate keys per environment (`dev`, `staging`, `prod`).
+- Define ingest endpoint and tenant/project identifiers.
+- Store secrets in your secret manager (never in source code).
+
+## 2. SDK Installation
+
+Pick SDK by runtime:
+
+- [Browser SDK](/docs/sdks/browser)
+- [Node/Bun SDK](/docs/sdks/node-bun)
+- [Python SDK](/docs/sdks/python)
+- [Go SDK](/docs/sdks/go)
+
+Apply instrumentation first to one service.
+
+## 3. Baseline Validation
+
+Confirm:
+
+- Data arrives continuously.
+- Tags are consistent (`service`, `env`, `version`).
+- Error and trace links are preserved.
+
+## 4. Expand by Topology
+
+- Add frontend correlation.
+- Add async workers.
+- Add edge/serverless runtimes.
+
+## 5. Integration Hardening
+
+- Configure runtime integration ([Integrations](/docs/integrations/overview)).
+- Add deployment metadata from CI/CD.
+- Monitor ingestion errors and dropped events.
+
+## 6. Operationalization
+
+- Define incident playbooks.
+- Set alert/triage ownership.
+- Enable AI workflows (`Ask AI`, MCP).

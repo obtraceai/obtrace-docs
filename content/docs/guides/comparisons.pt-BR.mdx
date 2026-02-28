@@ -1,0 +1,42 @@
+---
+title: Comparações
+description: Como comparar a Obtrace por fluxo operacional, não por checklist de funcionalidades
+icon: Scale
+---
+
+Comparação de ferramenta deve ser feita por fluxo operacional, não por contagem de features.
+
+## Comparação de Fluxo de Incidente
+
+### Stack Tradicional
+
+- Alerta em uma ferramenta
+- Trace em outra
+- Logs em outra
+- Contexto de deploy coletado manualmente
+- Correção planejada com evidência fragmentada
+
+### Fluxo com Obtrace
+
+- Detecção, correlação e contexto em fluxo unificado
+- Metadados de serviço/ambiente/release na timeline do incidente
+- Diagnóstico assistido por IA sobre telemetria observada
+- Contexto compartilhado humano + máquina (`Ask AI`, MCP, `llm.txt`)
+
+## Critérios de Decisão
+
+Use estes critérios na avaliação:
+
+1. Qualidade de correlação entre sinais e serviços.
+2. Tempo de triagem em incidente real de produção.
+3. Contexto de deploy/mudança dentro da timeline.
+4. Confiabilidade de ingestão e estratégia de sampling.
+5. Segurança e modelo de gestão de chaves.
+6. Atrito de adoção pelo time e complexidade de rollout.
+
+## Estratégia de Migração
+
+1. Instrumente Obtrace em paralelo em um serviço crítico.
+2. Compare MTTR e tempo de triagem em 2-4 incidentes.
+3. Valide qualidade de alerta e completude de contexto.
+4. Expanda apenas se houver ganho operacional mensurável.
