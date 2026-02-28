@@ -1,0 +1,68 @@
+---
+title: Quick Start
+description: Instale, instrumente, valide e rode Obtrace em produção em menos de 30 minutos
+icon: Rocket
+---
+
+Este quick start foi feito para velocidade sem perder qualidade de produção. No final, você terá um backend instrumentado, cobertura opcional de frontend e telemetria validada chegando na Obtrace.
+
+## Pré-requisitos
+
+- Conta na Obtrace e chave de API.
+- Acesso a um serviço backend e ao ambiente de deploy.
+- Runtime Node/Python/Go (dependendo da sua stack).
+
+## Passo 1: Autenticação
+
+Crie e armazene credenciais com segurança.
+
+- Siga [Autenticação](/pt-BR/docs/guides/auth).
+- Defina variáveis de ambiente localmente e no CI/CD.
+
+## Passo 2: Instrumente o Backend Primeiro
+
+Comece pelo serviço com maior impacto em incidentes.
+
+1. Escolha o SDK no [Catálogo de SDKs](/pt-BR/docs/sdks/catalog).
+2. Instale e inicialize o SDK.
+3. Adicione metadados (`service`, `env`, `version`, `region`).
+
+## Passo 3: Instrumentação Opcional de Frontend
+
+Se experiência de usuário é crítica nos incidentes, instrumente browser em seguida.
+
+- Use [SDK JavaScript Browser](/pt-BR/docs/sdks/browser).
+- Correlacione requisições frontend e backend quando possível.
+
+## Passo 4: Validar Ingestão de Dados
+
+Confirme que a telemetria está saudável antes do rollout.
+
+- Eventos chegando continuamente.
+- Tags de serviço/ambiente consistentes.
+- Contexto de trace e erro ligado corretamente.
+
+## Passo 5: Adicione Integração de Runtime
+
+Escolha seu runtime de deploy e integre já.
+
+- [Kubernetes](/pt-BR/docs/integrations/k8s)
+- [Docker](/pt-BR/docs/integrations/docker)
+- [Vercel](/pt-BR/docs/integrations/vercel)
+- [Railway](/pt-BR/docs/integrations/railway)
+
+## Passo 6: Adicione Contexto de CI/CD
+
+Conecte [GitHub Actions](/pt-BR/docs/integrations/github-actions) para incluir sinais de release/deploy no contexto de incidente.
+
+## Passo 7: Ative Fluxos de IA
+
+- Use o botão flutuante **Pergunte à IA** na documentação.
+- Exponha contexto legível por máquina via [`/llm.txt`](/llm.txt) e [`/mcp.json`](/mcp.json).
+- Veja [MCP](/pt-BR/docs/mcp) para integrações com agentes.
+
+## Próximos Caminhos
+
+- Precisa de arquitetura e racional: [Introdução](/pt-BR/docs/guides/intro)
+- Precisa de padrão de implementação: [Como usar](/pt-BR/docs/guides/how-to-use)
+- Precisa da matriz de runtime: [Matriz de Integrações](/pt-BR/docs/integrations/overview)

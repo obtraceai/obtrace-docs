@@ -1,5 +1,7 @@
 {
   "title": "Integrations",
+  "icon": "PlugZap",
+  "defaultOpen": false,
   "pages": [
     "overview",
     "k8s",

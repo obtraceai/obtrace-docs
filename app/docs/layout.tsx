@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <DocsI18nProvider locale={i18n.defaultLanguage}>
-      <AISearch>
+      <AISearch locale="en">
         <DocsLayout tree={tree} {...baseOptions()}>
           {children}
         </DocsLayout>
@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           className={buttonVariants({
             color: "primary",
             size: "sm",
-            className: "gap-2 rounded-full shadow-lg"
+            className: "gap-2 rounded-full shadow-lg z-[70] border border-fd-primary/20"
           })}
           position="float"
         >

@@ -1,12 +1,10 @@
 {
   "title": "Documentation",
   "root": true,
+  "defaultOpen": true,
   "pages": [
     "index",
-    "intro",
-    "why-obtrace",
-    "auth",
-    "how-to-use",
+    "guides",
     "sdks",
     "projects",
     "integrations",

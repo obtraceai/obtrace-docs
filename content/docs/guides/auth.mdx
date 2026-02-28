@@ -1,0 +1,27 @@
+---
+title: Authentication
+description: Configure API keys and environment variables safely
+icon: KeyRound
+---
+
+All Obtrace SDKs authenticate through API keys at ingest.
+
+## Required variables
+
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+
+## Minimum security rules
+
+1. Never expose server keys in client bundles.
+2. Separate keys by environment and service.
+3. Store keys only in a secret manager.
+4. Validate ingestion after every key rotation.
+
+## Misconfiguration signals
+
+- `401/403` during telemetry submission.
+- Partial telemetry across services.
+- Data reaching the wrong tenant/project.

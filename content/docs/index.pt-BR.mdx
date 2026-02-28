@@ -3,14 +3,37 @@ title: Documentação Obtrace
 description: Documentação completa de SDKs, blueprints de projeto, integrações e contexto para IA
 ---
 
-## Começando
+A Obtrace é uma plataforma de observabilidade com IA para reduzir MTTR e eliminar troca de contexto durante incidentes. Esta documentação não é só referência de API: é um playbook operacional para sair de zero instrumentação até operação em produção.
 
-- [Introdução](/pt-BR/docs/intro)
-- [Por que Obtrace](/pt-BR/docs/why-obtrace)
-- [Autenticação](/pt-BR/docs/auth)
-- [Como usar](/pt-BR/docs/how-to-use)
+## Comece Por Aqui
+
+Se você está começando agora, siga esta sequência:
+
+1. [Introdução](/pt-BR/docs/guides/intro)
+2. [Quick Start](/pt-BR/docs/guides/quick-start)
+3. [Por que Obtrace](/pt-BR/docs/guides/why-obtrace)
+4. [Autenticação](/pt-BR/docs/guides/auth)
+5. [Como usar](/pt-BR/docs/guides/how-to-use)
+
+## O Que Você Ganha Com a Obtrace
+
+- Causa raiz assistida por IA correlacionando logs, traces, erros e contexto de sessão.
+- Modelo unificado de observabilidade entre frontend e backend.
+- Triagem mais rápida com evidência correlacionada, não dashboards desconectados.
+- Fluxos opcionais de IA (Ask AI, MCP, `llm.txt`) para agentes e assistentes.
+
+## Caminho de Implementação em 30 Minutos
+
+1. Criar chaves de API e configurar variáveis de ambiente.
+2. Instrumentar um serviço backend com o SDK da sua stack.
+3. Instrumentar um app frontend/browser (se aplicável).
+4. Validar ingestão e sinais básicos.
+5. Configurar uma integração de runtime (Kubernetes, Vercel, Docker etc).
+6. Adicionar visibilidade de CI/CD com [GitHub Actions](/pt-BR/docs/integrations/github-actions).
 
 ## SDKs
+
+Use os guias por linguagem para setup completo:
 
 - [Catálogo de SDKs](/pt-BR/docs/sdks/catalog)
 - [SDK JavaScript Browser](/pt-BR/docs/sdks/browser)
@@ -25,11 +48,15 @@ description: Documentação completa de SDKs, blueprints de projeto, integraçõ
 - [SDK Kotlin (Planejado)](/pt-BR/docs/sdks/kotlin)
 - [SDK Swift (Planejado)](/pt-BR/docs/sdks/swift)
 
-## Projetos
+## Blueprints de Projeto
+
+Use estruturas de projeto de referência para evitar setup ad-hoc e padronizar telemetria:
 
 - [Blueprints de Projeto](/pt-BR/docs/projects/overview)
 
 ## Integrações
+
+Integre a Obtrace onde as cargas realmente rodam:
 
 - [Matriz de Integrações](/pt-BR/docs/integrations/overview)
 - [Kubernetes](/pt-BR/docs/integrations/k8s)
@@ -43,10 +70,12 @@ description: Documentação completa de SDKs, blueprints de projeto, integraçõ
 - [Azure Container Apps](/pt-BR/docs/integrations/azure-container-apps)
 - [GitHub Actions](/pt-BR/docs/integrations/github-actions)
 
-## Plataforma
+## IA e Contexto para Máquinas
 
 - [MCP](/pt-BR/docs/mcp)
 - [Referência](/pt-BR/docs/reference)
 - [Downloads de SDK](/pt-BR/docs/downloads)
 - [llm.txt](/llm.txt)
 - [mcp.json](/mcp.json)
+
+Se quiser fluxo guiado e conversacional, use o botão flutuante **Ask AI** nas páginas de docs.

@@ -1,0 +1,68 @@
+---
+title: Quick Start
+description: Install, instrument, validate, and ship Obtrace in production in under 30 minutes
+icon: Rocket
+---
+
+This quick start is designed for speed without losing production quality. At the end, you will have one instrumented backend, optional frontend coverage, and validated telemetry flowing into Obtrace.
+
+## Prerequisites
+
+- Obtrace account and API key.
+- Access to one backend service and its deployment environment.
+- Node/Python/Go runtime (depending on your stack).
+
+## Step 1: Authenticate
+
+Create and store your credentials securely.
+
+- Follow [Authentication](/docs/guides/auth).
+- Set environment variables in local and CI/CD.
+
+## Step 2: Instrument Backend First
+
+Start with the service that has the highest incident impact.
+
+1. Pick your SDK in [SDK Catalog](/docs/sdks/catalog).
+2. Install and initialize the SDK.
+3. Add service metadata (`service`, `env`, `version`, `region`).
+
+## Step 3: Optional Frontend Instrumentation
+
+If user-facing experience matters for your incidents, instrument browser telemetry next.
+
+- Use [JavaScript Browser SDK](/docs/sdks/browser).
+- Correlate frontend and backend requests where possible.
+
+## Step 4: Validate Data Ingestion
+
+Confirm that your telemetry is healthy before rollout.
+
+- Events are arriving continuously.
+- Service/env tags are consistent.
+- Trace and error context are linked.
+
+## Step 5: Add Runtime Integration
+
+Pick your deployment runtime and integrate right away.
+
+- [Kubernetes](/docs/integrations/k8s)
+- [Docker](/docs/integrations/docker)
+- [Vercel](/docs/integrations/vercel)
+- [Railway](/docs/integrations/railway)
+
+## Step 6: Add CI/CD Context
+
+Connect [GitHub Actions](/docs/integrations/github-actions) so incident context includes release and deploy signals.
+
+## Step 7: Enable AI Workflows
+
+- Use floating **Ask AI** in docs for guided troubleshooting.
+- Expose machine-readable context via [`/llm.txt`](/llm.txt) and [`/mcp.json`](/mcp.json).
+- Review [MCP](/docs/mcp) for agent integrations.
+
+## Next Paths
+
+- Need architecture and rationale: [Introduction](/docs/guides/intro)
+- Need implementation patterns: [How to use](/docs/guides/how-to-use)
+- Need runtime decision matrix: [Integration Matrix](/docs/integrations/overview)

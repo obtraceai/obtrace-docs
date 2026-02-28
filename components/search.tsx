@@ -26,10 +26,42 @@ const Context = createContext<{
   open: boolean;
   setOpen: (open: boolean) => void;
   chat: UseChatHelpers<UIMessage>;
+  locale: string;
 } | null>(null);
+
+const translations = {
+  en: {
+    title: 'AI Chat',
+    poweredBy: 'Powered by',
+    close: 'Close',
+    retry: 'Retry',
+    clearChat: 'Clear Chat',
+    aiAnswering: 'AI is answering...',
+    askQuestion: 'Ask a question',
+    abortAnswer: 'Abort Answer',
+    startChat: 'Start a new chat below.',
+  },
+  'pt-BR': {
+    title: 'Chat com IA',
+    poweredBy: 'Powered by',
+    close: 'Fechar',
+    retry: 'Tentar novamente',
+    clearChat: 'Limpar chat',
+    aiAnswering: 'A IA está respondendo...',
+    askQuestion: 'Faça uma pergunta',
+    abortAnswer: 'Interromper resposta',
+    startChat: 'Inicie uma conversa abaixo.',
+  },
+} as const;
+
+function useT() {
+  const { locale } = useAISearchContext();
+  return translations[locale as keyof typeof translations] ?? translations.en;
+}
 
 export function AISearchPanelHeader({ className, ...props }: ComponentProps<'div'>) {
   const { setOpen } = useAISearchContext();
+  const t = useT();
 
   return (
     <div
@@ -40,9 +72,9 @@ export function AISearchPanelHeader({ className, ...props }: ComponentProps<'div
       {...props}
     >
       <div className="px-3 py-2 flex-1">
-        <p className="text-sm font-medium mb-2">AI Chat</p>
+        <p className="text-sm font-medium mb-2">{t.title}</p>
         <p className="text-xs text-fd-muted-foreground">
-          Powered by{' '}
+          {t.poweredBy}{' '}
           <a href="https://inkeep.com" target="_blank" rel="noreferrer noopener">
             Inkeep AI
           </a>
@@ -50,7 +82,7 @@ export function AISearchPanelHeader({ className, ...props }: ComponentProps<'div
       </div>
 
       <button
-        aria-label="Close"
+        aria-label={t.close}
         tabIndex={-1}
         className={cn(
           buttonVariants({
@@ -69,6 +101,7 @@ export function AISearchPanelHeader({ className, ...props }: ComponentProps<'div
 
 export function AISearchInputActions() {
   const { messages, status, setMessages, regenerate } = useChatContext();
+  const t = useT();
   const isLoading = status === 'streaming';
 
   if (messages.length === 0) return null;
@@ -88,7 +121,7 @@ export function AISearchInputActions() {
           onClick={() => regenerate()}
         >
           <RefreshCw className="size-4" />
-          Retry
+          {t.retry}
         </button>
       )}
       <button
@@ -102,7 +135,7 @@ export function AISearchInputActions() {
         )}
         onClick={() => setMessages([])}
       >
-        Clear Chat
+        {t.clearChat}
       </button>
     </>
   );
@@ -111,7 +144,8 @@ export function AISearchInputActions() {
 const StorageKeyInput = '__ai_search_input';
 export function AISearchInput(props: ComponentProps<'form'>) {
   const { status, sendMessage, stop } = useChatContext();
-  const [input, setInput] = useState(() => localStorage.getItem(StorageKeyInput) ?? '');
+  const t = useT();
+  const [input, setInput] = useState('');
   const isLoading = status === 'streaming' || status === 'submitted';
   const onStart = (e?: SyntheticEvent) => {
     e?.preventDefault();
@@ -119,7 +153,19 @@ export function AISearchInput(props: ComponentProps<'form'>) {
     setInput('');
   };
 
-  localStorage.setItem(StorageKeyInput, input);
+  useEffect(() => {
+    try {
+      setInput(localStorage.getItem(StorageKeyInput) ?? '');
+    } catch {
+      setInput('');
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(StorageKeyInput, input);
+    } catch {}
+  }, [input]);
 
   useEffect(() => {
     if (isLoading) document.getElementById('nd-ai-input')?.focus();
@@ -129,7 +175,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
     <form {...props} className={cn('flex items-start pe-2', props.className)} onSubmit={onStart}>
       <Input
         value={input}
-        placeholder={isLoading ? 'AI is answering...' : 'Ask a question'}
+        placeholder={isLoading ? t.aiAnswering : t.askQuestion}
         autoFocus
         className="p-3"
         disabled={status === 'streaming' || status === 'submitted'}
@@ -155,7 +201,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           onClick={stop}
         >
           <Loader2 className="size-4 animate-spin text-fd-muted-foreground" />
-          Abort Answer
+          {t.abortAnswer}
         </button>
       ) : (
         <button
@@ -288,7 +334,7 @@ function Message({ message, ...props }: { message: UIMessage } & ComponentProps<
   );
 }
 
-export function AISearch({ children }: { children: ReactNode }) {
+export function AISearch({ children, locale = 'en' }: { children: ReactNode; locale?: string }) {
   const [open, setOpen] = useState(false);
   const chat = useChat({
     id: 'search',
@@ -298,7 +344,9 @@ export function AISearch({ children }: { children: ReactNode }) {
   });
 
   return (
-    <Context value={useMemo(() => ({ chat, open, setOpen }), [chat, open])}>{children}</Context>
+    <Context value={useMemo(() => ({ chat, locale, open, setOpen }), [chat, locale, open])}>
+      {children}
+    </Context>
   );
 }
 
@@ -314,7 +362,7 @@ export function AISearchTrigger({
       data-state={open ? 'open' : 'closed'}
       className={cn(
         position === 'float' && [
-          'fixed bottom-4 gap-3 w-24 end-[calc(--spacing(4)+var(--removed-body-scroll-bar-size,0px))] shadow-lg z-20 transition-[translate,opacity]',
+          'fixed bottom-6 right-6 gap-3 w-auto min-w-24 shadow-lg z-[70] transition-[translate,opacity]',
           open && 'translate-y-10 opacity-0',
         ],
         className,
@@ -388,6 +436,7 @@ export function AISearchPanel() {
 
 export function AISearchPanelList({ className, style, ...props }: ComponentProps<'div'>) {
   const chat = useChatContext();
+  const t = useT();
   const messages = chat.messages.filter((msg) => msg.role !== 'system');
 
   return (
@@ -403,7 +452,7 @@ export function AISearchPanelList({ className, style, ...props }: ComponentProps
       {messages.length === 0 ? (
         <div className="text-sm text-fd-muted-foreground/80 size-full flex flex-col items-center justify-center text-center gap-2">
           <MessageCircleIcon fill="currentColor" stroke="none" />
-          <p onClick={(e) => e.stopPropagation()}>Start a new chat below.</p>
+          <p onClick={(e) => e.stopPropagation()}>{t.startChat}</p>
         </div>
       ) : (
         <div className="flex flex-col px-3 gap-4">

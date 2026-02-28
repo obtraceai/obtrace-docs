@@ -25,7 +25,7 @@ export default async function LocalizedDocsLayout({ children, params }: Props) {
 
   return (
     <DocsI18nProvider locale={lang}>
-      <AISearch>
+      <AISearch locale={lang}>
         <DocsLayout tree={tree} {...baseOptions()}>
           {children}
         </DocsLayout>
@@ -33,12 +33,12 @@ export default async function LocalizedDocsLayout({ children, params }: Props) {
           className={buttonVariants({
             color: "primary",
             size: "sm",
-            className: "gap-2 rounded-full shadow-lg"
+            className: "gap-2 rounded-full shadow-lg z-[70] border border-fd-primary/20"
           })}
           position="float"
         >
           <MessageCircleIcon className="size-4" />
-          Ask AI
+          {lang === "pt-BR" ? "Pergunte à IA" : "Ask AI"}
         </AISearchTrigger>
         <AISearchPanel />
       </AISearch>

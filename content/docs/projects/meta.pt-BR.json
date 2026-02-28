@@ -1,4 +1,6 @@
 {
   "title": "Projetos",
+  "icon": "Boxes",
+  "defaultOpen": false,
   "pages": ["overview", "nextjs", "nestjs", "fastapi", "spring-boot", "laravel", "dotnet-api", "go-api"]
 }

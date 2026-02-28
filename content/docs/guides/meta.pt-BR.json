@@ -1,0 +1,12 @@
+{
+  "title": "Guias",
+  "icon": "BookOpen",
+  "defaultOpen": true,
+  "pages": [
+    "quick-start",
+    "intro",
+    "why-obtrace",
+    "auth",
+    "how-to-use"
+  ]
+}

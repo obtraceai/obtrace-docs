@@ -1,5 +1,7 @@
 {
   "title": "SDKs",
+  "icon": "Code2",
+  "defaultOpen": true,
   "pages": [
     "catalog",
     "browser",

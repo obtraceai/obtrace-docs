@@ -3,14 +3,37 @@ title: Obtrace Docs
 description: Complete documentation for SDKs, project blueprints, integrations, and AI-ready context
 ---
 
-## Getting started
+Obtrace is an AI-powered observability platform built to reduce incident MTTR and engineering context-switching. These docs are not only API references: they are the operational playbook to go from zero instrumentation to production-grade incident response.
 
-- [Introduction](/docs/intro)
-- [Why Obtrace](/docs/why-obtrace)
-- [Authentication](/docs/auth)
-- [How to use](/docs/how-to-use)
+## Start Here
+
+If you are new, follow this sequence:
+
+1. [Introduction](/docs/guides/intro)
+2. [Quick Start](/docs/guides/quick-start)
+3. [Why Obtrace](/docs/guides/why-obtrace)
+4. [Authentication](/docs/guides/auth)
+5. [How to use](/docs/guides/how-to-use)
+
+## What You Get With Obtrace
+
+- AI-assisted root cause analysis across logs, traces, errors, and session context.
+- Unified observability model across frontend and backend services.
+- Faster triage through correlated evidence, not disconnected dashboards.
+- Optional AI workflows (Ask AI, MCP, `llm.txt`) for agent and assistant integration.
+
+## 30-Minute Implementation Path
+
+1. Create API keys and configure environment variables.
+2. Instrument one backend service using your SDK.
+3. Instrument one frontend/browser app (if applicable).
+4. Validate ingestion and baseline signals.
+5. Configure one runtime integration (Kubernetes, Vercel, Docker, etc).
+6. Add CI/CD visibility with [GitHub Actions](/docs/integrations/github-actions).
 
 ## SDKs
+
+Use the language-specific guide for real setup details:
 
 - [SDK Catalog](/docs/sdks/catalog)
 - [JavaScript Browser SDK](/docs/sdks/browser)
@@ -25,11 +48,15 @@ description: Complete documentation for SDKs, project blueprints, integrations, 
 - [Kotlin SDK (Planned)](/docs/sdks/kotlin)
 - [Swift SDK (Planned)](/docs/sdks/swift)
 
-## Projects
+## Project Blueprints
+
+Use reference project structures to avoid ad-hoc setup and enforce consistent telemetry patterns:
 
 - [Project Blueprints](/docs/projects/overview)
 
 ## Integrations
+
+Integrate Obtrace where your workloads actually run:
 
 - [Integration Matrix](/docs/integrations/overview)
 - [Kubernetes](/docs/integrations/k8s)
@@ -43,10 +70,12 @@ description: Complete documentation for SDKs, project blueprints, integrations, 
 - [Azure Container Apps](/docs/integrations/azure-container-apps)
 - [GitHub Actions](/docs/integrations/github-actions)
 
-## Platform
+## AI and Machine-Readable Context
 
 - [MCP](/docs/mcp)
 - [Reference](/docs/reference)
 - [SDK Downloads](/docs/downloads)
 - [llm.txt](/llm.txt)
 - [mcp.json](/mcp.json)
+
+If you want a guided, conversational flow, use the floating **Ask AI** button in docs pages.
