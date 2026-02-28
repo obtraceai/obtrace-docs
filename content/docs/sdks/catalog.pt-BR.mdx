@@ -3,32 +3,55 @@ title: Catálogo de SDKs
 description: Cobertura dos SDKs oficiais e planejados
 ---
 
-Esta página consolida o escopo de SDKs por runtime.
+Este catálogo é uma camada de decisão, não só uma lista. Use para priorizar rollout por runtime e maturidade do time.
 
 ## SDKs oficiais
 
-| SDK | Status | Runtime principal | Docs |
-|---|---|---|---|
-| JavaScript Browser | GA | Browser | [Abrir](/pt-BR/docs/sdks/browser) |
-| JavaScript Node/Bun | GA | Node.js / Bun | [Abrir](/pt-BR/docs/sdks/node-bun) |
-| Python | GA | CPython | [Abrir](/pt-BR/docs/sdks/python) |
-| Go | GA | Go 1.21+ | [Abrir](/pt-BR/docs/sdks/go) |
-| Java | GA | JVM 17+ | [Abrir](/pt-BR/docs/sdks/java) |
-| .NET | GA | .NET 8+ | [Abrir](/pt-BR/docs/sdks/dotnet) |
-| PHP | GA | PHP 8.2+ | [Abrir](/pt-BR/docs/sdks/php) |
-| Ruby | GA | Ruby 3.2+ | [Abrir](/pt-BR/docs/sdks/ruby) |
+| SDK | Status | Runtime principal | Melhor uso | Docs |
+|---|---|---|---|---|
+| JavaScript Browser | GA | Browser | Telemetria de UX e correlação frontend/backend | [Abrir](/pt-BR/docs/sdks/browser) |
+| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers e serviços JS | [Abrir](/pt-BR/docs/sdks/node-bun) |
+| Python | GA | CPython | FastAPI/Django e serviços de dados | [Abrir](/pt-BR/docs/sdks/python) |
+| Go | GA | Go 1.21+ | Serviços de alto throughput e baixa latência | [Abrir](/pt-BR/docs/sdks/go) |
+| Java | GA | JVM 17+ | Microserviços enterprise e ecossistema Spring | [Abrir](/pt-BR/docs/sdks/java) |
+| .NET | GA | .NET 8+ | APIs ASP.NET e workloads enterprise | [Abrir](/pt-BR/docs/sdks/dotnet) |
+| PHP | GA | PHP 8.2+ | Laravel e stacks web tradicionais | [Abrir](/pt-BR/docs/sdks/php) |
+| Ruby | GA | Ruby 3.2+ | Serviços Rails e jobs de background | [Abrir](/pt-BR/docs/sdks/ruby) |
 
 ## Planejados / Em validação
 
 | SDK | Status | Observações |
 |---|---|---|
-| Rust | Planejamento Beta | Transporte core e API de tracing em validação. |
+| Rust | Planejamento Beta | Foco em segurança de transporte e ergonomia de tracing. |
 | Kotlin | Planejamento Beta | Foco em compatibilidade com Ktor e Spring. |
 | Swift | Planejamento Beta | Foco em telemetria iOS e buffer offline. |
 
-## Convenções entre SDKs
+## Guia de Seleção
 
-1. Modelo de auth compartilhado (`API_KEY`, `INGEST_BASE_URL`, IDs de tenant/projeto).
-2. Primitivas padrão: log, métrica, span e flush/shutdown.
-3. Comportamento de fila/retry documentado por runtime.
-4. Playbook de troubleshooting consistente (auth, transporte, volume, latência).
+Priorize por:
+
+1. Criticidade do serviço.
+2. Volume de requisições.
+3. Prontidão do time para suporte.
+4. Restrições do runtime (cold start, memória, edge limits).
+
+## Convenções Compartilhadas entre SDKs
+
+1. Modelo de autenticação consistente.
+2. Primitivas centrais alinhadas (log/trace/error + flush/shutdown).
+3. Retry/fila variam por runtime, mas são documentados.
+4. Taxonomia de troubleshooting compartilhada.
+
+## Padrão de Rollout por Runtime
+
+- Comece com um serviço por linguagem.
+- Valide gates de qualidade de dados.
+- Expanda por topologia (API síncrona -> workers -> edge/frontend).
+- Anexe metadados de release e integração de runtime antes de escalar.
+
+## Definição de Pronto (Por SDK)
+
+- Instrumentação aplicada e revisada.
+- Telemetria visível com tags estáveis.
+- Correlação erro/trace validada em simulação de incidente.
+- Runbook de rotação de chave e falha de transporte documentado.

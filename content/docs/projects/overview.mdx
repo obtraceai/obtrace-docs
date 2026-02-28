@@ -3,9 +3,9 @@ title: Project Blueprints
 description: Recommended project-level rollout patterns
 ---
 
-Use these blueprints when onboarding new services.
+Blueprints are not templates to copy blindly. They are reference architectures to reduce rollout mistakes and enforce consistent observability behavior across teams.
 
-## Available blueprints
+## Available Blueprints
 
 - [Next.js](/docs/projects/nextjs)
 - [NestJS](/docs/projects/nestjs)
@@ -15,9 +15,56 @@ Use these blueprints when onboarding new services.
 - [.NET API](/docs/projects/dotnet-api)
 - [Go API](/docs/projects/go-api)
 
-## Shared rollout policy
+## How To Use a Blueprint
 
-1. Enable telemetry in one environment first.
-2. Validate auth + ingestion.
-3. Expand by service tier.
-4. Enforce key rotation and runtime-specific hardening.
+1. Match the blueprint to your deployment topology.
+2. Copy only the instrumentation and config patterns that fit your environment.
+3. Keep your internal naming and ownership model.
+4. Validate with production-like traffic before broad rollout.
+
+## Shared Rollout Policy
+
+### Stage 1: Controlled Start
+
+- Enable telemetry in one environment (`staging` recommended).
+- Validate auth + ingest + tags.
+- Confirm no unacceptable overhead.
+
+### Stage 2: Expand by Tier
+
+- Instrument critical services first.
+- Add supporting services second.
+- Add low-criticality services last.
+
+### Stage 3: Operational Hardening
+
+- Key rotation policy documented.
+- Sampling and retention policy defined.
+- Runbooks for ingestion failures and noisy signals.
+
+## Minimum Blueprint Requirements
+
+Every production-ready blueprint should define:
+
+- Environment variable strategy.
+- Service/version tagging model.
+- Error capture baseline.
+- Trace propagation assumptions.
+- Deployment metadata strategy.
+- Rollback and failure-mode guidance.
+
+## Anti-Patterns
+
+1. One global key for all environments.
+2. Inconsistent service naming across repos.
+3. Rollout without ingestion validation gates.
+4. Treating observability as an afterthought in CI/CD.
+
+## Success Metrics
+
+Measure blueprint quality by outcomes:
+
+- Faster triage in real incidents.
+- Less time spent correlating data manually.
+- Lower false-positive alert volume.
+- Higher confidence in root-cause decisions.

@@ -3,7 +3,7 @@ title: Blueprints de Projeto
 description: Padrões recomendados de rollout por projeto
 ---
 
-Use estes blueprints ao onboardar novos serviços.
+Blueprint não é template para copiar cegamente. É arquitetura de referência para reduzir erro de rollout e padronizar comportamento de observabilidade entre times.
 
 ## Blueprints disponíveis
 
@@ -15,9 +15,56 @@ Use estes blueprints ao onboardar novos serviços.
 - [.NET API](/pt-BR/docs/projects/dotnet-api)
 - [Go API](/pt-BR/docs/projects/go-api)
 
-## Política compartilhada de rollout
+## Como Usar um Blueprint
 
-1. Habilite telemetria primeiro em um ambiente.
-2. Valide auth + ingestão.
-3. Expanda por tier de serviço.
-4. Aplique rotação de chave e hardening por runtime.
+1. Escolha o blueprint conforme sua topologia de deploy.
+2. Copie apenas padrões de instrumentação/config que cabem no seu ambiente.
+3. Preserve seu modelo interno de naming e ownership.
+4. Valide com tráfego semelhante ao de produção antes de expandir.
+
+## Política Compartilhada de Rollout
+
+### Estágio 1: Início Controlado
+
+- Habilite telemetria em um ambiente (`staging` recomendado).
+- Valide auth + ingestão + tags.
+- Confirme overhead aceitável.
+
+### Estágio 2: Expansão por Tier
+
+- Serviços críticos primeiro.
+- Serviços de suporte em seguida.
+- Serviços de baixa criticidade por último.
+
+### Estágio 3: Hardening Operacional
+
+- Política de rotação de chave documentada.
+- Política de sampling/retenção definida.
+- Runbooks de falha de ingestão e ruído de sinais.
+
+## Requisitos Mínimos de Blueprint
+
+Todo blueprint pronto para produção precisa definir:
+
+- Estratégia de variáveis de ambiente.
+- Modelo de tags de serviço/versão.
+- Baseline de captura de erro.
+- Premissas de propagação de trace.
+- Estratégia de metadados de deploy.
+- Guia de rollback e falhas comuns.
+
+## Anti-padrões
+
+1. Uma chave global para todos os ambientes.
+2. Nomes de serviço inconsistentes entre repositórios.
+3. Rollout sem gate de validação.
+4. Observabilidade tratada como pós-pensamento no CI/CD.
+
+## Métricas de Sucesso
+
+Qualidade de blueprint deve aparecer em resultado:
+
+- Triagem mais rápida em incidente real.
+- Menos tempo de correlação manual.
+- Menor volume de falso positivo.
+- Maior confiança nas decisões de causa raiz.

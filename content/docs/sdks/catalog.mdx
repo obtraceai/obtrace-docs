@@ -3,32 +3,55 @@ title: SDK Catalog
 description: Coverage of official and planned SDKs
 ---
 
-This page tracks the SDK surface across runtimes.
+This catalog is a decision layer, not only a list. Use it to choose the right rollout path per runtime and team maturity.
 
 ## Official SDKs
 
-| SDK | Status | Primary Runtime | Docs |
-|---|---|---|---|
-| JavaScript Browser | GA | Browser | [Open](/docs/sdks/browser) |
-| JavaScript Node/Bun | GA | Node.js / Bun | [Open](/docs/sdks/node-bun) |
-| Python | GA | CPython | [Open](/docs/sdks/python) |
-| Go | GA | Go 1.21+ | [Open](/docs/sdks/go) |
-| Java | GA | JVM 17+ | [Open](/docs/sdks/java) |
-| .NET | GA | .NET 8+ | [Open](/docs/sdks/dotnet) |
-| PHP | GA | PHP 8.2+ | [Open](/docs/sdks/php) |
-| Ruby | GA | Ruby 3.2+ | [Open](/docs/sdks/ruby) |
+| SDK | Status | Primary Runtime | Best For | Docs |
+|---|---|---|---|---|
+| JavaScript Browser | GA | Browser | User-facing telemetry and frontend correlation | [Open](/docs/sdks/browser) |
+| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers, edge-compatible JS services | [Open](/docs/sdks/node-bun) |
+| Python | GA | CPython | FastAPI/Django workers and data services | [Open](/docs/sdks/python) |
+| Go | GA | Go 1.21+ | High-throughput services and low-latency APIs | [Open](/docs/sdks/go) |
+| Java | GA | JVM 17+ | Enterprise microservices and Spring ecosystems | [Open](/docs/sdks/java) |
+| .NET | GA | .NET 8+ | ASP.NET APIs and enterprise backend workloads | [Open](/docs/sdks/dotnet) |
+| PHP | GA | PHP 8.2+ | Laravel and traditional web backend stacks | [Open](/docs/sdks/php) |
+| Ruby | GA | Ruby 3.2+ | Rails services and background job ecosystems | [Open](/docs/sdks/ruby) |
 
 ## Planned / In Validation
 
 | SDK | Status | Notes |
 |---|---|---|
-| Rust | Beta Planning | Core transport and tracing API under validation. |
+| Rust | Beta Planning | Focus on transport safety and tracing ergonomics. |
 | Kotlin | Beta Planning | Focus on Ktor and Spring compatibility. |
 | Swift | Beta Planning | Focus on iOS telemetry and offline buffering. |
 
-## Conventions across SDKs
+## Selection Guide
 
-1. Shared auth model (`API_KEY`, `INGEST_BASE_URL`, tenant/project IDs).
-2. Standard telemetry primitives: log, metric, span, flush/shutdown.
-3. Queueing and retry behavior documented per runtime.
-4. Consistent troubleshooting playbooks (auth, transport, volume, latency).
+Choose SDK priority using this order:
+
+1. Service criticality (incident cost if it fails).
+2. Request volume (signal usefulness).
+3. Team readiness (who can own rollout and support).
+4. Runtime constraints (cold starts, memory, edge limits).
+
+## Shared Conventions Across SDKs
+
+1. Auth model is consistent (API key + ingest base URL + tenant/project context).
+2. Core primitives are aligned (log/trace/error + flush/shutdown).
+3. Retry/queue behavior is runtime-specific but documented.
+4. Troubleshooting taxonomy is shared (auth, transport, volume, latency, cardinality).
+
+## Rollout Pattern by Runtime
+
+- Start with one service per language.
+- Validate data quality gates.
+- Expand by topology (sync API -> async workers -> edge/frontend).
+- Add release metadata and runtime integration before scaling rollout.
+
+## Definition of Done (Per SDK Rollout)
+
+- Instrumentation in place and peer-reviewed.
+- Telemetry visible with stable tags.
+- Error and trace correlation proven in at least one incident simulation.
+- Runbook exists for auth rotation and transport failure recovery.

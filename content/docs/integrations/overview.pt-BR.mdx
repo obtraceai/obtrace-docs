@@ -3,6 +3,8 @@ title: Matriz de Integrações
 description: Cobertura de integração por runtime e plataforma
 ---
 
+Integração conecta telemetria à realidade de infraestrutura. Sem isso, incidente perde contexto de runtime e deploy.
+
 ## Matriz de plataformas
 
 | Plataforma | Runtime | Status | Doc |
@@ -17,3 +19,49 @@ description: Cobertura de integração por runtime e plataforma
 | GCP Cloud Run | Container | GA | [Abrir](/pt-BR/docs/integrations/gcp-cloud-run) |
 | Azure Container Apps | Container | GA | [Abrir](/pt-BR/docs/integrations/azure-container-apps) |
 | GitHub Actions | CI pipeline | GA | [Abrir](/pt-BR/docs/integrations/github-actions) |
+
+## Como Escolher a Trilha de Integração
+
+Decida usando:
+
+1. Ciclo de vida do runtime (container longo vs serverless).
+2. Frequência de deploy e processo de release.
+3. Modelo de distribuição de segredos/chaves.
+4. Restrições de rede e políticas de egress.
+5. Volume esperado e comportamento de retry.
+
+## Checklist de Prontidão
+
+Antes de habilitar integração:
+
+- Variáveis de ambiente centralizadas e auditáveis.
+- Naming de serviço padronizado.
+- Metadados de deploy anexáveis.
+- Limite aceitável de overhead definido.
+
+## Considerações por Runtime
+
+### Plataformas de Container (K8s, Docker, Cloud Run, ACA)
+
+- Garanta flush em shutdown gracioso.
+- Valide drenagem de fila em rollout.
+- Monitore restart storms e bursts duplicados.
+
+### Serverless / Edge (Lambda, Cloudflare, Supabase, Vercel Edge)
+
+- Priorize baixo custo de inicialização.
+- Ajuste sampling para tráfego em rajada.
+- Valide flush assíncrono em janelas curtas.
+
+### Integração CI/CD (GitHub Actions)
+
+- Propague commit/build/deploy metadata.
+- Garanta consistência versão-artefato.
+- Falhe cedo quando faltar contexto de release.
+
+## Modelo de Maturidade Operacional
+
+1. Básico: ingestão funciona.
+2. Estruturado: tags e metadata de release consistentes.
+3. Confiável: alerta e triagem estáveis.
+4. Inteligente: diagnóstico assistido por IA com confiança.

@@ -4,78 +4,105 @@ description: Deep overview of Obtrace architecture, workflows, and how to adopt 
 icon: Info
 ---
 
-Obtrace exists to solve a common failure pattern in software operations: incidents are detected quickly, but diagnosis and resolution still require too much manual correlation across disconnected tools.
+Obtrace is an AI-native observability platform designed for teams that need faster incident response with less operational noise.
 
-## The Problem We Solve
+Most failures in incident response do not come from missing data. They come from fragmented context: telemetry exists, but engineers cannot connect it fast enough under pressure.
 
-Most teams operate with fragmented observability:
+## Why This Exists
 
-- Logs in one platform
-- Traces in another
-- Error tracking elsewhere
-- Deploy context in CI/CD tools
-- User-impact evidence disconnected from backend telemetry
+Typical production workflow today:
 
-This fragmentation increases mean time to resolution because engineers spend time assembling context instead of fixing issues.
+1. Alert fires.
+2. Engineer opens multiple tools.
+3. Team manually correlates logs, traces, deploys, and user impact.
+4. Diagnosis takes too long.
+5. Fix is delayed because confidence is low.
 
-## Obtrace Approach
+Obtrace focuses on collapsing these steps by keeping incident context connected.
 
-Obtrace centralizes incident context and adds AI-native workflows:
+## Product Philosophy
 
-1. Detect anomalies in production signals.
-2. Correlate telemetry and runtime context.
-3. Surface probable root cause with evidence.
-4. Accelerate remediation through guided actions.
+Obtrace is built around four principles:
 
-The core principle is simple: fewer context switches, faster and safer incident closure.
+1. Context over volume: more raw data is not always better data.
+2. Correlation over isolated dashboards: cross-signal linkage is mandatory.
+3. Operations over demos: setup should survive real production traffic.
+4. AI with evidence: assistant outputs must be grounded in observed telemetry.
 
-## Platform Architecture (Conceptual)
+## Conceptual Architecture
 
-- SDK layer: language and runtime instrumentation.
-- Ingestion layer: telemetry normalization and transport.
-- Correlation layer: cross-signal linking by service, environment, and time.
-- Analysis layer: incident intelligence and AI-assisted diagnosis.
-- Workflow layer: documentation, references, MCP/LLM context, and Ask AI entry points.
+### 1. Instrumentation Layer
 
-## What To Instrument First
+Language-specific SDKs emit logs, traces, errors, and custom metadata with a shared schema strategy.
 
-Start with the highest-value surfaces:
+### 2. Ingestion Layer
 
-1. Critical backend API/service.
-2. Public-facing frontend (if applicable).
-3. One asynchronous worker or queue consumer.
-4. Deployment metadata in CI/CD.
+Events are normalized and tagged for consistent querying across runtimes.
 
-This gives enough correlated signal to make AI-assisted analysis useful from day one.
+### 3. Correlation Layer
 
-## Adoption Model
+Signals are linked by identity and time (service/env/version/release).
+
+### 4. Analysis Layer
+
+Incident timelines and AI-assisted diagnosis are built on correlated evidence.
+
+### 5. Workflow Layer
+
+Human and machine interfaces:
+
+- Docs + runbooks
+- Ask AI
+- MCP interfaces
+- `llm.txt` / `mcp.json`
+
+## Adoption Strategy (Recommended)
 
 ### Phase 1: Baseline (Day 1)
 
-- Configure authentication.
-- Install one SDK.
-- Validate telemetry arrives.
+- Instrument one critical backend service.
+- Validate auth, transport, and tagging.
+- Confirm useful incident context appears.
 
 ### Phase 2: Coverage (Week 1)
 
-- Expand instrumentation to core services.
-- Add runtime integrations.
-- Standardize tags (service, env, version, region).
+- Expand to key services and async workloads.
+- Add frontend instrumentation where relevant.
+- Add runtime integrations and release metadata.
 
-### Phase 3: Operations (Week 2+)
+### Phase 3: Operationalization (Week 2+)
 
-- Define incident response runbooks using Obtrace data.
-- Enable Ask AI workflows for faster triage.
-- Integrate machine-readable context (`llm.txt`, `mcp.json`, MCP docs) for internal assistants.
+- Standardize incident runbooks using Obtrace context.
+- Define SLOs/alerts with reduced noise.
+- Enable AI-assisted triage with clear ownership.
 
-## How To Read These Docs
+## Data Modeling Guidance
 
-Use this order for fast time-to-value:
+Use consistent keys globally:
 
-1. [Authentication](/docs/guides/auth)
-2. [How to use](/docs/guides/how-to-use)
-3. [SDK Catalog](/docs/sdks/catalog)
-4. [Project Blueprints](/docs/projects/overview)
-5. [Integration Matrix](/docs/integrations/overview)
+- `service`: stable service identifier
+- `env`: `dev`, `staging`, `prod`
+- `version`: release/build identifier
+- `region`: if multi-region
 
-Then go deep in your stack-specific SDK and deployment integration pages.
+Inconsistent tags are the fastest way to make observability useless.
+
+## Security and Governance Basics
+
+- Keep keys in secret managers.
+- Separate credentials by environment.
+- Rotate keys with ingestion validation gates.
+- Treat observability payloads as production data with policy controls.
+
+## How To Read This Documentation
+
+Recommended flow:
+
+1. [Quick Start](/docs/guides/quick-start)
+2. [Authentication](/docs/guides/auth)
+3. [How to use](/docs/guides/how-to-use)
+4. [SDK Catalog](/docs/sdks/catalog)
+5. [Project Blueprints](/docs/projects/overview)
+6. [Integration Matrix](/docs/integrations/overview)
+
+Then go deep in runtime-specific pages and operational hardening.

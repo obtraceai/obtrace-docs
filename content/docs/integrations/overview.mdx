@@ -3,7 +3,9 @@ title: Integration Matrix
 description: Runtime and platform integration coverage
 ---
 
-## Platform matrix
+Integrations connect telemetry to infrastructure reality. Without them, incidents lack deployment and runtime context.
+
+## Platform Matrix
 
 | Platform | Runtime | Status | Doc |
 |---|---|---|---|
@@ -17,3 +19,49 @@ description: Runtime and platform integration coverage
 | GCP Cloud Run | Container | GA | [Open](/docs/integrations/gcp-cloud-run) |
 | Azure Container Apps | Container | GA | [Open](/docs/integrations/azure-container-apps) |
 | GitHub Actions | CI pipeline | GA | [Open](/docs/integrations/github-actions) |
+
+## Choosing the Right Integration Path
+
+Decide using these dimensions:
+
+1. Runtime lifecycle (long-lived container vs serverless cold start).
+2. Deployment frequency and release process.
+3. Secrets and key distribution model.
+4. Network constraints and egress policies.
+5. Expected telemetry volume and retry behavior.
+
+## Integration Readiness Checklist
+
+Before enabling an integration:
+
+- Environment variables are centralized and audited.
+- Service naming is standardized.
+- Deployment metadata can be attached.
+- Error budget for telemetry overhead is defined.
+
+## Runtime-Specific Considerations
+
+### Container Platforms (K8s, Docker, Cloud Run, ACA)
+
+- Ensure graceful shutdown flush behavior.
+- Validate queue drain during rolling deployments.
+- Watch restart storms and duplicate signal bursts.
+
+### Serverless / Edge (Lambda, Cloudflare, Supabase, Vercel Edge)
+
+- Prioritize low startup overhead.
+- Tune sampling carefully for burst traffic.
+- Validate async flush behavior in short execution windows.
+
+### CI/CD Integration (GitHub Actions)
+
+- Propagate commit/build/deploy metadata.
+- Keep artifact-version consistency.
+- Fail fast on missing release context.
+
+## Operational Maturity Model
+
+1. Basic: telemetry ingestion works.
+2. Structured: tags and release metadata are consistent.
+3. Reliable: alerting and triage are stable.
+4. Intelligent: AI-assisted diagnosis is trusted due to strong data quality.

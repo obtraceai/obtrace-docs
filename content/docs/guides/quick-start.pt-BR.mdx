@@ -4,65 +4,121 @@ description: Instale, instrumente, valide e rode Obtrace em produção em menos 
 icon: Rocket
 ---
 
-Este quick start foi feito para velocidade sem perder qualidade de produção. No final, você terá um backend instrumentado, cobertura opcional de frontend e telemetria validada chegando na Obtrace.
+Este guia é intencionalmente opinativo: ele entrega o caminho mais curto para valor real em produção, não apenas uma demo local.
+
+Ao final, você terá:
+
+- Um serviço backend instrumentado e enviando dados.
+- Instrumentação opcional de frontend ligada ao mesmo modelo de contexto.
+- Contexto de runtime e CI/CD disponível na investigação.
+- Interfaces prontas para IA (`Ask AI`, `llm.txt`, `mcp.json`).
 
 ## Pré-requisitos
 
-- Conta na Obtrace e chave de API.
-- Acesso a um serviço backend e ao ambiente de deploy.
-- Runtime Node/Python/Go (dependendo da sua stack).
+- Conta Obtrace com chave de API.
+- Acesso a um serviço relevante de produção.
+- Acesso à configuração de deploy (env vars/secrets).
+- Acesso ao pipeline de CI/CD (recomendado para correlação com release).
 
-## Passo 1: Autenticação
+## Como Saber se Deu Certo
 
-Crie e armazene credenciais com segurança.
+Antes de começar, defina critérios de aceite:
 
-- Siga [Autenticação](/pt-BR/docs/guides/auth).
-- Defina variáveis de ambiente localmente e no CI/CD.
+1. Telemetria chega continuamente para o serviço alvo.
+2. Você consegue filtrar por `service`, `env` e `version` sem ambiguidade.
+3. Pelo menos um erro/trace tem contexto suficiente para diagnóstico.
+4. Picos de telemetria podem ser associados a release/deploy.
 
-## Passo 2: Instrumente o Backend Primeiro
+## Passo 1: Configure Autenticação Corretamente
 
-Comece pelo serviço com maior impacto em incidentes.
+Siga [Autenticação](/pt-BR/docs/guides/auth) e crie credenciais por ambiente.
 
-1. Escolha o SDK no [Catálogo de SDKs](/pt-BR/docs/sdks/catalog).
-2. Instale e inicialize o SDK.
-3. Adicione metadados (`service`, `env`, `version`, `region`).
+Estratégia recomendada de chaves:
 
-## Passo 3: Instrumentação Opcional de Frontend
+- Uma chave por ambiente (`dev`, `staging`, `prod`).
+- Opcionalmente, uma por serviço para reduzir blast radius.
+- Chaves privilegiadas apenas no servidor.
 
-Se experiência de usuário é crítica nos incidentes, instrumente browser em seguida.
+## Passo 2: Instrumente Primeiro o Serviço Backend Mais Crítico
+
+Escolha o serviço com maior risco operacional (checkout, auth, billing, API gateway).
+
+1. Selecione runtime no [Catálogo de SDKs](/pt-BR/docs/sdks/catalog).
+2. Instale e inicialize SDK.
+3. Adicione atributos canônicos em todo evento/span:
+   - `service`
+   - `env`
+   - `version`
+   - `region` (se multi-região)
+
+Essa ordem gera maior valor diagnóstico por minuto investido.
+
+## Passo 3: Adicione Instrumentação de Frontend (Se Impacto no Usuário For Relevante)
 
 - Use [SDK JavaScript Browser](/pt-BR/docs/sdks/browser).
-- Correlacione requisições frontend e backend quando possível.
+- Capture contexto de página/rota/interação quando fizer sentido.
+- Correlacione falhas de frontend com requisições backend.
 
-## Passo 4: Validar Ingestão de Dados
+Isso transforma “backend lento” em “qual fluxo de usuário degradou e por quê”.
 
-Confirme que a telemetria está saudável antes do rollout.
+## Passo 4: Valide Ingestão e Qualidade dos Dados
 
-- Eventos chegando continuamente.
-- Tags de serviço/ambiente consistentes.
-- Contexto de trace e erro ligado corretamente.
+Não avance rollout sem passar nesse gate.
+
+Checklist de validação:
+
+- Fluxo contínuo, sem comportamento muito bursty.
+- Timestamps corretos (sem drift severo).
+- Sampling intencional e documentado.
+- Sem frequência alta de `401/403` ou retries de transporte.
+- Tags estáveis e padronizadas.
 
 ## Passo 5: Adicione Integração de Runtime
 
-Escolha seu runtime de deploy e integre já.
+Conecte cedo o ambiente real de execução:
 
 - [Kubernetes](/pt-BR/docs/integrations/k8s)
 - [Docker](/pt-BR/docs/integrations/docker)
 - [Vercel](/pt-BR/docs/integrations/vercel)
 - [Railway](/pt-BR/docs/integrations/railway)
+- [Cloudflare](/pt-BR/docs/integrations/cloudflare)
+- [AWS Lambda](/pt-BR/docs/integrations/aws-lambda)
+- [GCP Cloud Run](/pt-BR/docs/integrations/gcp-cloud-run)
+- [Azure Container Apps](/pt-BR/docs/integrations/azure-container-apps)
 
-## Passo 6: Adicione Contexto de CI/CD
+Objetivo: contexto do incidente precisa incluir onde a carga rodou.
 
-Conecte [GitHub Actions](/pt-BR/docs/integrations/github-actions) para incluir sinais de release/deploy no contexto de incidente.
+## Passo 6: Anexe Contexto de CI/CD
 
-## Passo 7: Ative Fluxos de IA
+Integre [GitHub Actions](/pt-BR/docs/integrations/github-actions) para ler telemetria junto com eventos de release.
 
-- Use o botão flutuante **Pergunte à IA** na documentação.
-- Exponha contexto legível por máquina via [`/llm.txt`](/llm.txt) e [`/mcp.json`](/mcp.json).
-- Veja [MCP](/pt-BR/docs/mcp) para integrações com agentes.
+Campos mínimos de contexto de release:
+
+- commit SHA
+- build ID
+- timestamp de deploy
+- ambiente
+
+Sem contexto de release, a análise de causa raiz sempre perde tempo.
+
+## Passo 7: Ative Fluxos de IA (Depois do Baseline Limpo)
+
+- Use botão flutuante **Pergunte à IA** nas docs.
+- Publique contexto legível por máquina em [`/llm.txt`](/llm.txt) e [`/mcp.json`](/mcp.json).
+- Revise [MCP](/pt-BR/docs/mcp) para integração com agentes.
+
+Fluxo de IA só funciona bem com telemetria de qualidade.
+
+## Erros Comuns
+
+1. Começar por serviços demais ao mesmo tempo.
+2. Falta de tags `service/env/version`.
+3. Reutilizar uma única chave em todos os ambientes.
+4. Rollout sem validar qualidade de ingestão.
+5. Tratar docs como referência passiva em vez de playbook operacional.
 
 ## Próximos Caminhos
 
-- Precisa de arquitetura e racional: [Introdução](/pt-BR/docs/guides/intro)
-- Precisa de padrão de implementação: [Como usar](/pt-BR/docs/guides/how-to-use)
-- Precisa da matriz de runtime: [Matriz de Integrações](/pt-BR/docs/integrations/overview)
+- Arquitetura e modelo mental: [Introdução](/pt-BR/docs/guides/intro)
+- Sequência operacional de rollout: [Como usar](/pt-BR/docs/guides/how-to-use)
+- Critérios por runtime: [Matriz de Integrações](/pt-BR/docs/integrations/overview)

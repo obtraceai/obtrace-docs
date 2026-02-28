@@ -4,65 +4,123 @@ description: Install, instrument, validate, and ship Obtrace in production in un
 icon: Rocket
 ---
 
-This quick start is designed for speed without losing production quality. At the end, you will have one instrumented backend, optional frontend coverage, and validated telemetry flowing into Obtrace.
+This guide is intentionally opinionated: it gives you the shortest path to real production value, not just a local demo.
+
+By the end of this quick start, you will have:
+
+- One backend service instrumented and sending data.
+- Optional frontend instrumentation connected to the same context model.
+- Runtime and CI/CD context attached to incident investigation.
+- AI-ready interfaces available (`Ask AI`, `llm.txt`, `mcp.json`).
 
 ## Prerequisites
 
-- Obtrace account and API key.
-- Access to one backend service and its deployment environment.
-- Node/Python/Go runtime (depending on your stack).
+- Obtrace account with an API key.
+- Access to one production-relevant service (not a toy service).
+- Access to deployment configuration (env vars/secrets).
+- CI/CD pipeline access (recommended for release correlation).
 
-## Step 1: Authenticate
+## What Success Looks Like
 
-Create and store your credentials securely.
+Before you start, define acceptance criteria:
 
-- Follow [Authentication](/docs/guides/auth).
-- Set environment variables in local and CI/CD.
+1. Telemetry arrives continuously for the target service.
+2. You can filter by `service`, `env`, and `version` without ambiguity.
+3. At least one error or trace contains enough context for diagnosis.
+4. You can associate telemetry spikes with release/deploy metadata.
 
-## Step 2: Instrument Backend First
+## Step 1: Configure Authentication Correctly
 
-Start with the service that has the highest incident impact.
+Follow [Authentication](/docs/guides/auth) and create environment-scoped credentials.
 
-1. Pick your SDK in [SDK Catalog](/docs/sdks/catalog).
-2. Install and initialize the SDK.
-3. Add service metadata (`service`, `env`, `version`, `region`).
+Recommended key strategy:
 
-## Step 3: Optional Frontend Instrumentation
+- One key per environment (`dev`, `staging`, `prod`).
+- Optional per-service keys for blast-radius control.
+- Server-side keys only; never ship privileged keys to browser clients.
 
-If user-facing experience matters for your incidents, instrument browser telemetry next.
+## Step 2: Instrument the Highest-Impact Backend Service
+
+Pick the service that creates the largest operational risk (checkout, auth, billing, API gateway).
+
+1. Select runtime in [SDK Catalog](/docs/sdks/catalog).
+2. Install and initialize SDK.
+3. Add canonical attributes to every event/span:
+   - `service`
+   - `env`
+   - `version`
+   - `region` (if multi-region)
+
+Why this order: backend-first usually gives the highest diagnostic value per minute invested.
+
+## Step 3: Add Frontend Instrumentation (If User Impact Matters)
+
+If your incidents affect user interaction, add browser telemetry.
 
 - Use [JavaScript Browser SDK](/docs/sdks/browser).
-- Correlate frontend and backend requests where possible.
+- Capture page, route, and interaction context where relevant.
+- Correlate frontend failures with backend requests whenever possible.
 
-## Step 4: Validate Data Ingestion
+This is what turns “backend is slow” into “which user path degraded and why”.
 
-Confirm that your telemetry is healthy before rollout.
+## Step 4: Validate Ingestion and Data Quality
 
-- Events are arriving continuously.
-- Service/env tags are consistent.
-- Trace and error context are linked.
+Do not continue rollout before this gate.
+
+Validation checklist:
+
+- Data flow is continuous, not bursty.
+- Timestamps are sane (no major clock drift).
+- Sampling is intentional and documented.
+- No frequent `401/403` or transport retries.
+- Tags are stable and standardized across services.
 
 ## Step 5: Add Runtime Integration
 
-Pick your deployment runtime and integrate right away.
+Connect your actual runtime early:
 
 - [Kubernetes](/docs/integrations/k8s)
 - [Docker](/docs/integrations/docker)
 - [Vercel](/docs/integrations/vercel)
 - [Railway](/docs/integrations/railway)
+- [Cloudflare](/docs/integrations/cloudflare)
+- [AWS Lambda](/docs/integrations/aws-lambda)
+- [GCP Cloud Run](/docs/integrations/gcp-cloud-run)
+- [Azure Container Apps](/docs/integrations/azure-container-apps)
 
-## Step 6: Add CI/CD Context
+Goal: incident context should include where the workload ran, not only app-level events.
 
-Connect [GitHub Actions](/docs/integrations/github-actions) so incident context includes release and deploy signals.
+## Step 6: Attach CI/CD Context
 
-## Step 7: Enable AI Workflows
+Integrate [GitHub Actions](/docs/integrations/github-actions) so telemetry can be read together with release events.
 
-- Use floating **Ask AI** in docs for guided troubleshooting.
-- Expose machine-readable context via [`/llm.txt`](/llm.txt) and [`/mcp.json`](/mcp.json).
+Minimum release context fields to propagate:
+
+- commit SHA
+- build ID
+- deploy timestamp
+- environment
+
+Without release context, root-cause analysis always loses time.
+
+## Step 7: Enable AI Workflows (After Baseline Is Clean)
+
+- Use floating **Ask AI** button in docs for contextual help.
+- Publish machine-readable context at [`/llm.txt`](/llm.txt) and [`/mcp.json`](/mcp.json).
 - Review [MCP](/docs/mcp) for agent integrations.
+
+AI workflows are only as good as your telemetry quality. Fix instrumentation quality first.
+
+## Common Mistakes
+
+1. Starting with too many services at once.
+2. Missing `service/env/version` tags.
+3. Reusing a single key across all environments.
+4. Rolling out before validating ingestion quality.
+5. Treating docs as reference-only instead of an operations playbook.
 
 ## Next Paths
 
-- Need architecture and rationale: [Introduction](/docs/guides/intro)
-- Need implementation patterns: [How to use](/docs/guides/how-to-use)
-- Need runtime decision matrix: [Integration Matrix](/docs/integrations/overview)
+- Architecture and mental model: [Introduction](/docs/guides/intro)
+- Operational rollout sequence: [How to use](/docs/guides/how-to-use)
+- Runtime decision criteria: [Integration Matrix](/docs/integrations/overview)

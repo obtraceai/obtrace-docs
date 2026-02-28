@@ -4,78 +4,105 @@ description: Visão profunda da arquitetura, dos fluxos e da adoção da Obtrace
 icon: Info
 ---
 
-A Obtrace existe para resolver um padrão recorrente em operações de software: incidentes até são detectados rápido, mas diagnóstico e resolução ainda exigem correlação manual demais entre ferramentas desconectadas.
+A Obtrace é uma plataforma de observabilidade nativa em IA para times que precisam responder incidentes mais rápido com menos ruído operacional.
 
-## O Problema Que Resolvemos
+Grande parte das falhas de resposta a incidentes não vem de falta de dados. Vem de contexto fragmentado: a telemetria existe, mas não se conecta com velocidade suficiente sob pressão.
 
-A maioria dos times opera com observabilidade fragmentada:
+## Por Que Isso Existe
 
-- Logs em uma ferramenta
-- Traces em outra
-- Erros em outra
-- Contexto de deploy no CI/CD
-- Evidência de impacto no usuário separada da telemetria backend
+Fluxo típico de produção hoje:
 
-Essa fragmentação aumenta o tempo médio de resolução porque o time gasta mais tempo montando contexto do que corrigindo o problema.
+1. Alerta dispara.
+2. Engenheiro abre múltiplas ferramentas.
+3. Time correlaciona manualmente logs, traces, deploys e impacto no usuário.
+4. Diagnóstico demora.
+5. Correção atrasa por baixa confiança.
 
-## Abordagem da Obtrace
+A Obtrace reduz esse ciclo mantendo contexto de incidente conectado.
 
-A Obtrace centraliza contexto de incidente e adiciona fluxos nativos de IA:
+## Filosofia do Produto
 
-1. Detectar anomalias nos sinais de produção.
-2. Correlacionar telemetria e contexto de runtime.
-3. Apontar causa raiz provável com evidências.
-4. Acelerar remediação com ações guiadas.
+Quatro princípios:
 
-O princípio central é simples: menos troca de contexto, fechamento de incidente mais rápido e seguro.
+1. Contexto acima de volume: mais dados brutos nem sempre significam mais clareza.
+2. Correlação acima de dashboards isolados.
+3. Operação acima de demo: setup precisa sobreviver tráfego real.
+4. IA com evidência: resposta assistida precisa estar ancorada em telemetria observada.
 
-## Arquitetura da Plataforma (Conceitual)
+## Arquitetura Conceitual
 
-- Camada de SDK: instrumentação por linguagem e runtime.
-- Camada de ingestão: normalização e transporte da telemetria.
-- Camada de correlação: ligação entre sinais por serviço, ambiente e tempo.
-- Camada de análise: inteligência de incidentes e diagnóstico assistido por IA.
-- Camada de workflow: documentação, referências, contexto MCP/LLM e entrada do Ask AI.
+### 1. Camada de Instrumentação
 
-## O Que Instrumentar Primeiro
+SDKs por linguagem emitem logs, traces, erros e metadados com estratégia de schema comum.
 
-Comece pelos pontos de maior valor:
+### 2. Camada de Ingestão
 
-1. API/serviço backend crítico.
-2. Frontend público (se aplicável).
-3. Um worker assíncrono ou consumidor de fila.
-4. Metadados de deploy no CI/CD.
+Eventos são normalizados e marcados para consulta consistente entre runtimes.
 
-Isso já cria sinal correlacionado suficiente para análise assistida por IA desde o primeiro dia.
+### 3. Camada de Correlação
 
-## Modelo de Adoção
+Sinais são ligados por identidade e tempo (service/env/version/release).
+
+### 4. Camada de Análise
+
+Timeline de incidente e diagnóstico assistido por IA são construídos sobre evidência correlacionada.
+
+### 5. Camada de Workflow
+
+Interfaces humana e de máquina:
+
+- Docs + runbooks
+- Ask AI
+- MCP
+- `llm.txt` / `mcp.json`
+
+## Estratégia de Adoção (Recomendada)
 
 ### Fase 1: Baseline (Dia 1)
 
-- Configurar autenticação.
-- Instalar um SDK.
-- Validar chegada da telemetria.
+- Instrumente um backend crítico.
+- Valide auth, transporte e tags.
+- Confirme que o contexto já é útil para investigação.
 
 ### Fase 2: Cobertura (Semana 1)
 
-- Expandir instrumentação para serviços centrais.
-- Adicionar integrações de runtime.
-- Padronizar tags (serviço, ambiente, versão, região).
+- Expanda para serviços-chave e workloads assíncronos.
+- Adicione frontend quando aplicável.
+- Anexe integrações de runtime e metadados de release.
 
-### Fase 3: Operação (Semana 2+)
+### Fase 3: Operacionalização (Semana 2+)
 
-- Definir runbooks de incidente com dados da Obtrace.
-- Ativar fluxos Ask AI para triagem mais rápida.
-- Integrar contexto para máquinas (`llm.txt`, `mcp.json`, docs MCP) em assistentes internos.
+- Padronize runbooks de incidente com contexto da Obtrace.
+- Defina SLOs e alertas com menos ruído.
+- Ative triagem assistida por IA com ownership claro.
+
+## Guia de Modelagem de Dados
+
+Padronize chaves globais:
+
+- `service`: identificador estável de serviço
+- `env`: `dev`, `staging`, `prod`
+- `version`: identificador de release/build
+- `region`: para topologia multi-região
+
+Tag inconsistente destrói utilidade de observabilidade.
+
+## Segurança e Governança (Base)
+
+- Chaves em secret manager.
+- Credenciais separadas por ambiente.
+- Rotação de chave com gate de validação de ingestão.
+- Payload de observabilidade tratado como dado de produção.
 
 ## Como Ler Esta Documentação
 
-Ordem recomendada para reduzir tempo até valor:
+Fluxo recomendado:
 
-1. [Autenticação](/pt-BR/docs/guides/auth)
-2. [Como usar](/pt-BR/docs/guides/how-to-use)
-3. [Catálogo de SDKs](/pt-BR/docs/sdks/catalog)
-4. [Blueprints de Projeto](/pt-BR/docs/projects/overview)
-5. [Matriz de Integrações](/pt-BR/docs/integrations/overview)
+1. [Quick Start](/pt-BR/docs/guides/quick-start)
+2. [Autenticação](/pt-BR/docs/guides/auth)
+3. [Como usar](/pt-BR/docs/guides/how-to-use)
+4. [Catálogo de SDKs](/pt-BR/docs/sdks/catalog)
+5. [Blueprints de Projeto](/pt-BR/docs/projects/overview)
+6. [Matriz de Integrações](/pt-BR/docs/integrations/overview)
 
-Depois aprofunde nas páginas do SDK e da integração exata da sua stack.
+Depois aprofunde no runtime específico e nas páginas de hardening.
