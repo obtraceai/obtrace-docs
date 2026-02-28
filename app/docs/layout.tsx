@@ -18,20 +18,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </DocsLayout>
         <AISearchTrigger
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            zIndex: 2147483647,
-            background: "#0ea5e9",
-            color: "#ffffff",
-            border: "1px solid rgba(125, 211, 252, 0.55)"
-          }}
           className={buttonVariants({
             color: "primary",
             size: "sm",
-            className:
-              "gap-2 rounded-full px-4 py-2 font-semibold shadow-2xl z-[2147483647] hover:brightness-110"
+            className: "gap-2 rounded-full px-4 py-2 font-semibold shadow-2xl z-[2147483647]"
           })}
           position="float"
         >
