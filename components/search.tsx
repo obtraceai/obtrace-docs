@@ -4,8 +4,8 @@ import {
   createContext,
   type ReactNode,
   type SyntheticEvent,
-  use,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -344,9 +344,9 @@ export function AISearch({ children, locale = 'en' }: { children: ReactNode; loc
   });
 
   return (
-    <Context value={useMemo(() => ({ chat, locale, open, setOpen }), [chat, locale, open])}>
+    <Context.Provider value={useMemo(() => ({ chat, locale, open, setOpen }), [chat, locale, open])}>
       {children}
-    </Context>
+    </Context.Provider>
   );
 }
 
@@ -487,9 +487,9 @@ export function useHotKey() {
 }
 
 export function useAISearchContext() {
-  return use(Context)!;
+  return useContext(Context)!;
 }
 
 function useChatContext() {
-  return use(Context)!.chat;
+  return useContext(Context)!.chat;
 }
