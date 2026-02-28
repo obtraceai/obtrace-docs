@@ -1,21 +1,47 @@
 ---
-title: Blueprint Nextjs
-description: Setup recomendado para projetos Nextjs
+title: Guia de Projeto Next.js
+description: Padrão completo de rollout para apps Next.js (runtime Node + telemetria browser)
 ---
 
-## Escopo
+Use este guia quando seu produto roda em Next.js e você precisa de visibilidade ponta a ponta entre servidor e navegador.
 
-Este blueprint define a instrumentação mínima para serviços Nextjs.
+## Escopo de Arquitetura
 
-## Saídas obrigatórias
+- Runtime servidor: rotas API, server actions, SSR.
+- Runtime browser: interações de usuário, transições de rota, erros frontend.
+- Contexto compartilhado: service/env/version/release.
 
-1. Logs de request/response com correlação.
-2. Métricas de latência e taxa de erro.
-3. Spans em DB e chamadas HTTP externas.
+## Setup Recomendado
 
-## Checklist de deploy
+1. Configure credenciais por ambiente.
+2. Inicialize SDK Node nos caminhos de startup do servidor.
+3. Inicialize SDK Browser no bootstrap do cliente.
+4. Capture fronteiras de requisição, chamadas externas e erros.
+5. Anexe metadata de release via CI/CD.
 
-1. Configure variáveis e secrets.
-2. Inicialize o SDK no bootstrap.
-3. Valide uma transação ponta a ponta.
-4. Adicione alertas para erro de ingestão.
+## Contrato Mínimo de Dados
+
+- `service`: `web-nextjs`
+- `env`: `dev` / `staging` / `prod`
+- `version`: commit SHA ou build ID
+- IDs de correlação entre servidor e cliente
+
+## Checklist de Validação
+
+- Eventos de browser e servidor visíveis.
+- Erros de servidor com contexto de requisição.
+- Incidentes frontend mapeáveis para traces backend.
+- Eventos de deploy visíveis na timeline.
+
+## Hardening de Produção
+
+1. Chaves de servidor sempre privadas.
+2. Sampling/replay configurados para controlar custo.
+3. Flush no shutdown gracioso do runtime servidor.
+4. Validação pós-upgrade de framework.
+
+## Troubleshooting
+
+- Cliente sem dados: valide bootstrap client-side.
+- Servidor sem dados: valide init no runtime servidor.
+- Correlação quebrada: padronize campos version/release.

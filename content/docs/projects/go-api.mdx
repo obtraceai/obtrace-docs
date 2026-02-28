@@ -1,21 +1,43 @@
 ---
-title: Go api Blueprint
-description: Recommended setup for Go api projects
+title: Go API Project Guide
+description: Complete observability rollout for Go HTTP APIs
 ---
 
-## Scope
+Use this guide for Go APIs where low latency and predictable resource usage are important.
 
-This blueprint defines minimum instrumentation for Go api services.
+## Architecture Scope
 
-## Required outputs
+- HTTP middleware and handlers.
+- Service/domain packages.
+- DB and outbound client boundaries.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Initialize SDK once at process start.
+2. Instrument middleware for request timing/status.
+3. Add spans around DB/outbound calls.
+4. Flush gracefully on SIGTERM.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+- `service`, `env`, `version` in all key events.
+- Request correlation IDs propagated through handlers.
+- Error events with operation context.
+
+## Validation Checklist
+
+- Synthetic load emits stable telemetry.
+- Slow handlers appear clearly in spans.
+- Shutdown path flushes final queue.
+
+## Production Hardening
+
+1. Keep queues bounded to avoid memory pressure.
+2. Monitor ingest errors and retries.
+3. Validate instrumentation after router/middleware changes.
+
+## Troubleshooting
+
+- Missing data under load: tune buffering/retry and inspect backpressure.
+- Missing spans: instrument all I/O boundaries.
+- Inconsistent tags: enforce shared middleware decorators.

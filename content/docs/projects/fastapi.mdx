@@ -1,21 +1,43 @@
 ---
-title: Fastapi Blueprint
-description: Recommended setup for Fastapi projects
+title: FastAPI Project Guide
+description: Complete rollout strategy for FastAPI services and async workloads
 ---
 
-## Scope
+Use this guide for FastAPI services where async request handling and dependency injection are central.
 
-This blueprint defines minimum instrumentation for Fastapi services.
+## Architecture Scope
 
-## Required outputs
+- API endpoints and dependency graph.
+- Async DB calls and background tasks.
+- Exception handling and response serialization.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Initialize SDK at app startup event.
+2. Instrument middleware for request timing and status.
+3. Wrap outbound calls (DB/HTTP/queue) with spans.
+4. Flush on graceful shutdown event.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+- `service`, `env`, `version` on all emitted signals.
+- Request ID and user/session context where policy allows.
+- Error type and stack context for triage.
+
+## Validation Checklist
+
+- Synthetic request emits log + span + metric.
+- Error responses include correlated trace context.
+- Shutdown flush emits final queue successfully.
+
+## Production Hardening
+
+1. Restrict sensitive fields before emission.
+2. Tune queue and flush interval for async workloads.
+3. Validate startup/shutdown hooks after framework upgrades.
+
+## Troubleshooting
+
+- Startup works but no data: inspect middleware order.
+- Drops under load: tune queue backpressure settings.
+- Trace gaps: instrument manual spans around async boundaries.

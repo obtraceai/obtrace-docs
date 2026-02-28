@@ -362,7 +362,7 @@ export function AISearchTrigger({
       data-state={open ? 'open' : 'closed'}
       className={cn(
         position === 'float' && [
-          'fixed bottom-6 right-6 gap-3 w-auto min-w-24 shadow-lg z-[70] transition-[translate,opacity]',
+          'fixed bottom-6 right-6 gap-3 w-auto min-w-24 shadow-lg z-[2147483647] transition-[translate,opacity] pointer-events-auto',
           open && 'translate-y-10 opacity-0',
         ],
         className,

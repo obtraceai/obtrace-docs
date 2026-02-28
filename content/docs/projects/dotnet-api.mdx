@@ -1,21 +1,43 @@
 ---
-title: Dotnet api Blueprint
-description: Recommended setup for Dotnet api projects
+title: .NET API Project Guide
+description: Complete instrumentation and rollout for ASP.NET APIs
 ---
 
-## Scope
+Use this guide for ASP.NET APIs where reliability depends on visibility into controllers, services, and outbound dependencies.
 
-This blueprint defines minimum instrumentation for Dotnet api services.
+## Architecture Scope
 
-## Required outputs
+- HTTP middleware and endpoint pipeline.
+- Service/repository layers.
+- Outbound HTTP, DB, and message clients.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Initialize SDK during host startup.
+2. Instrument middleware boundaries.
+3. Capture structured exceptions.
+4. Instrument outbound dependencies with spans.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+- Stable `service`, `env`, `version` tags.
+- Endpoint/operation naming consistency.
+- Deploy metadata from CI/CD.
+
+## Validation Checklist
+
+- Request telemetry visible with status and latency.
+- Exception telemetry trace-linked.
+- Host shutdown flushes pending events.
+
+## Production Hardening
+
+1. Flush on `IHostApplicationLifetime` stop token.
+2. Keep retry bounded and monitored.
+3. Validate after runtime/package upgrades.
+
+## Troubleshooting
+
+- Missing telemetry after startup changes: confirm host init path.
+- Missing outbound spans: wrap HttpClient/DB calls.
+- Volume spikes: review emission points and sampling.

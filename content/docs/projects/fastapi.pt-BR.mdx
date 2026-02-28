@@ -1,21 +1,43 @@
 ---
-title: Blueprint Fastapi
-description: Setup recomendado para projetos Fastapi
+title: Guia de Projeto FastAPI
+description: Estratégia completa de rollout para serviços FastAPI e workloads assíncronos
 ---
 
-## Escopo
+Use este guia para serviços FastAPI com processamento assíncrono e dependências injetadas.
 
-Este blueprint define a instrumentação mínima para serviços Fastapi.
+## Escopo de Arquitetura
 
-## Saídas obrigatórias
+- Endpoints e grafo de dependências.
+- Chamadas assíncronas de DB e tasks.
+- Tratamento de exceções e serialização de resposta.
 
-1. Logs de request/response com correlação.
-2. Métricas de latência e taxa de erro.
-3. Spans em DB e chamadas HTTP externas.
+## Setup Recomendado
 
-## Checklist de deploy
+1. Inicialize SDK no evento de startup.
+2. Instrumente middleware de tempo/status de requisição.
+3. Envolva chamadas outbound com spans.
+4. Faça flush no evento de shutdown.
 
-1. Configure variáveis e secrets.
-2. Inicialize o SDK no bootstrap.
-3. Valide uma transação ponta a ponta.
-4. Adicione alertas para erro de ingestão.
+## Contrato Mínimo de Dados
+
+- `service`, `env`, `version` em todos os sinais.
+- Contexto de request e sessão quando política permitir.
+- Tipo de erro e stack para triagem.
+
+## Checklist de Validação
+
+- Requisição sintética gera log + span + métrica.
+- Respostas de erro incluem contexto de trace.
+- Shutdown finaliza envio da fila.
+
+## Hardening de Produção
+
+1. Remova campos sensíveis antes de emitir.
+2. Ajuste queue/flush para workload assíncrono.
+3. Revalide hooks de ciclo de vida após upgrades.
+
+## Troubleshooting
+
+- Startup ok sem dados: revise ordem de middleware.
+- Queda sob carga: ajuste backpressure de fila.
+- Lacunas de trace: adicione spans manuais em fronteiras async.

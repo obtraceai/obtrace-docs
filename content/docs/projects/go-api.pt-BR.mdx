@@ -1,21 +1,43 @@
 ---
-title: Blueprint Go api
-description: Setup recomendado para projetos Go api
+title: Guia de Projeto Go API
+description: Rollout completo de observabilidade para APIs HTTP em Go
 ---
 
-## Escopo
+Use este guia para APIs Go onde baixa latência e uso previsível de recursos são prioridades.
 
-Este blueprint define a instrumentação mínima para serviços Go api.
+## Escopo de Arquitetura
 
-## Saídas obrigatórias
+- Middleware e handlers HTTP.
+- Pacotes de serviço/domínio.
+- Fronteiras de DB e clientes outbound.
 
-1. Logs de request/response com correlação.
-2. Métricas de latência e taxa de erro.
-3. Spans em DB e chamadas HTTP externas.
+## Setup Recomendado
 
-## Checklist de deploy
+1. Inicialize SDK uma vez no startup do processo.
+2. Instrumente middleware para tempo/status de requisição.
+3. Adicione spans em DB/chamadas externas.
+4. Flush gracioso em SIGTERM.
 
-1. Configure variáveis e secrets.
-2. Inicialize o SDK no bootstrap.
-3. Valide uma transação ponta a ponta.
-4. Adicione alertas para erro de ingestão.
+## Contrato Mínimo de Dados
+
+- `service`, `env`, `version` em eventos-chave.
+- Correlation IDs propagados em handlers.
+- Erros com contexto de operação.
+
+## Checklist de Validação
+
+- Carga sintética emite telemetria estável.
+- Handlers lentos aparecem claramente em spans.
+- Shutdown faz flush da fila final.
+
+## Hardening de Produção
+
+1. Filas limitadas para evitar pressão de memória.
+2. Monitoramento de erro de ingestão/retry.
+3. Revalidação após mudança de router/middleware.
+
+## Troubleshooting
+
+- Dados ausentes sob carga: ajuste buffer/retry/backpressure.
+- Spans ausentes: instrumente todas as fronteiras de I/O.
+- Tags inconsistentes: aplique decorators/middleware compartilhados.

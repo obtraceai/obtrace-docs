@@ -1,21 +1,44 @@
 ---
-title: Nestjs Blueprint
-description: Recommended setup for Nestjs projects
+title: NestJS Project Guide
+description: Complete instrumentation approach for NestJS APIs and microservices
 ---
 
-## Scope
+Use this guide for NestJS backends where request lifecycle, dependency injection, and module boundaries must remain observable.
 
-This blueprint defines minimum instrumentation for Nestjs services.
+## Architecture Scope
 
-## Required outputs
+- HTTP controllers and middleware chain.
+- Service/provider calls.
+- Outbound HTTP/DB/queue operations.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Initialize SDK before app starts listening.
+2. Instrument request lifecycle (ingress -> handler -> response).
+3. Capture structured errors from global exception filters.
+4. Add spans around DB and external service calls.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+- Stable service name per app/module domain.
+- Environment and version tags in every event.
+- Correlation ID propagation through async operations.
+
+## Validation Checklist
+
+- 4xx/5xx errors include trace context.
+- Slow endpoints produce spans with useful attributes.
+- Startup/shutdown hooks flush telemetry correctly.
+
+## Production Hardening
+
+1. Bound queue and retry configuration.
+2. Add ingestion failure alerting.
+3. Validate after module refactors.
+4. Keep key rotation runbook documented.
+
+## Troubleshooting
+
+- No events after deploy: verify bootstrap path still initializes SDK.
+- Missing spans in async handlers: confirm context propagation.
+- High noise: reduce low-value event emission.

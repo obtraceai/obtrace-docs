@@ -5,7 +5,11 @@ export function baseOptions(): BaseLayoutProps {
   return {
     i18n: true,
     nav: {
-      title: <ObtraceLogo />,
+      title: (
+        <span className="inline-flex items-center min-w-[180px]">
+          <ObtraceLogo />
+        </span>
+      ),
       url: "/docs"
     }
   };

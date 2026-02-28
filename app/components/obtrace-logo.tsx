@@ -1,9 +1,10 @@
 export function ObtraceLogo() {
   return (
     <svg
+      fill="currentColor"
       viewBox="430 190 1190 450"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-10 w-auto fill-[hsl(215,65%,58%)] dark:fill-[hsl(210,25%,92%)]"
+      className="h-9 w-[220px] max-w-[55vw] text-[hsl(215,65%,58%)] dark:text-[hsl(210,25%,92%)]"
       aria-label="Obtrace"
       role="img"
     >

@@ -1,11 +1,11 @@
 ---
-title: Blueprints de Projeto
+title: Guias de Projeto
 description: Padrões recomendados de rollout por projeto
 ---
 
-Blueprint não é template para copiar cegamente. É arquitetura de referência para reduzir erro de rollout e padronizar comportamento de observabilidade entre times.
+Guias de projeto não são templates para copiar cegamente. São referências de arquitetura para reduzir erros de rollout e padronizar observabilidade entre times.
 
-## Blueprints disponíveis
+## Guias disponíveis
 
 - [Next.js](/pt-BR/docs/projects/nextjs)
 - [NestJS](/pt-BR/docs/projects/nestjs)
@@ -15,9 +15,9 @@ Blueprint não é template para copiar cegamente. É arquitetura de referência 
 - [.NET API](/pt-BR/docs/projects/dotnet-api)
 - [Go API](/pt-BR/docs/projects/go-api)
 
-## Como Usar um Blueprint
+## Como Usar um Guia
 
-1. Escolha o blueprint conforme sua topologia de deploy.
+1. Escolha o guia conforme sua topologia de deploy.
 2. Copie apenas padrões de instrumentação/config que cabem no seu ambiente.
 3. Preserve seu modelo interno de naming e ownership.
 4. Valide com tráfego semelhante ao de produção antes de expandir.
@@ -42,9 +42,9 @@ Blueprint não é template para copiar cegamente. É arquitetura de referência 
 - Política de sampling/retenção definida.
 - Runbooks de falha de ingestão e ruído de sinais.
 
-## Requisitos Mínimos de Blueprint
+## Requisitos Mínimos de Guia
 
-Todo blueprint pronto para produção precisa definir:
+Todo guia pronto para produção precisa definir:
 
 - Estratégia de variáveis de ambiente.
 - Modelo de tags de serviço/versão.
@@ -62,7 +62,7 @@ Todo blueprint pronto para produção precisa definir:
 
 ## Métricas de Sucesso
 
-Qualidade de blueprint deve aparecer em resultado:
+Qualidade do guia deve aparecer em resultados:
 
 - Triagem mais rápida em incidente real.
 - Menos tempo de correlação manual.

@@ -1,21 +1,43 @@
 ---
-title: Laravel Blueprint
-description: Recommended setup for Laravel projects
+title: Laravel Project Guide
+description: Complete observability setup for Laravel web backends
 ---
 
-## Scope
+Use this guide for Laravel services that need stable incident context across request lifecycle and queue jobs.
 
-This blueprint defines minimum instrumentation for Laravel services.
+## Architecture Scope
 
-## Required outputs
+- HTTP kernel and middleware stack.
+- Controllers/services/repositories.
+- Queue workers and scheduled jobs.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Initialize SDK in application bootstrap/service provider.
+2. Instrument HTTP request lifecycle.
+3. Capture exceptions from global handler.
+4. Instrument queue jobs and external APIs.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+- Consistent `service`, `env`, `version` tags.
+- Correlation ID between request and queued work.
+- Error context with route and exception class.
+
+## Validation Checklist
+
+- Web requests emit logs/traces.
+- Queue jobs emit telemetry with same environment tags.
+- Failed jobs include enough context for triage.
+
+## Production Hardening
+
+1. Keep credentials in deployment secret stores.
+2. Use queue-safe buffering settings.
+3. Validate observability after framework upgrades.
+
+## Troubleshooting
+
+- Web data present but queue data missing: initialize SDK in worker context.
+- Noisy logs: restrict low-value events.
+- Correlation breaks: enforce shared request/job identifiers.

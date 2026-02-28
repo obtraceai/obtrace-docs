@@ -1,21 +1,44 @@
 ---
-title: Blueprint Nestjs
-description: Setup recomendado para projetos Nestjs
+title: Guia de Projeto NestJS
+description: Abordagem completa de instrumentação para APIs e microsserviços NestJS
 ---
 
-## Escopo
+Use este guia para backends NestJS onde ciclo de requisição, DI e fronteiras de módulo precisam ser observáveis.
 
-Este blueprint define a instrumentação mínima para serviços Nestjs.
+## Escopo de Arquitetura
 
-## Saídas obrigatórias
+- Controllers HTTP e cadeia de middleware.
+- Chamadas entre serviços/providers.
+- Operações outbound (HTTP/DB/fila).
 
-1. Logs de request/response com correlação.
-2. Métricas de latência e taxa de erro.
-3. Spans em DB e chamadas HTTP externas.
+## Setup Recomendado
 
-## Checklist de deploy
+1. Inicialize SDK antes do app escutar porta.
+2. Instrumente ciclo de requisição (entrada -> handler -> resposta).
+3. Capture erros estruturados em filtros globais.
+4. Adicione spans em DB e chamadas externas.
 
-1. Configure variáveis e secrets.
-2. Inicialize o SDK no bootstrap.
-3. Valide uma transação ponta a ponta.
-4. Adicione alertas para erro de ingestão.
+## Contrato Mínimo de Dados
+
+- Nome de serviço estável por domínio de app.
+- Tags de ambiente e versão em todos os eventos.
+- Propagação de correlation ID em operações assíncronas.
+
+## Checklist de Validação
+
+- Erros 4xx/5xx com contexto de trace.
+- Endpoints lentos com spans úteis.
+- Startup/shutdown com flush correto.
+
+## Hardening de Produção
+
+1. Limite queue/retry.
+2. Alerta para falha de ingestão.
+3. Revalidação após refactor de módulos.
+4. Runbook de rotação de chave documentado.
+
+## Troubleshooting
+
+- Sem eventos após deploy: valide caminho de bootstrap.
+- Spans ausentes em async handlers: confirme propagação de contexto.
+- Ruído alto: reduza eventos de baixo valor.

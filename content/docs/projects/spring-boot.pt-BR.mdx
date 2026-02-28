@@ -1,21 +1,44 @@
 ---
-title: Blueprint Spring boot
-description: Setup recomendado para projetos Spring boot
+title: Guia de Projeto Spring Boot
+description: Padrão completo de instrumentação para serviços Spring Boot
 ---
 
-## Escopo
+Use este guia para serviços Spring Boot onde controllers, serviços e repositórios precisam ser diagnosticáveis.
 
-Este blueprint define a instrumentação mínima para serviços Spring boot.
+## Escopo de Arquitetura
 
-## Saídas obrigatórias
+- Controllers e cadeia de filtros servlet.
+- Camadas de serviço e repositório.
+- Clientes outbound (HTTP, mensageria, DB).
 
-1. Logs de request/response com correlação.
-2. Métricas de latência e taxa de erro.
-3. Spans em DB e chamadas HTTP externas.
+## Setup Recomendado
 
-## Checklist de deploy
+1. Inicialize SDK no startup da aplicação.
+2. Instrumente requisições HTTP de entrada.
+3. Capture exceções com vínculo de trace.
+4. Instrumente DB e chamadas externas.
 
-1. Configure variáveis e secrets.
-2. Inicialize o SDK no bootstrap.
-3. Valide uma transação ponta a ponta.
-4. Adicione alertas para erro de ingestão.
+## Contrato Mínimo de Dados
+
+- Tags `service`, `env`, `version` em todos os sinais.
+- Metadata de release para correlação com deploy.
+- Erros com stack e rota.
+
+## Checklist de Validação
+
+- Boot emite sinal de startup.
+- Respostas 5xx ligadas a trace.
+- Queries lentas aparecem na timeline de spans.
+
+## Hardening de Produção
+
+1. Flush em hooks de shutdown.
+2. Retry limitado para evitar cascata.
+3. Alertas para erros de ingestão/auth.
+4. Revalidação após upgrades de dependência/JDK.
+
+## Troubleshooting
+
+- Sem dados após refactor: valide caminho de init do bean.
+- Sem spans DB: instrumente fronteiras de driver/repo.
+- Cardinalidade alta: normalize tags dinâmicas.

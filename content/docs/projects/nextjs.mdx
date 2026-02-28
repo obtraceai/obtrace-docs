@@ -1,21 +1,49 @@
 ---
-title: Nextjs Blueprint
-description: Recommended setup for Nextjs projects
+title: Next.js Project Guide
+description: Complete rollout pattern for Next.js apps (Node runtime + browser telemetry)
 ---
 
-## Scope
+Use this guide when your product surface is Next.js and you need end-to-end visibility across server and browser paths.
 
-This blueprint defines minimum instrumentation for Nextjs services.
+## Architecture Scope
 
-## Required outputs
+- Server runtime: API routes, server actions, SSR logic.
+- Browser runtime: user interactions, route transitions, frontend errors.
+- Shared context: service/env/version/release IDs for correlation.
 
-1. Request/response logs with correlation IDs.
-2. Service metrics for latency and error rate.
-3. Spans across DB and outbound HTTP.
+## Recommended Setup
 
-## Deployment checklist
+1. Configure environment-scoped credentials.
+2. Initialize Node SDK on server startup paths.
+3. Initialize Browser SDK on client bootstrap.
+4. Capture request boundaries, external calls, and error paths.
+5. Attach release metadata from CI/CD.
 
-1. Configure env vars and secrets.
-2. Initialize SDK at process bootstrap.
-3. Validate one end-to-end transaction.
-4. Add alerts for ingestion errors.
+## Minimum Data Contract
+
+Emit and standardize:
+
+- `service`: `web-nextjs`
+- `env`: `dev` / `staging` / `prod`
+- `version`: commit SHA or build ID
+- Request identifiers for server/client correlation
+
+## Validation Checklist
+
+- Browser and server events are both visible.
+- Server errors include request context.
+- Frontend incidents can be mapped to backend traces.
+- Deploy events are visible in incident timeline.
+
+## Production Hardening
+
+1. Keep server keys private; only use public keys in browser where required.
+2. Configure replay/sampling to control cost.
+3. Ensure graceful shutdown flush for server runtime.
+4. Validate instrumentation after each framework upgrade.
+
+## Troubleshooting
+
+- Missing client data: verify client bootstrap executes once.
+- Missing server data: verify SDK initialization in server runtime path.
+- Broken correlation: standardize version/release fields.
