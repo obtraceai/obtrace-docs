@@ -1,0 +1,17 @@
+Obtrace Docs Service
+
+Purpose:
+- Public documentation portal for Obtrace SDKs.
+
+Tech:
+- Next.js service
+- Fumadocs-required baseline (framework target)
+
+Primary sections:
+- JS Browser SDK
+- JS Node/Bun SDK
+- Kubernetes integration
+- Railway integration
+
+Notes:
+- Designed as independent service/repository.

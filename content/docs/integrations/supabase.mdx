@@ -1,0 +1,54 @@
+---
+title: Supabase Integration
+description: Use Obtrace SDK with Supabase Edge Functions and frontend apps
+---
+
+## Install
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+## Configuration
+
+Edge Function secrets:
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+- `OBTRACE_ENV`
+
+Frontend:
+- `VITE_OBTRACE_API_KEY`
+- `VITE_OBTRACE_INGEST_BASE_URL`
+- `VITE_OBTRACE_TENANT_ID`
+- `VITE_OBTRACE_PROJECT_ID`
+
+Reference:
+- https://supabase.com/docs/guides/functions/secrets
+
+## Quickstart
+
+Supabase Edge Functions (Deno runtime): use core `ObtraceClient`.
+
+```ts
+import { ObtraceClient } from "@obtrace/sdk-js";
+
+const client = new ObtraceClient({
+  apiKey: Deno.env.get("OBTRACE_API_KEY")!,
+  ingestBaseUrl: Deno.env.get("OBTRACE_INGEST_BASE_URL")!,
+  serviceName: "supabase-edge",
+  appId: "supabase-edge"
+});
+```
+
+## Production Hardening
+
+1. Keep server keys only in function secrets.
+2. Rotate keys per project/environment.
+3. Verify logs/replay after each deploy.
+
+## Troubleshooting
+
+- Deno runtime issues: avoid `@obtrace/sdk-js/node` entrypoint.
+- Missing secrets: validate `Deno.env.get(...)` returns values.

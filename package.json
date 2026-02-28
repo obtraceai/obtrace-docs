@@ -1,0 +1,28 @@
+{
+  "name": "@obtrace/docs-service",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3005",
+    "build": "next build",
+    "start": "next start -p 3005",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.1.7",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "fumadocs-core": "14.6.0",
+    "fumadocs-ui": "14.6.0",
+    "fumadocs-mdx": "11.5.0",
+    "tailwindcss": "3.4.19"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3",
+    "@types/node": "22.13.5",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
+    "@types/mdx": "2.0.13"
+  }
+}

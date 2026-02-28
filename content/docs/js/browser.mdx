@@ -1,0 +1,47 @@
+---
+title: JS Browser SDK
+description: Frontend instrumentation with replay, recipes, vitals and propagation
+---
+
+## Install
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+## Configuration
+
+```ts
+import { initBrowserSDK } from "@obtrace/sdk-js/browser";
+
+const sdk = initBrowserSDK({
+  apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
+  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
+  tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
+  projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
+  appId: "web-app",
+  serviceName: "web-app"
+});
+```
+
+## Quickstart
+
+```ts
+const obFetch = sdk.instrumentFetch();
+await obFetch("/api/ping");
+sdk.log("info", "page.loaded");
+await sdk.shutdown();
+```
+
+## Production Hardening
+
+1. Use scoped API keys by environment.
+2. Mask sensitive fields before custom attributes.
+3. Keep replay sampling controlled by env.
+4. Validate ingestion with `/v1/logs` and `/v1/replay/index`.
+
+## Troubleshooting
+
+- Missing data: verify `OBTRACE_INGEST_BASE_URL` and CORS on ingest edge.
+- No replay events: ensure initialization happens in browser runtime.
+- Debug with SDK console logs in non-production.

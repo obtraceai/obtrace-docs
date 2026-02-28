@@ -1,0 +1,10 @@
+{
+  "mcp_version": "1.0",
+  "name": "obtrace-docs-service",
+  "description": "MCP context metadata for Obtrace documentation service",
+  "resources": [
+    { "id": "readme", "path": "README.md", "description": "Service overview" },
+    { "id": "docs-home", "path": "content/docs/index.mdx", "description": "Docs home content" },
+    { "id": "requirements", "path": "../docs/requirements-docs-service-v1.md", "description": "Normative requirements" }
+  ]
+}

@@ -1,0 +1,50 @@
+---
+title: JS Node/Bun SDK
+description: Backend instrumentation for Node.js and Bun
+---
+
+## Install
+
+```bash
+npm install @obtrace/sdk-js
+# or
+bun add @obtrace/sdk-js
+```
+
+## Configuration
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  tenantId: process.env.OBTRACE_TENANT_ID,
+  projectId: process.env.OBTRACE_PROJECT_ID,
+  env: process.env.OBTRACE_ENV,
+  appId: "api",
+  serviceName: "api"
+});
+```
+
+## Quickstart
+
+```ts
+sdk.log("info", "service.started");
+sdk.metric("request.count", 1);
+sdk.span("db.query");
+await sdk.shutdown();
+```
+
+## Production Hardening
+
+1. Keep API keys in secret manager only.
+2. Set bounded queue and flush intervals based on latency budget.
+3. Validate telemetry in Query Gateway after deploy.
+4. Enable retries with fail-open behavior for app continuity.
+
+## Troubleshooting
+
+- 401/403 on ingest: rotate and validate API key.
+- Queue dropping data: increase `maxQueueSize` conservatively.
+- Use debug mode in non-prod for transport diagnostics.

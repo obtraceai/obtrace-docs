@@ -1,0 +1,35 @@
+---
+title: Railway Integration
+description: Configure SDK on Railway with environment variables
+---
+
+## Install
+
+Use templates from `sdk/integrations/railway`.
+
+## Configuration
+
+Set variables in Railway service:
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+- `OBTRACE_ENV`
+
+## Quickstart
+
+1. Configure variables.
+2. Deploy backend/frontend with SDK initialization.
+3. Trigger one API request and one frontend action.
+
+## Production Hardening
+
+1. Split keys by service and environment.
+2. Protect backend key from client exposure.
+3. Monitor ingest latency and retries on deploy.
+
+## Troubleshooting
+
+- Missing browser events: validate client env variables at build/runtime.
+- Backend denied: confirm server env key and ingest URL.
+- Intermittent failures: inspect network egress and timeout values.

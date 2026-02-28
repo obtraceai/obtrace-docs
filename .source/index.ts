@@ -1,0 +1,13 @@
+// @ts-nocheck -- skip type checking
+import * as docs_doc_8 from "../content/docs/integrations/vercel.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_7 from "../content/docs/integrations/supabase.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_6 from "../content/docs/integrations/railway.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_5 from "../content/docs/integrations/k8s.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_4 from "../content/docs/integrations/cloudflare.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_3 from "../content/docs/js/node-bun.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_2 from "../content/docs/js/browser.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_1 from "../content/docs/reference.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import * as docs_doc_0 from "../content/docs/index.mdx?collection=docs&hash=31873079344a50878c39ecdf48c82594"
+import { _runtime } from "fumadocs-mdx"
+import * as _source from "../source.config"
+export const docs = _runtime.docs<typeof _source.docs>([{ info: {"path":"index.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/index.mdx"}, data: docs_doc_0 }, { info: {"path":"reference.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/reference.mdx"}, data: docs_doc_1 }, { info: {"path":"js/browser.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/js/browser.mdx"}, data: docs_doc_2 }, { info: {"path":"js/node-bun.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/js/node-bun.mdx"}, data: docs_doc_3 }, { info: {"path":"integrations/cloudflare.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/integrations/cloudflare.mdx"}, data: docs_doc_4 }, { info: {"path":"integrations/k8s.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/integrations/k8s.mdx"}, data: docs_doc_5 }, { info: {"path":"integrations/railway.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/integrations/railway.mdx"}, data: docs_doc_6 }, { info: {"path":"integrations/supabase.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/integrations/supabase.mdx"}, data: docs_doc_7 }, { info: {"path":"integrations/vercel.mdx","absolutePath":"/home/cendy/workspace/obtrace/ingest/docs-service/content/docs/integrations/vercel.mdx"}, data: docs_doc_8 }], [])

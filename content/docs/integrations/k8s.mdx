@@ -1,0 +1,42 @@
+---
+title: Kubernetes Integration
+description: Deploy and configure SDK with K8s secret/config patterns
+---
+
+## Install
+
+Use templates from `sdk/integrations/k8s`.
+
+Helm chart:
+
+```bash
+helm upgrade --install obtrace-sdk-integration \
+  ./deploy/helm/obtrace-sdk-integration \
+  -n observability --create-namespace \
+  -f ./deploy/helm/obtrace-sdk-integration/values-dev.yaml
+```
+
+## Configuration
+
+Define:
+- Secret `obtrace-sdk` with `OBTRACE_API_KEY`
+- ConfigMap `obtrace-sdk-config` with ingest URL and tenant/project/env
+
+## Quickstart
+
+1. Apply secret and configmap.
+2. Inject vars in workload deployment.
+3. Initialize SDK in app bootstrap.
+
+## Production Hardening
+
+1. Rotate API key via secret rollout.
+2. Use per-namespace/project keys.
+3. Add readiness/liveness probes in workloads.
+4. Validate logs/replay presence in backend after deploy.
+
+## Troubleshooting
+
+- No telemetry: check env injection and network policy to ingest endpoint.
+- 429 responses: verify tenant/project quotas.
+- High latency: adjust flush interval and network path.
