@@ -172,12 +172,12 @@ export function AISearchInput(props: ComponentProps<'form'>) {
   }, [isLoading]);
 
   return (
-    <form {...props} className={cn('flex items-start pe-2', props.className)} onSubmit={onStart}>
+    <form {...props} className={cn('flex items-end gap-2 p-2', props.className)} onSubmit={onStart}>
       <Input
         value={input}
         placeholder={isLoading ? t.aiAnswering : t.askQuestion}
         autoFocus
-        className="p-3"
+        className="min-h-24 p-3"
         disabled={status === 'streaming' || status === 'submitted'}
         onChange={(e) => {
           setInput(e.target.value);
@@ -195,7 +195,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           className={cn(
             buttonVariants({
               color: 'secondary',
-              className: 'transition-all rounded-full mt-2 gap-2',
+              className: 'mb-1 shrink-0 rounded-full gap-2',
             }),
           )}
           onClick={stop}
@@ -210,7 +210,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           className={cn(
             buttonVariants({
               color: 'primary',
-              className: 'transition-all rounded-full mt-2',
+              className: 'mb-1 h-10 w-10 shrink-0 rounded-full px-0',
             }),
           )}
           disabled={input.length === 0}
@@ -267,10 +267,11 @@ function Input(props: ComponentProps<'textarea'>) {
   const shared = cn('col-start-1 row-start-1', props.className);
 
   return (
-    <div className="grid flex-1">
+    <div className="grid min-w-0 flex-1 rounded-xl border bg-fd-secondary text-fd-secondary-foreground">
       <textarea
         id="nd-ai-input"
         {...props}
+        rows={4}
         className={cn(
           'resize-none bg-transparent placeholder:text-fd-muted-foreground focus-visible:outline-none',
           shared,
@@ -339,7 +340,7 @@ export function AISearch({ children, locale = 'en' }: { children: ReactNode; loc
   const chat = useChat({
     id: 'search',
     transport: new DefaultChatTransport({
-      api: '/api/chat',
+      api: `/api/chat?locale=${encodeURIComponent(locale)}`,
     }),
   });
 
