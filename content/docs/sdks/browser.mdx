@@ -6,24 +6,45 @@ description: Frontend instrumentation for replay, metrics, and propagation
 ## Install
 
 ```bash
-npm install @obtrace/sdk-js
+npm install @obtrace/sdk-browser
 ```
 
 ## Configuration
 
 ```ts
-import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-js/browser";
+import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-browser/browser";
 
 const sdk = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
   ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
   projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
-  appId: "web-app",
-  serviceName: "web-app",
+  appId: "checkout-web",
+  env: import.meta.env.MODE,
+  serviceName: "checkout-web",
+  serviceVersion: import.meta.env.VITE_OBTRACE_SERVICE_VERSION,
   validateSemanticMetrics: true,
   debug: true
 });
+```
+
+The browser SDK sends to:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+- `POST /ingest/replay/chunk`
+- `POST /ingest/replay/recipes`
+
+## Canonical runtime identity
+
+Set `serviceName`, `env`, and `serviceVersion` in config. Add region or route details on browser events and spans.
+
+```ts
+const runtimeAttrs = {
+  "cloud.region": import.meta.env.VITE_APP_REGION ?? "us-east-1",
+  "deployment.ring": import.meta.env.VITE_DEPLOYMENT_RING ?? "stable",
+};
 ```
 
 ## Quick start
@@ -32,9 +53,33 @@ const sdk = initBrowserSDK({
 const obFetch = sdk.instrumentFetch();
 await obFetch("/api/ping");
 sdk.log("info", "page.loaded");
-sdk.metric(SemanticMetrics.webVitalLcp, 2400, "ms");
+sdk.metric(SemanticMetrics.webVitalLcp, 2400, "ms", {
+  attrs: {
+    "cloud.region": runtimeAttrs["cloud.region"],
+  },
+});
 await sdk.shutdown();
 ```
+
+## Error and replay example
+
+```ts
+window.addEventListener("error", (event) => {
+  sdk.captureException(event.error, {
+    attrs: {
+      "ui.route": window.location.pathname,
+      "cloud.region": import.meta.env.VITE_APP_REGION ?? "us-east-1",
+    },
+  });
+});
+```
+
+## Validation checklist
+
+- browser logs and fetch traces carry the same `serviceName`, `env`, and `serviceVersion`
+- replay chunks reach the replay endpoints
+- session-aware incidents can be tied to route and region
+- CORS and public ingest access are configured correctly
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 
@@ -43,10 +88,10 @@ See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 1. Use environment-scoped keys.
 2. Mask sensitive fields before custom attributes.
 3. Control replay sampling via env vars.
-4. Validate ingestion in `/v1/logs` and `/v1/replay/index`.
+4. Validate ingestion in OTLP and replay endpoints.
 
 ## Troubleshooting
 
-- No data: verify `OBTRACE_INGEST_BASE_URL` and CORS.
+- No data: verify `VITE_OBTRACE_INGEST_BASE_URL` and CORS.
 - No replay: confirm initialization in browser runtime.
 - Enable debug logs in non-production environments.

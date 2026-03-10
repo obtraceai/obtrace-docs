@@ -16,3 +16,31 @@ Use este fluxo quando o primeiro alvo de rollout for um servico JVM.
 3. Anexe `service`, `env` e `version`
 4. Valide um caminho de request e um caminho de falha
 5. Conecte [metadata de release](/pt-BR/docs/workflows/connect-release-metadata-to-incidents)
+
+## Exemplo de bootstrap
+
+```java
+import io.obtrace.sdk.core.ObtraceClient;
+import io.obtrace.sdk.core.SemanticMetrics;
+import io.obtrace.sdk.model.ObtraceConfig;
+import java.util.Map;
+
+ObtraceConfig cfg = new ObtraceConfig();
+cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
+cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
+cfg.appId = "checkout-api";
+cfg.serviceName = "checkout-api";
+cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
+cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
+
+ObtraceClient client = new ObtraceClient(cfg);
+client.log("info", "service.started", null);
+client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41, "1", null);
+client.span("checkout.charge", null, null, null, "", Map.of(
+    "feature.name", "checkout",
+    "cloud.region", System.getenv().getOrDefault("AWS_REGION", "us-east-1")
+));
+client.flush();
+```

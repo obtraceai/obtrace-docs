@@ -12,12 +12,31 @@ dotnet add package Obtrace.SDK
 ## Configuração
 
 ```csharp
-var client = ObtraceSdk.InitSDK(new ObtraceConfig {
+using Obtrace.Sdk;
+
+var cfg = new ObtraceConfig {
   ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
   IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL"),
   TenantId = Environment.GetEnvironmentVariable("OBTRACE_TENANT_ID"),
   ProjectId = Environment.GetEnvironmentVariable("OBTRACE_PROJECT_ID"),
-  ServiceName = "dotnet-api",
-  AppId = "dotnet-api"
+  AppId = "checkout-api",
+  Env = Environment.GetEnvironmentVariable("OBTRACE_ENV") ?? "prod",
+  ServiceName = "checkout-api",
+  ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "2026.03.10",
+};
+
+var client = new ObtraceClient(cfg);
+```
+
+## Início rápido
+
+```csharp
+client.Log("info", "service.started");
+client.Metric(SemanticMetrics.RuntimeCPUUtilization, 0.41, "1");
+client.Span("checkout.charge", attrs: new Dictionary<string, object?>
+{
+    ["feature.name"] = "checkout",
+    ["cloud.region"] = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1",
 });
+await client.FlushAsync();
 ```

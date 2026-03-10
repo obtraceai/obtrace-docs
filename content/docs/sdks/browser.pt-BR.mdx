@@ -6,21 +6,23 @@ description: Instrumentação frontend com replay, métricas e propagação
 ## Instalação
 
 ```bash
-npm install @obtrace/sdk-js
+npm install @obtrace/sdk-browser
 ```
 
 ## Configuração
 
 ```ts
-import { initBrowserSDK } from "@obtrace/sdk-js/browser";
+import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-browser/browser";
 
 const sdk = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
   ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
   projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
-  appId: "web-app",
-  serviceName: "web-app"
+  appId: "checkout-web",
+  env: import.meta.env.MODE,
+  serviceName: "checkout-web",
+  serviceVersion: import.meta.env.VITE_OBTRACE_SERVICE_VERSION
 });
 ```
 
@@ -30,6 +32,11 @@ const sdk = initBrowserSDK({
 const obFetch = sdk.instrumentFetch();
 await obFetch("/api/ping");
 sdk.log("info", "page.loaded");
+sdk.metric(SemanticMetrics.webVitalLcp, 2400, "ms", {
+  attrs: {
+    "cloud.region": import.meta.env.VITE_APP_REGION ?? "us-east-1",
+  },
+});
 await sdk.shutdown();
 ```
 
@@ -38,10 +45,10 @@ await sdk.shutdown();
 1. Use chaves por ambiente.
 2. Masque dados sensíveis antes de enviar atributos.
 3. Controle sampling de replay por env var.
-4. Valide ingestão em `/v1/logs` e `/v1/replay/index`.
+4. Valide ingestão em OTLP e replay.
 
 ## Solução de problemas
 
-- Sem dados: valide `OBTRACE_INGEST_BASE_URL` e CORS.
+- Sem dados: valide `VITE_OBTRACE_INGEST_BASE_URL` e CORS.
 - Sem replay: confira inicialização no runtime de browser.
 - Ative logs de debug em ambiente não produtivo.

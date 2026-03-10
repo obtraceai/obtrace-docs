@@ -12,12 +12,40 @@ composer require obtrace/sdk-php
 ## Configuração
 
 ```php
-$client = Obtrace\SDK::initSDK([
-  'apiKey' => getenv('OBTRACE_API_KEY'),
-  'ingestBaseUrl' => getenv('OBTRACE_INGEST_BASE_URL'),
-  'tenantId' => getenv('OBTRACE_TENANT_ID'),
-  'projectId' => getenv('OBTRACE_PROJECT_ID'),
-  'serviceName' => 'php-api',
-  'appId' => 'php-api',
+<?php
+require_once __DIR__ . "/../src/ObtraceClient.php";
+require_once __DIR__ . "/../src/Types.php";
+
+use Obtrace\Sdk\ObtraceClient;
+use Obtrace\Sdk\ObtraceConfig;
+
+$cfg = new ObtraceConfig(
+    apiKey: getenv("OBTRACE_API_KEY") ?: "",
+    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "https://inject.obtrace.ai",
+    serviceName: "checkout-api",
+    tenantId: getenv("OBTRACE_TENANT_ID") ?: null,
+    projectId: getenv("OBTRACE_PROJECT_ID") ?: null,
+    appId: "checkout-api",
+    env: getenv("OBTRACE_ENV") ?: "prod",
+    serviceVersion: getenv("OBTRACE_SERVICE_VERSION") ?: "2026.03.10",
+);
+
+$client = new ObtraceClient($cfg);
+```
+
+## Início rápido
+
+```php
+<?php
+require_once __DIR__ . "/../src/SemanticMetrics.php";
+
+use Obtrace\Sdk\SemanticMetrics;
+
+$client->log("info", "service.started");
+$client->metric(SemanticMetrics::RUNTIME_CPU_UTILIZATION, 0.41);
+$client->span("checkout.charge", attrs: [
+    "feature.name" => "checkout",
+    "cloud.region" => getenv("AWS_REGION") ?: "us-east-1",
 ]);
+$client->flush();
 ```

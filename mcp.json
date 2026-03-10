@@ -1,25 +1,187 @@
 {
   "mcp_version": "1.0",
   "name": "obtrace-docs-service",
-  "description": "MCP context metadata for Obtrace documentation service and AI-first support surfaces",
+  "description": "MCP context metadata for Obtrace documentation service, SDK setup, OTLP ingest, and AI-first support surfaces",
   "resources": [
-    { "id": "readme", "path": "README.md", "description": "Service overview" },
-    { "id": "docs-home", "path": "content/docs/index.mdx", "description": "Docs home content" },
-    { "id": "docs-quickstart", "path": "content/docs/quickstart.mdx", "description": "Canonical quickstart" },
-    { "id": "docs-workflow-install", "path": "content/docs/workflows/instrument-your-first-service.mdx", "description": "Install your first service workflow" },
-    { "id": "docs-workflow-incident", "path": "content/docs/workflows/investigate-your-first-incident.mdx", "description": "Investigate your first incident workflow" },
-    { "id": "docs-workflow-remediation", "path": "content/docs/workflows/enable-remediation-prs-safely.mdx", "description": "Enable remediation PRs safely workflow" },
-    { "id": "docs-concepts-detection", "path": "content/docs/concepts/how-obtrace-detects-incidents.mdx", "description": "Incident detection concept" },
-    { "id": "docs-concepts-root-cause", "path": "content/docs/concepts/how-root-cause-analysis-works.mdx", "description": "Root cause analysis concept" },
-    { "id": "docs-concepts-pr", "path": "content/docs/concepts/how-ai-decides-to-open-a-pr.mdx", "description": "How AI decides to open a PR" },
-    { "id": "docs-security-permissions", "path": "content/docs/security/github-app-permissions.mdx", "description": "GitHub App permissions" },
-    { "id": "docs-security-access", "path": "content/docs/security/repository-access-model.mdx", "description": "Repository access model" },
-    { "id": "docs-api-overview", "path": "content/docs/api-reference/overview.mdx", "description": "API reference overview" },
-    { "id": "docs-auth", "path": "content/docs/auth.mdx", "description": "Authentication setup" },
-    { "id": "docs-how-to-use", "path": "content/docs/how-to-use.mdx", "description": "Recommended rollout flow" },
-    { "id": "docs-mcp", "path": "content/docs/mcp.mdx", "description": "MCP documentation page" },
-    { "id": "llm-txt", "path": "llm.txt", "description": "Machine-readable authority index for LLMs" },
-    { "id": "mcp-json", "path": "mcp.json", "description": "MCP manifest for documentation resources" },
-    { "id": "requirements", "path": "../docs/requirements-docs-service-v1.md", "description": "Normative requirements" }
+    {
+      "id": "docs-home",
+      "path": "content/docs/index.mdx",
+      "description": "Docs home content",
+      "url": "https://docs.obtrace.ai/docs"
+    },
+    {
+      "id": "docs-quickstart",
+      "path": "content/docs/quickstart.mdx",
+      "description": "Canonical quickstart",
+      "url": "https://docs.obtrace.ai/docs/quickstart"
+    },
+    {
+      "id": "docs-auth",
+      "path": "content/docs/auth.mdx",
+      "description": "Authentication setup and required ingest environment variables",
+      "url": "https://docs.obtrace.ai/docs/auth"
+    },
+    {
+      "id": "workflow-instrument-first-service",
+      "path": "content/docs/workflows/instrument-your-first-service.mdx",
+      "description": "Primary end-to-end instrumentation workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/instrument-your-first-service"
+    },
+    {
+      "id": "workflow-instrument-python",
+      "path": "content/docs/workflows/instrument-python-in-production.mdx",
+      "description": "Python production instrumentation workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/instrument-python-in-production"
+    },
+    {
+      "id": "workflow-instrument-go",
+      "path": "content/docs/workflows/instrument-go-in-production.mdx",
+      "description": "Go production instrumentation workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/instrument-go-in-production"
+    },
+    {
+      "id": "workflow-instrument-java",
+      "path": "content/docs/workflows/instrument-java-in-production.mdx",
+      "description": "Java production instrumentation workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/instrument-java-in-production"
+    },
+    {
+      "id": "workflow-incident",
+      "path": "content/docs/workflows/investigate-your-first-incident.mdx",
+      "description": "Investigate your first incident workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/investigate-your-first-incident"
+    },
+    {
+      "id": "workflow-remediation",
+      "path": "content/docs/workflows/enable-remediation-prs-safely.mdx",
+      "description": "Enable remediation PRs safely workflow",
+      "url": "https://docs.obtrace.ai/docs/workflows/enable-remediation-prs-safely"
+    },
+    {
+      "id": "workflow-release-metadata",
+      "path": "content/docs/workflows/connect-release-metadata-to-incidents.mdx",
+      "description": "Connect release metadata to incidents",
+      "url": "https://docs.obtrace.ai/docs/workflows/connect-release-metadata-to-incidents"
+    },
+    {
+      "id": "sdk-python",
+      "path": "content/docs/sdks/python.mdx",
+      "description": "Python SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/python"
+    },
+    {
+      "id": "sdk-go",
+      "path": "content/docs/sdks/go.mdx",
+      "description": "Go SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/go"
+    },
+    {
+      "id": "sdk-java",
+      "path": "content/docs/sdks/java.mdx",
+      "description": "Java SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/java"
+    },
+    {
+      "id": "sdk-node-bun",
+      "path": "content/docs/sdks/node-bun.mdx",
+      "description": "Node/Bun SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/node-bun"
+    },
+    {
+      "id": "sdk-dotnet",
+      "path": "content/docs/sdks/dotnet.mdx",
+      "description": ".NET SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/dotnet"
+    },
+    {
+      "id": "sdk-php",
+      "path": "content/docs/sdks/php.mdx",
+      "description": "PHP SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/php"
+    },
+    {
+      "id": "sdk-ruby",
+      "path": "content/docs/sdks/ruby.mdx",
+      "description": "Ruby SDK source-of-truth setup and examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/ruby"
+    },
+    {
+      "id": "sdk-browser",
+      "path": "content/docs/sdks/browser.mdx",
+      "description": "Browser SDK source-of-truth setup and replay examples",
+      "url": "https://docs.obtrace.ai/docs/sdks/browser"
+    },
+    {
+      "id": "concept-detection",
+      "path": "content/docs/concepts/how-obtrace-detects-incidents.mdx",
+      "description": "Incident detection concept",
+      "url": "https://docs.obtrace.ai/docs/concepts/how-obtrace-detects-incidents"
+    },
+    {
+      "id": "concept-root-cause",
+      "path": "content/docs/concepts/how-root-cause-analysis-works.mdx",
+      "description": "Root cause analysis concept",
+      "url": "https://docs.obtrace.ai/docs/concepts/how-root-cause-analysis-works"
+    },
+    {
+      "id": "concept-pr-decision",
+      "path": "content/docs/concepts/how-ai-decides-to-open-a-pr.mdx",
+      "description": "How AI decides to open a PR",
+      "url": "https://docs.obtrace.ai/docs/concepts/how-ai-decides-to-open-a-pr"
+    },
+    {
+      "id": "security-permissions",
+      "path": "content/docs/security/github-app-permissions.mdx",
+      "description": "GitHub App permissions",
+      "url": "https://docs.obtrace.ai/docs/security/github-app-permissions"
+    },
+    {
+      "id": "security-access",
+      "path": "content/docs/security/repository-access-model.mdx",
+      "description": "Repository access model",
+      "url": "https://docs.obtrace.ai/docs/security/repository-access-model"
+    },
+    {
+      "id": "security-pr-flow",
+      "path": "content/docs/security/pr-approval-flow.mdx",
+      "description": "PR approval flow",
+      "url": "https://docs.obtrace.ai/docs/security/pr-approval-flow"
+    },
+    {
+      "id": "api-overview",
+      "path": "content/docs/api-reference/overview.mdx",
+      "description": "API reference overview",
+      "url": "https://docs.obtrace.ai/docs/api-reference/overview"
+    },
+    {
+      "id": "api-ingestion",
+      "path": "content/docs/api-reference/ingestion-api.mdx",
+      "description": "Ingestion API reference",
+      "url": "https://docs.obtrace.ai/docs/api-reference/ingestion-api"
+    },
+    {
+      "id": "api-remediation",
+      "path": "content/docs/api-reference/remediation-api.mdx",
+      "description": "Remediation API reference",
+      "url": "https://docs.obtrace.ai/docs/api-reference/remediation-api"
+    },
+    {
+      "id": "api-webhooks",
+      "path": "content/docs/api-reference/webhooks.mdx",
+      "description": "Webhook reference",
+      "url": "https://docs.obtrace.ai/docs/api-reference/webhooks"
+    },
+    {
+      "id": "llm-txt",
+      "path": "llm.txt",
+      "description": "Machine-readable authority index for LLMs",
+      "url": "https://docs.obtrace.ai/llm.txt"
+    },
+    {
+      "id": "mcp-json",
+      "path": "mcp.json",
+      "description": "MCP manifest for documentation resources",
+      "url": "https://docs.obtrace.ai/mcp.json"
+    }
   ]
 }

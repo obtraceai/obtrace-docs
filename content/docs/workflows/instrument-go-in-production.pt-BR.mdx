@@ -16,3 +16,41 @@ Use este fluxo quando o primeiro alvo de rollout for uma API ou worker em Go.
 3. Adicione identidade estavel de servico
 4. Valide um caminho sensivel a latencia
 5. Conecte [metadata de release](/pt-BR/docs/workflows/connect-release-metadata-to-incidents)
+
+## Exemplo de bootstrap
+
+```go
+package main
+
+import (
+  "context"
+  "net/http"
+  "os"
+
+  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+)
+
+func main() {
+  client := ob.NewClient(ob.Config{
+    APIKey: os.Getenv("OBTRACE_API_KEY"),
+    IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+    TenantID: os.Getenv("OBTRACE_TENANT_ID"),
+    ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
+    AppID: "checkout-api",
+    Env: os.Getenv("OBTRACE_ENV"),
+    ServiceName: "checkout-api",
+    ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
+  })
+  defer client.Flush(context.Background())
+
+  http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+    client.Log("INFO", "healthz.request", nil)
+    client.Span("http.server GET /healthz", "", "", 0, "", map[string]any{
+      "http.method": "GET",
+      "http.route": "/healthz",
+      "cloud.region": os.Getenv("AWS_REGION"),
+    })
+    _, _ = w.Write([]byte("ok"))
+  })
+}
+```

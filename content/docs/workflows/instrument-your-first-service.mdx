@@ -57,6 +57,65 @@ Every event should contain:
 
 Without these fields, incident grouping and release correlation get weaker fast.
 
+Examples with the active SDKs:
+
+```python
+client = ObtraceClient(
+    ObtraceConfig(
+        api_key=os.getenv("OBTRACE_API_KEY"),
+        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
+        project_id=os.getenv("OBTRACE_PROJECT_ID"),
+        app_id="checkout-api",
+        service_name="checkout-api",
+        service_version=os.getenv("OBTRACE_SERVICE_VERSION", "2026.03.10"),
+        env=os.getenv("OBTRACE_ENV", "prod"),
+    )
+)
+
+client.span("checkout.charge", attrs={"cloud.region": os.getenv("AWS_REGION", "us-east-1")})
+```
+
+```go
+client := ob.NewClient(ob.Config{
+  APIKey: os.Getenv("OBTRACE_API_KEY"),
+  IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+  TenantID: os.Getenv("OBTRACE_TENANT_ID"),
+  ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
+  AppID: "checkout-api",
+  Env: os.Getenv("OBTRACE_ENV"),
+  ServiceName: "checkout-api",
+  ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
+})
+
+client.Span("checkout.charge", "", "", 0, "", map[string]any{
+  "cloud.region": os.Getenv("AWS_REGION"),
+})
+```
+
+```java
+ObtraceConfig cfg = new ObtraceConfig();
+cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
+cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
+cfg.appId = "checkout-api";
+cfg.serviceName = "checkout-api";
+cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
+cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
+```
+
+What the core ingest expects:
+
+- `tenant_id`
+- `project_id`
+- `app_id`
+- `service_name`
+- `env`
+- `service_version`
+
+The SDKs map those fields into OTLP. Ingest then derives the scoped envelope used by storage and incident projection.
+
 ## Step 5: Attach the runtime environment
 
 Choose the runtime path that matches production:
@@ -73,6 +132,13 @@ Expected result:
 - No `401/403` auth failures
 - Stable tags across restarts and deploys
 - At least one trace or error with enough context for diagnosis
+
+Minimum validation path:
+
+1. Hit one real request path in production or staging.
+2. Confirm one log and one trace arrive with the same `service`, `env`, and `version`.
+3. Confirm region is present if the service is multi-region.
+4. Only then expand rollout.
 
 ## Step 7: Add release context
 

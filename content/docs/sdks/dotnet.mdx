@@ -12,12 +12,79 @@ dotnet add package Obtrace.SDK
 ## Configuration
 
 ```csharp
-var client = ObtraceSdk.InitSDK(new ObtraceConfig {
+using Obtrace.Sdk;
+
+var cfg = new ObtraceConfig {
   ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
   IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL"),
   TenantId = Environment.GetEnvironmentVariable("OBTRACE_TENANT_ID"),
   ProjectId = Environment.GetEnvironmentVariable("OBTRACE_PROJECT_ID"),
-  ServiceName = "dotnet-api",
-  AppId = "dotnet-api"
+  AppId = "checkout-api",
+  Env = Environment.GetEnvironmentVariable("OBTRACE_ENV") ?? "prod",
+  ServiceName = "checkout-api",
+  ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "2026.03.10",
+  ValidateSemanticMetrics = true,
+  Debug = Environment.GetEnvironmentVariable("OBTRACE_DEBUG") == "1"
+};
+
+var client = new ObtraceClient(cfg);
+```
+
+The .NET SDK targets:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Canonical runtime identity
+
+Put `ServiceName`, `Env`, and `ServiceVersion` in `ObtraceConfig`. Add region on the actual spans or logs where it helps diagnosis.
+
+```csharp
+var runtimeAttrs = new Dictionary<string, object?>
+{
+    ["cloud.region"] = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1",
+    ["deployment.ring"] = "stable"
+};
+```
+
+## Quick start
+
+```csharp
+using Obtrace.Sdk;
+
+client.Log("info", "service.started");
+client.Metric(SemanticMetrics.RuntimeCPUUtilization, 0.41, "1");
+client.Span("checkout.charge", attrs: new Dictionary<string, object?>
+{
+    ["feature.name"] = "checkout",
+    ["payment.provider"] = "stripe",
+    ["cloud.region"] = runtimeAttrs["cloud.region"],
+});
+await client.FlushAsync();
+```
+
+## ASP.NET Core example
+
+```csharp
+app.MapGet("/healthz", async () =>
+{
+    client.Log("info", "healthz.request");
+    client.Span("http.server GET /healthz", attrs: new Dictionary<string, object?>
+    {
+        ["http.method"] = "GET",
+        ["http.route"] = "/healthz",
+        ["cloud.region"] = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1",
+    });
+
+    await client.FlushAsync();
+    return Results.Ok(new { ok = true });
 });
 ```
+
+## Validation checklist
+
+- stable `ServiceName`, `Env`, and `ServiceVersion` across restarts
+- one real HTTP path emits a trace and one log line
+- no `401/403` during OTLP submission
+- region appears when the service is deployed in more than one region

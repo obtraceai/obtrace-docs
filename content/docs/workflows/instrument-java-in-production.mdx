@@ -23,6 +23,41 @@ Use this workflow when the first rollout target is a JVM service where memory, c
 4. Validate one request path and one failure path
 5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
 
+## Example bootstrap
+
+```java
+import io.obtrace.sdk.core.ObtraceClient;
+import io.obtrace.sdk.core.SemanticMetrics;
+import io.obtrace.sdk.model.ObtraceConfig;
+import java.util.Map;
+
+ObtraceConfig cfg = new ObtraceConfig();
+cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
+cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
+cfg.appId = "checkout-api";
+cfg.serviceName = "checkout-api";
+cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
+cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
+
+ObtraceClient client = new ObtraceClient(cfg);
+client.log("info", "service.started", null);
+client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41, "1", null);
+client.span("checkout.charge", null, null, null, "", Map.of(
+    "feature.name", "checkout",
+    "cloud.region", System.getenv().getOrDefault("AWS_REGION", "us-east-1")
+));
+client.flush();
+```
+
+## What to validate
+
+- one real request path emits traces with `service`, `env`, and `version`
+- one failure path still emits usable evidence before shutdown
+- OOM or executor incidents can be tied to one release value
+- region is present when the JVM service spans multiple regions
+
 ## Done definition
 
 - One JVM service is release-aware in production

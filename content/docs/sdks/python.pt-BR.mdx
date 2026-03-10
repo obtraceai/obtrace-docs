@@ -6,29 +6,97 @@ description: Instrumentação backend para serviços Python
 ## Instalação
 
 ```bash
-pip install obtrace-sdk
+pip install .
 ```
 
 ## Configuração
 
 ```python
-from obtrace import init_sdk
+import os
 
-client = init_sdk(
-    api_key=os.getenv("OBTRACE_API_KEY"),
-    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-    tenant_id=os.getenv("OBTRACE_TENANT_ID"),
-    project_id=os.getenv("OBTRACE_PROJECT_ID"),
-    service_name="python-api",
-    app_id="python-api",
+from obtrace_sdk import ObtraceClient, ObtraceConfig
+
+client = ObtraceClient(
+    ObtraceConfig(
+        api_key=os.getenv("OBTRACE_API_KEY"),
+        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
+        project_id=os.getenv("OBTRACE_PROJECT_ID"),
+        app_id="checkout-api",
+        service_name="checkout-api",
+        service_version=os.getenv("OBTRACE_SERVICE_VERSION", "2026.03.10"),
+        env=os.getenv("OBTRACE_ENV", "prod"),
+        validate_semantic_metrics=True,
+        debug=os.getenv("OBTRACE_DEBUG") == "1",
+    )
 )
+```
+
+O SDK Python envia para:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Identidade canonica de runtime
+
+Defina no `ObtraceConfig`:
+
+- `service_name`
+- `env`
+- `service_version`
+- `tenant_id`
+- `project_id`
+- `app_id`
+
+Adicione `region` como atributo do evento quando a topologia importar:
+
+```python
+runtime_attrs = {
+    "cloud.region": os.getenv("AWS_REGION", "us-east-1"),
+    "deployment.ring": "stable",
+}
 ```
 
 ## Início rápido
 
-1. Inicialize o SDK no startup.
-2. Emita um log, uma métrica e um span.
-3. Faça flush no shutdown gracioso.
+```python
+from obtrace_sdk import SemanticMetrics
+
+client.log("info", "service.started")
+client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.42)
+client.span(
+    "checkout.authorize",
+    attrs={
+        "feature.name": "checkout",
+        "db.system": "postgresql",
+        "cloud.region": runtime_attrs["cloud.region"],
+    },
+)
+client.flush()
+```
+
+## Exemplo com FastAPI
+
+```python
+from fastapi import FastAPI
+from obtrace_sdk.http import fastapi_middleware
+
+app = FastAPI()
+app.middleware("http")(fastapi_middleware(client))
+
+@app.get("/healthz")
+async def healthz():
+    client.log("info", "healthz.request")
+    return {"ok": True}
+```
+
+## Checklist de validação
+
+- o mesmo `service`, `env` e `version` aparece entre restarts
+- um caminho real de request emite log e trace
+- nao existe `401/403` na submissao OTLP
+- `cloud.region` aparece quando o servico e multi-regiao
 
 ## Hardening de produção
 

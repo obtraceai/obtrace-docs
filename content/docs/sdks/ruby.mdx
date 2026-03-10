@@ -12,12 +12,67 @@ bundle add obtrace-sdk
 ## Configuration
 
 ```ruby
-client = Obtrace::SDK.init_sdk(
-  api_key: ENV['OBTRACE_API_KEY'],
-  ingest_base_url: ENV['OBTRACE_INGEST_BASE_URL'],
-  tenant_id: ENV['OBTRACE_TENANT_ID'],
-  project_id: ENV['OBTRACE_PROJECT_ID'],
-  service_name: 'ruby-api',
-  app_id: 'ruby-api'
+require_relative "../lib/obtrace_sdk"
+
+cfg = ObtraceSDK::Config.new(
+  api_key: ENV.fetch("OBTRACE_API_KEY"),
+  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
+  tenant_id: ENV["OBTRACE_TENANT_ID"],
+  project_id: ENV["OBTRACE_PROJECT_ID"],
+  app_id: "checkout-api",
+  env: ENV.fetch("OBTRACE_ENV", "prod"),
+  service_name: "checkout-api",
+  service_version: ENV.fetch("OBTRACE_SERVICE_VERSION", "2026.03.10"),
+  validate_semantic_metrics: true,
+  debug: ENV["OBTRACE_DEBUG"] == "1"
 )
+
+client = ObtraceSDK::Client.new(cfg)
 ```
+
+The Ruby SDK sends to:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Canonical runtime identity
+
+Set `service_name`, `env`, and `service_version` in `ObtraceSDK::Config`. Add region on the event or span where topology matters.
+
+```ruby
+runtime_attrs = {
+  "cloud.region" => ENV.fetch("AWS_REGION", "us-east-1"),
+  "deployment.ring" => "stable"
+}
+```
+
+## Quick start
+
+```ruby
+client.log("info", "service.started")
+client.metric(ObtraceSDK::SemanticMetrics::RUNTIME_CPU_UTILIZATION, 0.41)
+client.span("checkout.charge", attrs: {
+  "feature.name" => "checkout",
+  "payment.provider" => "stripe",
+  "cloud.region" => runtime_attrs["cloud.region"]
+})
+client.flush
+```
+
+## Rack-style request example
+
+```ruby
+client.log("info", "http.request", {
+  route: "/healthz",
+  method: "GET",
+  "cloud.region": ENV.fetch("AWS_REGION", "us-east-1")
+})
+```
+
+## Validation checklist
+
+- `service_name`, `env`, and `service_version` remain stable after deploy
+- one real request path emits a log and trace
+- no `401/403` appears during OTLP submission
+- region is attached when topology matters for grouping or routing

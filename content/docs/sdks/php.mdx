@@ -12,12 +12,77 @@ composer require obtrace/sdk-php
 ## Configuration
 
 ```php
-$client = Obtrace\SDK::initSDK([
-  'apiKey' => getenv('OBTRACE_API_KEY'),
-  'ingestBaseUrl' => getenv('OBTRACE_INGEST_BASE_URL'),
-  'tenantId' => getenv('OBTRACE_TENANT_ID'),
-  'projectId' => getenv('OBTRACE_PROJECT_ID'),
-  'serviceName' => 'php-api',
-  'appId' => 'php-api',
+<?php
+require_once __DIR__ . "/../src/ObtraceClient.php";
+require_once __DIR__ . "/../src/Types.php";
+
+use Obtrace\Sdk\ObtraceClient;
+use Obtrace\Sdk\ObtraceConfig;
+
+$cfg = new ObtraceConfig(
+    apiKey: getenv("OBTRACE_API_KEY") ?: "",
+    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "https://inject.obtrace.ai",
+    serviceName: "checkout-api",
+    tenantId: getenv("OBTRACE_TENANT_ID") ?: null,
+    projectId: getenv("OBTRACE_PROJECT_ID") ?: null,
+    appId: "checkout-api",
+    env: getenv("OBTRACE_ENV") ?: "prod",
+    serviceVersion: getenv("OBTRACE_SERVICE_VERSION") ?: "2026.03.10",
+    validateSemanticMetrics: true,
+    debug: getenv("OBTRACE_DEBUG") === "1",
+);
+
+$client = new ObtraceClient($cfg);
+```
+
+The PHP SDK sends to:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Canonical runtime identity
+
+Use `serviceName`, `env`, and `serviceVersion` in `ObtraceConfig`. Add region on the event or span where topology matters.
+
+```php
+$runtimeAttrs = [
+    "cloud.region" => getenv("AWS_REGION") ?: "us-east-1",
+    "deployment.ring" => "stable",
+];
+```
+
+## Quick start
+
+```php
+<?php
+require_once __DIR__ . "/../src/SemanticMetrics.php";
+
+use Obtrace\Sdk\SemanticMetrics;
+
+$client->log("info", "service.started");
+$client->metric(SemanticMetrics::RUNTIME_CPU_UTILIZATION, 0.41);
+$client->span("checkout.charge", attrs: [
+    "feature.name" => "checkout",
+    "payment.provider" => "stripe",
+    "cloud.region" => $runtimeAttrs["cloud.region"],
+]);
+$client->flush();
+```
+
+## Request example
+
+```php
+$client->log("info", "http.request", [
+    "route" => "/healthz",
+    "method" => "GET",
+    "cloud.region" => getenv("AWS_REGION") ?: "us-east-1",
 ]);
 ```
+
+## Validation checklist
+
+- the same `serviceName`, `env`, and `serviceVersion` survive deploys
+- one real request or job path emits a log and a trace
+- no `401/403` appears during OTLP submission
+- region is present when the service is multi-region

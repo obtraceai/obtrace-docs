@@ -23,6 +23,50 @@ Use this workflow when your first serious rollout target is a Python service.
 4. Validate one real request path
 5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
 
+## Example bootstrap
+
+```python
+import os
+
+from fastapi import FastAPI
+from obtrace_sdk import ObtraceClient, ObtraceConfig, SemanticMetrics
+from obtrace_sdk.http import fastapi_middleware
+
+client = ObtraceClient(
+    ObtraceConfig(
+        api_key=os.getenv("OBTRACE_API_KEY"),
+        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
+        project_id=os.getenv("OBTRACE_PROJECT_ID"),
+        app_id="checkout-api",
+        service_name="checkout-api",
+        service_version=os.getenv("OBTRACE_SERVICE_VERSION", "2026.03.10"),
+        env=os.getenv("OBTRACE_ENV", "prod"),
+    )
+)
+
+app = FastAPI()
+app.middleware("http")(fastapi_middleware(client))
+
+@app.get("/healthz")
+async def healthz():
+    client.log("info", "healthz.request")
+    client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41)
+    client.span("http.server GET /healthz", attrs={
+        "http.method": "GET",
+        "http.route": "/healthz",
+        "cloud.region": os.getenv("AWS_REGION", "us-east-1"),
+    })
+    return {"ok": True}
+```
+
+## What to validate
+
+- a real request emits both log and trace
+- `service_name`, `env`, and `service_version` are stable after restart
+- `cloud.region` is present when deployed across regions
+- exceptions are visible before expanding instrumentation to more workers
+
 ## Done definition
 
 - One Python service emits diagnosable telemetry in production

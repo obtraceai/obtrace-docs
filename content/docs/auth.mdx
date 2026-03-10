@@ -12,6 +12,18 @@ All Obtrace SDKs authenticate through API keys at ingest.
 - `OBTRACE_TENANT_ID`
 - `OBTRACE_PROJECT_ID`
 
+Recommended additional identity fields:
+
+- `OBTRACE_ENV`
+- `OBTRACE_SERVICE_VERSION`
+- language/runtime specific `app_id` and `service_name`
+
+The ingest core accepts SDK traffic on:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
 ## Minimum security rules
 
 1. Never expose server keys in client bundles.

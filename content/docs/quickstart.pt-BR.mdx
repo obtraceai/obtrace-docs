@@ -37,6 +37,28 @@ Todo evento, span e erro deve incluir:
 - `version`
 - `region` quando aplicavel
 
+Exemplo:
+
+```ts
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  tenantId: process.env.OBTRACE_TENANT_ID,
+  projectId: process.env.OBTRACE_PROJECT_ID,
+  appId: "checkout-api",
+  env: process.env.OBTRACE_ENV,
+  serviceName: "checkout-api",
+  serviceVersion: process.env.OBTRACE_SERVICE_VERSION,
+});
+
+sdk.span({
+  name: "checkout.authorize",
+  attrs: {
+    "cloud.region": process.env.AWS_REGION ?? "us-east-1",
+  },
+});
+```
+
 ## Passo 3: Conecte o ambiente
 
 - [Kubernetes](/pt-BR/docs/environments/kubernetes)

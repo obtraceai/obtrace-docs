@@ -21,12 +21,30 @@ const sdk = initNodeSDK({
   ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   tenantId: process.env.OBTRACE_TENANT_ID,
   projectId: process.env.OBTRACE_PROJECT_ID,
+  appId: "checkout-api",
   env: process.env.OBTRACE_ENV,
-  appId: "api",
-  serviceName: "api",
+  serviceName: "checkout-api",
+  serviceVersion: process.env.OBTRACE_SERVICE_VERSION,
   validateSemanticMetrics: true,
   debug: true
 });
+```
+
+The backend JS SDK sends to:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Canonical runtime identity
+
+Set `serviceName`, `env`, and `serviceVersion` in the SDK config. Add region or topology on spans and logs.
+
+```ts
+const runtimeAttrs = {
+  "cloud.region": process.env.AWS_REGION ?? "us-east-1",
+  "deployment.ring": process.env.DEPLOYMENT_RING ?? "stable",
+};
 ```
 
 ## Quick start
@@ -38,11 +56,53 @@ sdk.span({
   name: "db.query",
   attrs: {
     "db.system": "postgresql",
-    "feature.name": "checkout"
+    "feature.name": "checkout",
+    "cloud.region": runtimeAttrs["cloud.region"]
   }
 });
 await sdk.shutdown();
 ```
+
+## Express example
+
+```ts
+import express from "express";
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  tenantId: process.env.OBTRACE_TENANT_ID,
+  projectId: process.env.OBTRACE_PROJECT_ID,
+  appId: "checkout-api",
+  env: process.env.OBTRACE_ENV,
+  serviceName: "checkout-api",
+  serviceVersion: process.env.OBTRACE_SERVICE_VERSION,
+});
+
+const app = express();
+
+app.get("/healthz", (_req, res) => {
+  sdk.log("info", "healthz.request");
+  sdk.span({
+    name: "http.server GET /healthz",
+    attrs: {
+      "http.method": "GET",
+      "http.route": "/healthz",
+      "cloud.region": process.env.AWS_REGION ?? "us-east-1",
+    },
+  });
+
+  res.json({ ok: true });
+});
+```
+
+## Validation checklist
+
+- the same `serviceName`, `env`, and `serviceVersion` are present across deploys
+- one real request path emits logs plus a trace
+- `401/403` does not appear when the SDK flushes OTLP payloads
+- region is present when incidents need multi-region grouping
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 

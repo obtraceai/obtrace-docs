@@ -6,34 +6,114 @@ description: Instrumentation guide for Go services
 ## Install
 
 ```bash
-go get github.com/obtraceai/obtrace-sdk-go
+go get github.com/obtrace/sdk-go
 ```
 
 ## Configuration
 
 ```go
-client := obtrace.NewClient(obtrace.Config{
+import (
+  "os"
+
+  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+)
+
+client := ob.NewClient(ob.Config{
   APIKey: os.Getenv("OBTRACE_API_KEY"),
   IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
   TenantID: os.Getenv("OBTRACE_TENANT_ID"),
   ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
-  ServiceName: "go-api",
-  AppID: "go-api",
+  AppID: "checkout-api",
+  Env: os.Getenv("OBTRACE_ENV"),
+  ServiceName: "checkout-api",
+  ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
   ValidateSemanticMetrics: true,
-  Debug: true,
+  Debug: os.Getenv("OBTRACE_DEBUG") == "1",
 })
 ```
+
+The Go SDK sends to:
+
+- `POST /otlp/v1/logs`
+- `POST /otlp/v1/traces`
+- `POST /otlp/v1/metrics`
+
+## Canonical runtime identity
+
+Set stable identity in `ob.Config` and attach region on events when the service is multi-region.
+
+```go
+runtimeAttrs := map[string]any{
+  "cloud.region": os.Getenv("AWS_REGION"),
+  "k8s.cluster.name": os.Getenv("CLUSTER_NAME"),
+}
+```
+
+This aligns with the ingest/core contract:
+
+- `ServiceName` -> OTLP `service.name`
+- `Env` -> OTLP `deployment.environment`
+- `ServiceVersion` -> OTLP `service.version`
+- `TenantID`, `ProjectID`, `AppID` -> scoped ingest identity
 
 ## Quick start
 
 ```go
 client.Log("INFO", "service.started", nil)
-client.Metric(obtrace.SemanticMetrics.RuntimeCPUUtilization, 0.42, "1", nil)
+client.Metric(ob.SemanticMetrics.RuntimeCPUUtilization, 0.42, "1", nil)
 client.Span("db.query", "", "", 0, "", map[string]any{
   "db.system": "postgresql",
   "feature.name": "checkout",
+  "cloud.region": runtimeAttrs["cloud.region"],
 })
 _ = client.Flush(context.Background())
 ```
+
+## HTTP handler example
+
+```go
+package main
+
+import (
+  "context"
+  "net/http"
+  "os"
+
+  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+)
+
+func main() {
+  client := ob.NewClient(ob.Config{
+    APIKey: os.Getenv("OBTRACE_API_KEY"),
+    IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+    TenantID: os.Getenv("OBTRACE_TENANT_ID"),
+    ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
+    AppID: "checkout-api",
+    Env: os.Getenv("OBTRACE_ENV"),
+    ServiceName: "checkout-api",
+    ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
+  })
+  defer client.Flush(context.Background())
+
+  http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+    client.Log("INFO", "healthz.request", nil)
+    client.Span("http.server GET /healthz", "", "", 0, "", map[string]any{
+      "http.method": "GET",
+      "http.route": "/healthz",
+      "cloud.region": os.Getenv("AWS_REGION"),
+    })
+    _, _ = w.Write([]byte("ok"))
+  })
+
+  _ = http.ListenAndServe(":8080", nil)
+}
+```
+
+## Validation checklist
+
+- the same `service`, `env`, and `version` survive restarts and deploys
+- one real path emits both logs and spans
+- no `401/403` appears during OTLP submission
+- region is present when the service is deployed in more than one region
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

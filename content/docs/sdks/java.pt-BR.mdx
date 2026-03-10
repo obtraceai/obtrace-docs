@@ -6,17 +6,54 @@ description: Instrumentação para serviços JVM
 ## Instalação
 
 ```bash
-./mvnw dependency:get -Dartifact=ai.obtrace:sdk-java:latest
+./mvnw dependency:get -Dartifact=io.obtrace:obtrace-sdk-java:1.0.0
 ```
 
 ## Configuração
 
 ```java
-var client = Obtrace.initSDK(new ObtraceConfig()
-  .setApiKey(System.getenv("OBTRACE_API_KEY"))
-  .setIngestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
-  .setTenantId(System.getenv("OBTRACE_TENANT_ID"))
-  .setProjectId(System.getenv("OBTRACE_PROJECT_ID"))
-  .setServiceName("java-api")
-  .setAppId("java-api"));
+import io.obtrace.sdk.core.ObtraceClient;
+import io.obtrace.sdk.model.ObtraceConfig;
+
+ObtraceConfig cfg = new ObtraceConfig();
+cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
+cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
+cfg.appId = "checkout-api";
+cfg.serviceName = "checkout-api";
+cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
+cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
+
+ObtraceClient client = new ObtraceClient(cfg);
 ```
+
+## Identidade canonica de runtime
+
+```java
+Map<String, Object> runtimeAttrs = Map.of(
+    "cloud.region", System.getenv().getOrDefault("AWS_REGION", "us-east-1"),
+    "deployment.ring", "stable"
+);
+```
+
+## Início rápido
+
+```java
+import io.obtrace.sdk.core.SemanticMetrics;
+import java.util.Map;
+
+client.log("info", "service.started", null);
+client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41, "1", null);
+client.span("checkout.charge", null, null, null, "", Map.of(
+    "feature.name", "checkout",
+    "cloud.region", runtimeAttrs.get("cloud.region")
+));
+client.flush();
+```
+
+## Checklist de validação
+
+- request e erro usam o mesmo `service`, `env` e `version`
+- nao existe `401/403` na submissao OTLP
+- incidentes JVM podem ser ligados a uma release

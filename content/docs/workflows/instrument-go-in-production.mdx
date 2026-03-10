@@ -23,6 +23,53 @@ Use this workflow when the first rollout target is a Go API or worker.
 4. Validate one latency-sensitive request path
 5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
 
+## Example bootstrap
+
+```go
+package main
+
+import (
+  "context"
+  "net/http"
+  "os"
+
+  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+)
+
+func main() {
+  client := ob.NewClient(ob.Config{
+    APIKey: os.Getenv("OBTRACE_API_KEY"),
+    IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+    TenantID: os.Getenv("OBTRACE_TENANT_ID"),
+    ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
+    AppID: "checkout-api",
+    Env: os.Getenv("OBTRACE_ENV"),
+    ServiceName: "checkout-api",
+    ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
+  })
+  defer client.Flush(context.Background())
+
+  http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+    client.Log("INFO", "healthz.request", nil)
+    client.Span("http.server GET /healthz", "", "", 0, "", map[string]any{
+      "http.method": "GET",
+      "http.route": "/healthz",
+      "cloud.region": os.Getenv("AWS_REGION"),
+    })
+    _, _ = w.Write([]byte("ok"))
+  })
+
+  _ = http.ListenAndServe(":8080", nil)
+}
+```
+
+## What to validate
+
+- the service is searchable by one stable `service`, `env`, and `version`
+- one real low-latency path emits both logs and spans
+- timeout and panic paths still flush enough evidence for diagnosis
+- region is attached when the service is distributed geographically
+
 ## Done definition
 
 - One Go service emits traces and errors with release context
