@@ -5,6 +5,11 @@
   "pages": [
     "instrument-your-first-service",
     "investigate-your-first-incident",
-    "enable-remediation-prs-safely"
+    "enable-remediation-prs-safely",
+    "roll-out-obtrace-in-kubernetes",
+    "connect-release-metadata-to-incidents",
+    "instrument-python-in-production",
+    "instrument-go-in-production",
+    "instrument-java-in-production"
   ]
 }

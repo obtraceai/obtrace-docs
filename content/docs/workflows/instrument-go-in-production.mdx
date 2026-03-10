@@ -1,0 +1,29 @@
+---
+title: Instrument Go in Production
+description: Opinionated Go workflow for instrumenting low-latency APIs and background workers with Obtrace.
+intent: workflow
+sourceOfTruth: true
+---
+
+# Instrument Go in Production
+
+Use this workflow when the first rollout target is a Go API or worker.
+
+## Best first targets
+
+- public APIs
+- internal gRPC services
+- critical background jobs
+
+## Sequence
+
+1. Install [Go SDK](/docs/sdks/go)
+2. Configure [Authentication](/docs/auth)
+3. Add stable service identity fields
+4. Validate one latency-sensitive request path
+5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
+
+## Done definition
+
+- One Go service emits traces and errors with release context
+- Panic and timeout paths are diagnosable

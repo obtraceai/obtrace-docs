@@ -1,0 +1,18 @@
+---
+title: Instrumentar Go em Producao
+description: Fluxo opinativo para instrumentar APIs de baixa latencia e workers com Obtrace.
+intent: workflow
+sourceOfTruth: true
+---
+
+# Instrumentar Go em Producao
+
+Use este fluxo quando o primeiro alvo de rollout for uma API ou worker em Go.
+
+## Sequencia
+
+1. Instale o [SDK Go](/pt-BR/docs/sdks/go)
+2. Configure [Autenticacao](/pt-BR/docs/auth)
+3. Adicione identidade estavel de servico
+4. Valide um caminho sensivel a latencia
+5. Conecte [metadata de release](/pt-BR/docs/workflows/connect-release-metadata-to-incidents)

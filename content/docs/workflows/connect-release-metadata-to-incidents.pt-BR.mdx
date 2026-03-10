@@ -1,0 +1,43 @@
+---
+title: Conectar Metadata de Release aos Incidentes
+description: Fluxo completo para anexar contexto de CI/CD e ligar incidentes a commits, builds e janelas de deploy.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Conectar Metadata de Release aos Incidentes
+
+Use este fluxo quando o time ja consegue ver telemetria, mas ainda perde tempo respondendo qual release introduziu o problema.
+
+## Objetivo
+
+Ao final, todo incidente deve ser rastreavel para uma janela de release, faixa de commits e contexto de deploy.
+
+## Passo 1: Defina os campos minimos
+
+Propague no minimo:
+
+- commit SHA
+- build id
+- horario do deploy
+- ambiente
+- versao do servico
+
+## Passo 2: Adicione a integracao de CI/CD
+
+Comece com [Integracao GitHub Actions](/pt-BR/docs/integrations/github-actions).
+
+## Passo 3: Verifique que a telemetria carrega o contexto
+
+Resultado esperado:
+
+- traces filtraveis por versao
+- timeline do incidente mostrando proximidade com deploy
+- regressao comparavel ao ultimo release saudavel
+
+## Definicao de pronto
+
+- Incidentes filtraveis por janela de release
+- Comparacao entre release quebrado e release saudavel
+- RCA nao mais separada do historico de deploy

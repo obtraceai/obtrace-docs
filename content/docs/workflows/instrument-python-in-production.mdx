@@ -1,0 +1,29 @@
+---
+title: Instrument Python in Production
+description: Opinionated Python workflow for shipping Obtrace in FastAPI, Django, and worker-based services.
+intent: workflow
+sourceOfTruth: true
+---
+
+# Instrument Python in Production
+
+Use this workflow when your first serious rollout target is a Python service.
+
+## Best first targets
+
+- FastAPI APIs
+- Django backends
+- Celery workers
+
+## Sequence
+
+1. Install [Python SDK](/docs/sdks/python)
+2. Configure [Authentication](/docs/auth)
+3. Add `service`, `env`, and `version`
+4. Validate one real request path
+5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
+
+## Done definition
+
+- One Python service emits diagnosable telemetry in production
+- Exceptions are tied to deploy context

@@ -1,0 +1,50 @@
+---
+title: Connect Release Metadata to Incidents
+description: Complete workflow to attach CI/CD release context so incidents can be tied to commits, builds, and deploy windows.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Connect Release Metadata to Incidents
+
+Use this workflow when teams can already see telemetry, but still lose time answering which release introduced the problem.
+
+## Goal
+
+By the end of this flow, every incident should be traceable to a release window, commit range, and deploy context.
+
+## Step 1: Define the minimum release fields
+
+At minimum propagate:
+
+- commit SHA
+- build id
+- deploy timestamp
+- environment
+- service version
+
+## Step 2: Add CI/CD integration
+
+Start with [GitHub Actions integration](/docs/integrations/github-actions).
+
+## Step 3: Verify telemetry carries release context
+
+Expected result:
+
+- traces can be filtered by version
+- incident timeline shows deploy proximity
+- regressions can be compared against previous healthy release
+
+## Step 4: Use release context during diagnosis
+
+Read:
+
+- [Investigate your first incident](/docs/workflows/investigate-your-first-incident)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+
+## Done definition
+
+- Incidents can be filtered by release window
+- Engineers can compare the failing release to the previous healthy one
+- Root cause analysis is no longer detached from deployment history

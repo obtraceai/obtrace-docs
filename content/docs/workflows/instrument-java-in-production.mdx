@@ -1,0 +1,29 @@
+---
+title: Instrument Java in Production
+description: Opinionated Java workflow for Spring Boot and JVM services with release-aware incident analysis.
+intent: workflow
+sourceOfTruth: true
+---
+
+# Instrument Java in Production
+
+Use this workflow when the first rollout target is a JVM service where memory, concurrency, and dependency issues matter.
+
+## Best first targets
+
+- Spring Boot APIs
+- JVM microservices
+- async worker services
+
+## Sequence
+
+1. Install [Java SDK](/docs/sdks/java)
+2. Configure [Authentication](/docs/auth)
+3. Attach `service`, `env`, and `version`
+4. Validate one request path and one failure path
+5. Connect [release metadata](/docs/workflows/connect-release-metadata-to-incidents)
+
+## Done definition
+
+- One JVM service is release-aware in production
+- OOM and executor failures can be correlated to code or config changes

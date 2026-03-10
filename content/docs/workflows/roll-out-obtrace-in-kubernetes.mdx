@@ -1,0 +1,61 @@
+---
+title: Roll Out Obtrace in Kubernetes
+description: Complete Kubernetes workflow for instrumenting workloads, attaching rollout context, and making pod-level failures diagnosable.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Roll Out Obtrace in Kubernetes
+
+Use this workflow when your main production incidents happen in Kubernetes and you need pod symptoms tied back to application and release changes.
+
+## Goal
+
+By the end of this flow, Kubernetes incidents should be diagnosable through one path that connects pods, deploys, traces, and repository context.
+
+## Step 1: Start with one critical deployment
+
+Choose one deployment with real incident cost. Do not start with the entire cluster.
+
+## Step 2: Instrument the application first
+
+Complete [Instrument your first service](/docs/workflows/instrument-your-first-service) and confirm:
+
+- `service`
+- `env`
+- `version`
+
+## Step 3: Attach Kubernetes identity
+
+Capture:
+
+- cluster
+- namespace
+- deployment
+- pod
+- container
+
+## Step 4: Attach rollout metadata
+
+Every deployment should expose:
+
+- image tag
+- commit SHA
+- deploy timestamp
+- environment
+
+## Step 5: Validate common pod failure modes
+
+Check that your setup can explain:
+
+- CrashLoopBackOff
+- ImagePullBackOff
+- OOMKilled
+- readiness probe failures
+
+## Done definition
+
+- One Kubernetes deployment is fully diagnosable
+- Pod failures are tied to deploy metadata
+- Teams can move from restart symptom to likely root cause without switching tools blindly
