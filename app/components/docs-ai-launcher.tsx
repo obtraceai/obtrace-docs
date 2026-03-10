@@ -24,7 +24,7 @@ export function DocsAiLauncher({ locale, label }: DocsAiLauncherProps) {
   return createPortal(
     <AISearch locale={locale}>
       <AISearchTrigger
-        className="gap-2 rounded-full border border-fd-border/70 bg-fd-foreground px-4 py-3 text-sm font-semibold text-fd-background shadow-2xl hover:opacity-95"
+        className="gap-2 rounded-full border border-[hsl(220,12%,18%)]/80 bg-[hsl(222,22%,6%)] px-4 py-3 text-sm font-semibold text-[hsl(210,25%,92%)] shadow-2xl shadow-black/40 hover:bg-[hsl(220,16%,12%)]"
         position="float"
       >
         <MessageCircleIcon className="size-4" />

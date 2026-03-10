@@ -3,6 +3,44 @@
 @tailwind utilities;
 @import "fumadocs-ui/style.css";
 
+:root {
+  --fd-background: 210 20% 98%;
+  --fd-foreground: 220 25% 10%;
+  --fd-card: 0 0% 100%;
+  --fd-card-foreground: 220 25% 10%;
+  --fd-popover: 0 0% 100%;
+  --fd-popover-foreground: 220 25% 10%;
+  --fd-primary: 215 65% 25%;
+  --fd-primary-foreground: 0 0% 100%;
+  --fd-secondary: 215 20% 96%;
+  --fd-secondary-foreground: 220 25% 10%;
+  --fd-muted: 215 18% 95%;
+  --fd-muted-foreground: 220 10% 46%;
+  --fd-accent: 215 25% 93%;
+  --fd-accent-foreground: 215 65% 45%;
+  --fd-border: 215 12% 92%;
+  --fd-ring: 215 65% 45%;
+}
+
+.dark {
+  --fd-background: 222 22% 6%;
+  --fd-foreground: 210 25% 92%;
+  --fd-card: 222 20% 9%;
+  --fd-card-foreground: 210 25% 92%;
+  --fd-popover: 222 20% 9%;
+  --fd-popover-foreground: 210 25% 92%;
+  --fd-primary: 215 65% 58%;
+  --fd-primary-foreground: 222 22% 6%;
+  --fd-secondary: 220 16% 14%;
+  --fd-secondary-foreground: 210 25% 88%;
+  --fd-muted: 220 16% 14%;
+  --fd-muted-foreground: 215 15% 58%;
+  --fd-accent: 220 16% 18%;
+  --fd-accent-foreground: 215 65% 58%;
+  --fd-border: 220 12% 18%;
+  --fd-ring: 215 65% 58%;
+}
+
 body {
   margin: 0;
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
