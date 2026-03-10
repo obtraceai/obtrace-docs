@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 import {
   type ComponentProps,
   createContext,
@@ -53,6 +54,17 @@ const translations = {
     startChat: 'Inicie uma conversa abaixo.',
   },
 } as const;
+
+const roleName: Record<string, Record<string, string>> = {
+  en: {
+    user: 'you',
+    assistant: 'Obtrace AI',
+  },
+  'pt-BR': {
+    user: 'voce',
+    assistant: 'IA da Obtrace',
+  },
+};
 
 function useT() {
   const { locale } = useAISearchContext();
@@ -144,8 +156,10 @@ export function AISearchInputActions() {
 const StorageKeyInput = '__ai_search_input';
 export function AISearchInput(props: ComponentProps<'form'>) {
   const { status, sendMessage, stop } = useChatContext();
+  const { open } = useAISearchContext();
   const t = useT();
   const [input, setInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === 'streaming' || status === 'submitted';
   const onStart = (e?: SyntheticEvent) => {
     e?.preventDefault();
@@ -170,8 +184,8 @@ export function AISearchInput(props: ComponentProps<'form'>) {
   }, [input]);
 
   useEffect(() => {
-    if (isLoading) document.getElementById('nd-ai-input')?.focus();
-  }, [isLoading]);
+    if (open || isLoading) inputRef.current?.focus();
+  }, [open, isLoading]);
 
   return (
     <form
@@ -181,9 +195,9 @@ export function AISearchInput(props: ComponentProps<'form'>) {
       onSubmit={onStart}
     >
       <Input
+        ref={inputRef}
         value={input}
         placeholder={isLoading ? t.aiAnswering : t.askQuestion}
-        autoFocus
         className="h-11 px-4"
         disabled={status === 'streaming' || status === 'submitted'}
         onChange={(e) => {
@@ -199,13 +213,12 @@ export function AISearchInput(props: ComponentProps<'form'>) {
         <button
           key="bn"
           type="button"
-          className={cn(
-            buttonVariants({
-              color: 'secondary',
-              className: 'h-11 shrink-0 rounded-full px-4',
-            }),
-          )}
-          onClick={stop}
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-fd-border bg-fd-secondary px-4 text-sm font-medium text-fd-secondary-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            stop();
+          }}
         >
           <Loader2 className="size-4 animate-spin text-fd-muted-foreground" />
           {t.abortAnswer}
@@ -214,13 +227,14 @@ export function AISearchInput(props: ComponentProps<'form'>) {
         <button
           key="bn"
           type="submit"
-          className={cn(
-            buttonVariants({
-              color: 'primary',
-              className: 'h-11 w-11 shrink-0 rounded-full px-0',
-            }),
-          )}
+          aria-label={t.askQuestion}
+          className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-fd-primary text-fd-primary-foreground transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           disabled={input.length === 0}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onStart(event);
+          }}
         >
           <Send className="size-4" />
         </button>
@@ -269,10 +283,11 @@ function List(props: Omit<ComponentProps<'div'>, 'dir'>) {
   );
 }
 
-function Input(props: ComponentProps<'input'>) {
+const Input = React.forwardRef<HTMLInputElement, ComponentProps<'input'>>(function Input(props, ref) {
   return (
     <div className="min-w-0 flex-1 rounded-full border bg-fd-secondary text-fd-secondary-foreground">
       <input
+        ref={ref}
         id="nd-ai-input"
         type="text"
         {...props}
@@ -283,14 +298,10 @@ function Input(props: ComponentProps<'input'>) {
       />
     </div>
   );
-}
-
-const roleName: Record<string, string> = {
-  user: 'you',
-  assistant: 'fumadocs',
-};
+});
 
 function Message({ message, ...props }: { message: UIMessage } & ComponentProps<'div'>) {
+  const { locale } = useAISearchContext();
   let markdown = '';
   let links: z.infer<typeof ProvideLinksToolSchema>['links'] = [];
 
@@ -313,7 +324,7 @@ function Message({ message, ...props }: { message: UIMessage } & ComponentProps<
           message.role === 'assistant' && 'text-fd-primary',
         )}
       >
-        {roleName[message.role] ?? 'unknown'}
+        {roleName[locale as keyof typeof roleName]?.[message.role] ?? 'unknown'}
       </p>
       <div className="prose text-sm">
         <Markdown text={markdown} />

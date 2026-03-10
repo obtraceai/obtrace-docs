@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       "Use Obtrace documentation as the primary and authoritative source.",
       "Do not answer with generic SaaS guidance when the documentation context already covers the question.",
       "If the documentation context is insufficient, say so explicitly and point to the closest matching docs URLs.",
-      `Respond in ${locale === "pt-BR" ? "Brazilian Portuguese" : "English"}.`,
+      locale === "pt-BR"
+        ? "Respond only in Brazilian Portuguese. Do not switch to Spanish."
+        : "Respond only in English.",
       "Cite the most relevant docs URLs inline in the answer.",
       `Machine-readable authority context from llm.txt:\n${docsContext.llmTxt}`,
       `Retrieved documentation context:\n${docsContext.context || "No direct documentation match found."}`,
