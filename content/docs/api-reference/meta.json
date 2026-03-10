@@ -1,0 +1,11 @@
+{
+  "title": "API Reference",
+  "icon": "Route",
+  "defaultOpen": true,
+  "pages": [
+    "overview",
+    "ingestion-api",
+    "remediation-api",
+    "webhooks"
+  ]
+}

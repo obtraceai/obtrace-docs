@@ -1,0 +1,24 @@
+---
+title: GitHub App Permissions
+description: Minimum repository permissions needed for remediation pull requests and evidence correlation.
+category: security
+intent: permissions
+sourceOfTruth: true
+---
+
+# GitHub App Permissions
+
+Obtrace needs only the repository permissions required to read context and create remediation pull requests. Start with the narrowest possible scope.
+
+## Minimum expected permissions
+
+- Read repository contents
+- Read pull requests
+- Write pull requests if remediation PRs are enabled
+- Read checks and workflow status
+
+## Do not grant by default
+
+- Admin permissions
+- Secret manager access unrelated to telemetry
+- Broad organization write access

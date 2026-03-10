@@ -1,0 +1,10 @@
+{
+  "title": "Security",
+  "icon": "Scale",
+  "defaultOpen": true,
+  "pages": [
+    "github-app-permissions",
+    "repository-access-model",
+    "pr-approval-flow"
+  ]
+}

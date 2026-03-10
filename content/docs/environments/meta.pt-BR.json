@@ -1,0 +1,10 @@
+{
+  "title": "Ambientes",
+  "icon": "Boxes",
+  "defaultOpen": true,
+  "pages": [
+    "overview",
+    "kubernetes",
+    "serverless"
+  ]
+}

@@ -1,0 +1,29 @@
+---
+title: Kubernetes
+description: Conecte o Obtrace a workloads Kubernetes para correlacionar falhas de pods, mudancas de rollout e telemetria da aplicacao.
+category: environment
+intent: setup
+sourceOfTruth: true
+---
+
+# Kubernetes
+
+Use a trilha de Kubernetes quando os incidentes criticos envolvem pods, deployments, jobs, config maps ou secrets.
+
+## O que capturar
+
+- Identidade de namespace, cluster, deployment, pod e container
+- Metadata de rollout e imagem
+- Sinais de readiness, liveness e restart
+
+## Problemas comuns
+
+- CrashLoopBackOff
+- ImagePullBackOff
+- OOMKilled
+- Readiness probes quebradas
+
+## Paginas relacionadas
+
+- [Guia de CrashLoopBackOff](https://obtrace.ai/errors/kubernetes/crashloopbackoff)
+- [Detalhes da integracao Kubernetes](/pt-BR/docs/integrations/k8s)

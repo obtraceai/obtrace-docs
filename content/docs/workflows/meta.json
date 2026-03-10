@@ -1,0 +1,10 @@
+{
+  "title": "Workflows",
+  "icon": "Compass",
+  "defaultOpen": true,
+  "pages": [
+    "instrument-your-first-service",
+    "investigate-your-first-incident",
+    "enable-remediation-prs-safely"
+  ]
+}

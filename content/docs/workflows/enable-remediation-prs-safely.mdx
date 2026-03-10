@@ -1,0 +1,80 @@
+---
+title: Enable Remediation PRs Safely
+description: End-to-end flow to enable remediation pull requests with repository guardrails, permissions, and approval policy.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Enable Remediation PRs Safely
+
+Use this workflow when telemetry is already healthy and you want Obtrace to move from diagnosis into proposed code changes.
+
+## Goal
+
+By the end of this flow, repository access, approval policy, and remediation confidence rules should be explicit and safe.
+
+## Step 1: Confirm your signal baseline
+
+Do not enable remediation first. Confirm:
+
+- Stable telemetry
+- Reliable release metadata
+- Usable root cause evidence
+
+If not, start with [Instrument your first service](/docs/workflows/instrument-your-first-service).
+
+## Step 2: Review the decision model
+
+Read:
+
+- [How AI decides to open a PR](/docs/concepts/how-ai-decides-to-open-a-pr)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+
+## Step 3: Scope repository permissions
+
+Read:
+
+- [GitHub App Permissions](/docs/security/github-app-permissions)
+- [Repository Access Model](/docs/security/repository-access-model)
+
+Recommended baseline:
+
+- read repository content
+- read checks
+- write pull requests only where remediation is approved
+
+## Step 4: Define approval policy
+
+Read [PR Approval Flow](/docs/security/pr-approval-flow).
+
+Minimum policy should define:
+
+- confidence threshold
+- environments allowed for PR creation
+- whether auto-open is allowed
+- whether auto-merge is forbidden
+
+## Step 5: Test a low-risk remediation path
+
+Start with narrow cases:
+
+- config typo
+- missing env var binding
+- known null guard
+- bounded resource setting fix
+
+## Step 6: Review auditability
+
+Ensure every generated PR includes:
+
+- incident link
+- root cause summary
+- evidence sources
+- approval trace
+
+## Done definition
+
+- Repository access is intentionally scoped
+- Approval policy is documented
+- At least one low-risk remediation path is validated

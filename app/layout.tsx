@@ -1,11 +1,43 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
+import { DOCS_OG_IMAGE, DOCS_SITE_URL } from "../lib/metadata";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "Obtrace Docs",
-  description: "SDK docs (browser, node/bun, k8s, railway)",
+  metadataBase: new URL(DOCS_SITE_URL),
+  title: {
+    default: "Obtrace Docs",
+    template: "%s | Obtrace Docs"
+  },
+  description:
+    "Documentation for Obtrace SDKs, concepts, environments, security model, and APIs for AI-native observability and auto-remediation.",
+  keywords: [
+    "obtrace docs",
+    "aiops docs",
+    "auto-remediation docs",
+    "observability sdk docs",
+    "root cause analysis docs"
+  ],
+  alternates: {
+    canonical: "/docs"
+  },
+  openGraph: {
+    title: "Obtrace Docs",
+    description:
+      "Documentation for Obtrace SDKs, concepts, environments, security model, and APIs for AI-native observability and auto-remediation.",
+    url: `${DOCS_SITE_URL}/docs`,
+    siteName: "Obtrace Docs",
+    type: "website",
+    images: [DOCS_OG_IMAGE]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Obtrace Docs",
+    description:
+      "Documentation for Obtrace SDKs, concepts, environments, security model, and APIs for AI-native observability and auto-remediation.",
+    images: [DOCS_OG_IMAGE]
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

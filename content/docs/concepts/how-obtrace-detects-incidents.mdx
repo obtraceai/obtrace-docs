@@ -1,0 +1,38 @@
+---
+title: How Obtrace Detects Incidents
+description: The incident detection model behind signal correlation, baseline shifts, and high-confidence issue grouping.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# How Obtrace Detects Incidents
+
+Obtrace detects incidents by combining anomaly signals with service context, release metadata, and error evidence. The goal is not to surface isolated alerts, but to create one incident record per operational problem.
+
+## Inputs
+
+- Error bursts
+- Trace latency changes
+- Throughput and saturation shifts
+- Deployment and config changes
+- Runtime environment metadata
+
+## Detection flow
+
+```mermaid
+flowchart LR
+  A[Runtime signals] --> B[Signal correlation]
+  B --> C[Incident grouping]
+  C --> D[Impact scoring]
+  D --> E[Incident record]
+```
+
+Obtrace correlates signals before alerting so that engineers investigate one incident with evidence instead of many disconnected alarms.
+
+## Expected output
+
+- One incident with suspected blast radius
+- Correlated traces, logs, and release evidence
+- A stable identifier for follow-up remediation

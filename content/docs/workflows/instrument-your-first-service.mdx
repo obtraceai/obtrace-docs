@@ -1,0 +1,92 @@
+---
+title: Instrument Your First Service
+description: Complete workflow to choose an SDK, configure auth, attach environment context, and validate production telemetry.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Instrument Your First Service
+
+Use this workflow when you want one service fully instrumented and operationally useful, not just sending raw events.
+
+## Goal
+
+By the end of this flow, one production-relevant service should emit telemetry with stable identity, deployment context, and enough evidence for incident diagnosis.
+
+## Step 1: Pick the service correctly
+
+Choose the service with the highest operational risk, not the easiest local demo.
+
+Good first targets:
+
+- Checkout
+- Auth
+- Billing
+- API gateway
+
+## Step 2: Pick the SDK
+
+Use [SDK Catalog](/docs/sdks/catalog), then open the language-specific page:
+
+- [Python](/docs/sdks/python)
+- [Go](/docs/sdks/go)
+- [Java](/docs/sdks/java)
+- [Node/Bun](/docs/sdks/node-bun)
+- [.NET](/docs/sdks/dotnet)
+
+## Step 3: Configure authentication
+
+Read [Authentication](/docs/auth) and ensure environment-specific credentials.
+
+Minimum required values:
+
+- `OBTRACE_API_KEY`
+- `OBTRACE_INGEST_BASE_URL`
+- `OBTRACE_TENANT_ID`
+- `OBTRACE_PROJECT_ID`
+
+## Step 4: Add canonical runtime attributes
+
+Every event should contain:
+
+- `service`
+- `env`
+- `version`
+- `region` when relevant
+
+Without these fields, incident grouping and release correlation get weaker fast.
+
+## Step 5: Attach the runtime environment
+
+Choose the runtime path that matches production:
+
+- [Kubernetes](/docs/environments/kubernetes)
+- [Serverless](/docs/environments/serverless)
+- Existing platform-specific guides in `/docs/integrations/*`
+
+## Step 6: Validate before rollout expands
+
+Expected result:
+
+- Continuous telemetry
+- No `401/403` auth failures
+- Stable tags across restarts and deploys
+- At least one trace or error with enough context for diagnosis
+
+## Step 7: Add release context
+
+Before scaling rollout, connect CI/CD metadata so incidents can be tied to deploys.
+
+Read:
+
+- [GitHub Actions integration](/docs/integrations/github-actions)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+
+## Done definition
+
+This workflow is complete only when:
+
+- One service is instrumented in production
+- The service can be filtered cleanly by `service`, `env`, and `version`
+- Incident evidence is usable without manual log archaeology

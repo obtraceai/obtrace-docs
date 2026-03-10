@@ -1,0 +1,65 @@
+---
+title: Quickstart
+description: Install one SDK, connect one runtime, validate ingestion, and prepare Obtrace for remediation workflows.
+category: quickstart
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Quickstart
+
+Obtrace is most useful when telemetry, release metadata, and repository context are connected early. This quickstart focuses on the shortest path to a production-ready signal baseline.
+
+## Outcome
+
+By the end of this guide, you should have:
+
+- One backend service instrumented.
+- Stable `service`, `env`, and `version` tagging.
+- One runtime environment connected.
+- Enough context for root cause analysis and remediation decisions.
+
+## Step 1: Install the SDK
+
+Pick the SDK that matches the service you care about most:
+
+- [Python](/docs/sdks/python)
+- [Go](/docs/sdks/go)
+- [Java](/docs/sdks/java)
+- [Node/Bun](/docs/sdks/node-bun)
+- [.NET](/docs/sdks/dotnet)
+
+## Step 2: Set canonical attributes
+
+Every event, span, and error should include:
+
+- `service`
+- `env`
+- `version`
+- `region` when applicable
+
+## Step 3: Connect the environment
+
+Start with the runtime where the incident actually happens:
+
+- [Kubernetes](/docs/environments/kubernetes)
+- [Serverless](/docs/environments/serverless)
+- [Environment overview](/docs/environments/overview)
+
+## Step 4: Validate ingestion
+
+Expected result:
+
+- Telemetry is continuous.
+- Tags are stable across deploys.
+- Errors contain enough stack and deploy context for diagnosis.
+
+## Step 5: Review how remediation works
+
+Before enabling repository actions, read:
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+- [How AI decides to open a PR](/docs/concepts/how-ai-decides-to-open-a-pr)
+- [GitHub app permissions](/docs/security/github-app-permissions)

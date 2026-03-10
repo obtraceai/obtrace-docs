@@ -1,0 +1,37 @@
+---
+title: How AI Decides to Open a PR
+description: Confidence thresholds, guardrails, and repository permission checks that control remediation pull requests.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# How AI Decides to Open a PR
+
+Obtrace does not open pull requests based on anomaly detection alone. The system requires a coherent root cause hypothesis, enough evidence, and a repository policy that permits the action.
+
+## Decision inputs
+
+- Incident confidence
+- Root cause confidence
+- Availability of a narrow remediation path
+- Repository and branch permissions
+- Approval policy for the environment
+
+## Decision flow
+
+```mermaid
+flowchart TD
+  A[Incident detected] --> B[Root cause scored]
+  B --> C[Policy and permission check]
+  C --> D[Draft remediation plan]
+  D --> E[Open PR or require approval]
+```
+
+## When Obtrace should not open a PR
+
+- Confidence is below policy threshold
+- The blast radius is unclear
+- The repository app lacks permission
+- The change is destructive or high-risk

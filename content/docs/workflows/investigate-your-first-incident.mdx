@@ -1,0 +1,89 @@
+---
+title: Investigate Your First Incident
+description: Complete incident triage workflow from symptom detection to root cause hypothesis and remediation path.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Investigate Your First Incident
+
+Use this workflow when production is already degraded and you need the shortest path from symptom to likely cause.
+
+## Goal
+
+By the end of this flow, you should have one incident record, one likely root cause path, and one remediation direction.
+
+## Step 1: Define the symptom precisely
+
+Start with the observable problem:
+
+- Error rate spike
+- Latency regression
+- Restart loop
+- Timeout storm
+- Database saturation
+
+## Step 2: Scope the blast radius
+
+Answer these first:
+
+- Which service is failing?
+- Which environment is affected?
+- Which version or release window overlaps with the incident?
+- Is the issue isolated or cross-service?
+
+## Step 3: Read the correlated evidence
+
+Use Obtrace to inspect:
+
+- Related traces
+- Error signatures
+- Deploy and config changes
+- Dependency impact
+
+Then read:
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+
+## Step 4: Move to the runtime-specific guide
+
+If the symptom is environment-heavy:
+
+- [Kubernetes](/docs/environments/kubernetes)
+- [Serverless](/docs/environments/serverless)
+
+If the symptom is a known production error pattern:
+
+- [Open the error library](https://obtrace.ai/errors)
+
+## Step 5: Separate mitigation from remediation
+
+Temporary mitigation might be:
+
+- Restarting pods
+- Scaling replicas
+- Raising memory limits
+- Rolling back
+
+Real remediation should answer:
+
+- What changed?
+- Why did it fail now?
+- What code or config change actually prevents recurrence?
+
+## Step 6: Prepare remediation
+
+Read:
+
+- [How AI decides to open a PR](/docs/concepts/how-ai-decides-to-open-a-pr)
+- [Enable remediation PRs safely](/docs/workflows/enable-remediation-prs-safely)
+
+## Done definition
+
+This workflow is complete only when:
+
+- The likely root cause is explicit
+- The release or config trigger is identified
+- The next remediation action is clear

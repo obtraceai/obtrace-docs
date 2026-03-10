@@ -1,0 +1,23 @@
+---
+title: Ingestion API
+description: Expectativas de contrato para endpoints de ingestao, atributos obrigatorios, autenticacao e validacao.
+category: api
+intent: reference
+sourceOfTruth: true
+---
+
+# Ingestion API
+
+A ingestion API recebe telemetria com identidade estavel e metadata de autorizacao.
+
+## Campos obrigatorios
+
+- API key
+- identidade de tenant ou projeto
+- service
+- env
+- version
+
+## Resultado esperado
+
+Os eventos sao aceitos, carimbados com tempo e correlacionados com o contexto de runtime existente.

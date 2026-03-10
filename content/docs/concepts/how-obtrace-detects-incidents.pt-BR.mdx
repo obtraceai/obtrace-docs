@@ -1,0 +1,36 @@
+---
+title: Como o Obtrace Detecta Incidentes
+description: O modelo de deteccao de incidentes baseado em correlacao de sinais, mudancas de baseline e agrupamento de evidencias.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Como o Obtrace Detecta Incidentes
+
+O Obtrace detecta incidentes combinando sinais de anomalia com contexto de servico, metadata de release e evidencias de erro. O objetivo nao e emitir alertas isolados, mas criar um unico incidente por problema operacional.
+
+## Entradas
+
+- Explosao de erros
+- Mudancas de latencia em traces
+- Alteracoes de throughput e saturacao
+- Deploys e mudancas de configuracao
+- Metadata do ambiente de runtime
+
+## Fluxo de deteccao
+
+```mermaid
+flowchart LR
+  A[Sinais de runtime] --> B[Correlacao de sinais]
+  B --> C[Agrupamento do incidente]
+  C --> D[Score de impacto]
+  D --> E[Registro do incidente]
+```
+
+## Saida esperada
+
+- Um incidente com blast radius estimado
+- Traces, logs e evidencias de release correlacionados
+- Identificador estavel para remediation

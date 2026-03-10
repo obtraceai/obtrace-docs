@@ -1,0 +1,67 @@
+---
+title: Instrumente Seu Primeiro Servico
+description: Fluxo completo para escolher SDK, configurar auth, anexar contexto de ambiente e validar telemetria em producao.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Instrumente Seu Primeiro Servico
+
+Use este fluxo quando voce quiser um servico realmente instrumentado e operacionalmente util, nao apenas enviando eventos crus.
+
+## Objetivo
+
+Ao final, um servico relevante em producao deve emitir telemetria com identidade estavel, contexto de deploy e evidencia suficiente para diagnostico de incidentes.
+
+## Passo 1: Escolha o servico certo
+
+Comece pelo servico de maior risco operacional, nao pelo demo mais facil.
+
+## Passo 2: Escolha o SDK
+
+Use o [Catalogo de SDKs](/pt-BR/docs/sdks/catalog) e depois abra a pagina da linguagem:
+
+- [Python](/pt-BR/docs/sdks/python)
+- [Go](/pt-BR/docs/sdks/go)
+- [Java](/pt-BR/docs/sdks/java)
+- [Node/Bun](/pt-BR/docs/sdks/node-bun)
+- [.NET](/pt-BR/docs/sdks/dotnet)
+
+## Passo 3: Configure autenticacao
+
+Leia [Autenticacao](/pt-BR/docs/auth) e use credenciais separadas por ambiente.
+
+## Passo 4: Adicione atributos canonicos
+
+Todo evento deve conter:
+
+- `service`
+- `env`
+- `version`
+- `region` quando relevante
+
+## Passo 5: Conecte o ambiente de runtime
+
+- [Kubernetes](/pt-BR/docs/environments/kubernetes)
+- [Serverless](/pt-BR/docs/environments/serverless)
+- Guias especificos em `/pt-BR/docs/integrations/*`
+
+## Passo 6: Valide antes de expandir
+
+Resultado esperado:
+
+- Telemetria continua
+- Sem erros `401/403`
+- Tags estaveis entre restarts e deploys
+- Pelo menos um trace ou erro com contexto suficiente
+
+## Passo 7: Anexe contexto de release
+
+Antes de escalar rollout, conecte metadata de CI/CD para amarrar incidentes a deploys.
+
+## Definicao de pronto
+
+- Um servico em producao instrumentado
+- Filtro limpo por `service`, `env` e `version`
+- Evidencia suficiente para diagnostico sem arqueologia manual

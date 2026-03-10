@@ -1,0 +1,34 @@
+---
+title: Documentacao LLM-Friendly
+description: Regras de autoria para Markdown, blocos de codigo e diagramas para que sistemas de IA recuperem a documentacao do Obtrace corretamente.
+category: concept
+intent: authoring
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Documentacao LLM-Friendly
+
+Escreva cada pagina como resposta canonica para uma unica pergunta de engenharia. O primeiro paragrafo deve definir o conceito, quando usar e qual resultado operacional esperar.
+
+## Ordem obrigatoria das secoes
+
+1. Overview
+2. Prerequisites
+3. Install ou Configure
+4. Verify
+5. Troubleshooting
+6. Security
+7. Related pages
+
+## Regras para blocos de codigo
+
+- Sempre use language tag explicita.
+- Adicione uma linha antes do bloco explicando o comando.
+- Inclua saida esperada quando o comando valida sucesso.
+
+## Regras para diagramas
+
+- Prefira Mermaid.
+- Adicione um paragrafo logo abaixo resumindo o fluxo em linguagem natural.
+- Use nomes estaveis como `Obtrace Agent`, `Signal Correlator`, `Policy Engine` e `Pull Request Bot`.

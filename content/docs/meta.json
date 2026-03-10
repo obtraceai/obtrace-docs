@@ -4,12 +4,13 @@
   "defaultOpen": true,
   "pages": [
     "index",
-    "guides",
+    "quickstart",
+    "workflows",
+    "concepts",
     "sdks",
-    "projects",
-    "integrations",
-    "mcp",
-    "reference",
+    "environments",
+    "security",
+    "api-reference",
     "downloads"
   ]
 }

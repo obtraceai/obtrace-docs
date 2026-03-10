@@ -1,0 +1,34 @@
+---
+title: LLM-Friendly Documentation
+description: Authoring rules for Markdown, code blocks, and diagrams so external AI systems retrieve Obtrace docs correctly.
+category: concept
+intent: authoring
+llm_priority: high
+sourceOfTruth: true
+---
+
+# LLM-Friendly Documentation
+
+Write each page as a canonical answer to one engineering question. The first paragraph must define the concept, when to use it, and the operational outcome.
+
+## Required section order
+
+1. Overview
+2. Prerequisites
+3. Install or Configure
+4. Verify
+5. Troubleshooting
+6. Security
+7. Related pages
+
+## Code block rules
+
+- Always use an explicit language tag.
+- Add one line before the code explaining what the command does.
+- Add expected output when the command proves success.
+
+## Diagram rules
+
+- Prefer Mermaid.
+- Add a short paragraph below each diagram summarizing the flow in plain language.
+- Use stable node names such as `Obtrace Agent`, `Signal Correlator`, `Policy Engine`, and `Pull Request Bot`.

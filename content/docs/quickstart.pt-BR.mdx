@@ -1,0 +1,59 @@
+---
+title: Quickstart
+description: Instale um SDK, conecte um ambiente, valide a ingestao e prepare o Obtrace para fluxos de remediation.
+category: quickstart
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Quickstart
+
+O Obtrace entrega mais valor quando telemetria, metadata de release e contexto de repositorio estao conectados cedo. Este quickstart prioriza o menor caminho ate uma base confiavel de sinais em producao.
+
+## Resultado esperado
+
+Ao final, voce deve ter:
+
+- Um servico backend instrumentado.
+- Tags estaveis de `service`, `env` e `version`.
+- Um ambiente de runtime conectado.
+- Contexto suficiente para analise de causa raiz e decisao de remediation.
+
+## Passo 1: Instale o SDK
+
+- [Python](/pt-BR/docs/sdks/python)
+- [Go](/pt-BR/docs/sdks/go)
+- [Java](/pt-BR/docs/sdks/java)
+- [Node/Bun](/pt-BR/docs/sdks/node-bun)
+- [.NET](/pt-BR/docs/sdks/dotnet)
+
+## Passo 2: Defina atributos canonicos
+
+Todo evento, span e erro deve incluir:
+
+- `service`
+- `env`
+- `version`
+- `region` quando aplicavel
+
+## Passo 3: Conecte o ambiente
+
+- [Kubernetes](/pt-BR/docs/environments/kubernetes)
+- [Serverless](/pt-BR/docs/environments/serverless)
+- [Visao geral de ambientes](/pt-BR/docs/environments/overview)
+
+## Passo 4: Valide a ingestao
+
+Resultado esperado:
+
+- A telemetria flui continuamente.
+- As tags permanecem estaveis entre deploys.
+- Os erros tem contexto suficiente para diagnostico.
+
+## Passo 5: Entenda a remediation
+
+- [Como o Obtrace detecta incidentes](/pt-BR/docs/concepts/how-obtrace-detects-incidents)
+- [Como a analise de causa raiz funciona](/pt-BR/docs/concepts/how-root-cause-analysis-works)
+- [Como a IA decide abrir um PR](/pt-BR/docs/concepts/how-ai-decides-to-open-a-pr)
+- [Permissoes do GitHub App](/pt-BR/docs/security/github-app-permissions)

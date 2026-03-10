@@ -1,0 +1,17 @@
+---
+title: Repository Access Model
+description: How Obtrace scopes repository access by environment, policy, and remediation workflow.
+category: security
+intent: explanation
+sourceOfTruth: true
+---
+
+# Repository Access Model
+
+Repository access should follow the same blast-radius principles as production credentials. Obtrace should only touch repositories, branches, and environments covered by explicit policy.
+
+## Recommended model
+
+1. Separate policy by environment.
+2. Restrict which branches can receive automated PRs.
+3. Keep audit visibility for every generated change.

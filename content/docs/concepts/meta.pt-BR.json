@@ -1,0 +1,11 @@
+{
+  "title": "Conceitos",
+  "icon": "Sparkles",
+  "defaultOpen": true,
+  "pages": [
+    "how-obtrace-detects-incidents",
+    "how-root-cause-analysis-works",
+    "how-ai-decides-to-open-a-pr",
+    "llm-friendly-docs"
+  ]
+}

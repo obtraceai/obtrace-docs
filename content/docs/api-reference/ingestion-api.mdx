@@ -1,0 +1,23 @@
+---
+title: Ingestion API
+description: Contract expectations for ingest endpoints, required attributes, authentication, and validation.
+category: api
+intent: reference
+sourceOfTruth: true
+---
+
+# Ingestion API
+
+The ingestion API accepts telemetry with stable identity and authorization metadata.
+
+## Required fields
+
+- API key
+- tenant or project identity
+- service
+- env
+- version
+
+## Expected outcome
+
+Events are accepted, timestamped, and correlated with existing runtime context.

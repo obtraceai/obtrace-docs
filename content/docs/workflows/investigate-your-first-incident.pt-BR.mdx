@@ -1,0 +1,69 @@
+---
+title: Investigue Seu Primeiro Incidente
+description: Fluxo completo de triagem, do sintoma ate hipotese de causa raiz e caminho de remediation.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Investigue Seu Primeiro Incidente
+
+Use este fluxo quando a producao ja estiver degradada e voce precisar do menor caminho entre sintoma e causa provavel.
+
+## Objetivo
+
+Ao final, voce deve ter um incidente, um caminho provavel de causa raiz e uma direcao de remediation.
+
+## Passo 1: Defina o sintoma
+
+Comece pelo problema observavel:
+
+- Explosao de erros
+- Regressao de latencia
+- Loop de restart
+- Tempestade de timeouts
+- Saturacao de banco
+
+## Passo 2: Defina o blast radius
+
+Responda primeiro:
+
+- Qual servico esta falhando?
+- Qual ambiente foi afetado?
+- Qual versao ou janela de release coincide com o incidente?
+- O problema e isolado ou cruza servicos?
+
+## Passo 3: Leia a evidencia correlacionada
+
+Use o Obtrace para inspecionar:
+
+- Traces relacionados
+- Assinaturas de erro
+- Mudancas de deploy e configuracao
+- Impacto em dependencias
+
+## Passo 4: Va para o guia certo
+
+Se o sintoma for muito ligado ao ambiente:
+
+- [Kubernetes](/pt-BR/docs/environments/kubernetes)
+- [Serverless](/pt-BR/docs/environments/serverless)
+
+Se for um padrao conhecido:
+
+- [Abra a biblioteca de erros](https://obtrace.ai/errors)
+
+## Passo 5: Separe mitigacao de remediation
+
+Mitigacao temporaria pode ser restart, scale, aumento de memoria ou rollback. Remediation real responde o que mudou, por que falhou agora e qual alteracao impede recorrencia.
+
+## Passo 6: Prepare remediation
+
+- [Como a IA decide abrir um PR](/pt-BR/docs/concepts/how-ai-decides-to-open-a-pr)
+- [Habilite remediation PRs com seguranca](/pt-BR/docs/workflows/enable-remediation-prs-safely)
+
+## Definicao de pronto
+
+- A causa raiz provavel esta explicita
+- O gatilho de release ou configuracao foi identificado
+- A proxima acao de remediation esta clara

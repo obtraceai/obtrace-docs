@@ -1,57 +1,57 @@
 ---
-title: Catálogo de SDKs
-description: Cobertura dos SDKs oficiais e planejados
+title: Catalogo de SDKs
+description: Escolha o caminho certo de rollout do SDK com base no que voce quer instrumentar primeiro.
 ---
 
-Este catálogo é uma camada de decisão, não só uma lista. Use para priorizar rollout por runtime e maturidade do time.
+# Catalogo de SDKs
+
+Use esta pagina para decidir o que instrumentar primeiro. Nao comece apenas pela linguagem favorita. Comece pelo valor do incidente e pelo risco operacional.
+
+## Escolha pela intencao
+
+### Quero visibilidade de incidentes no backend primeiro
+
+Melhores pontos de partida:
+
+- [Python](/pt-BR/docs/sdks/python)
+- [Go](/pt-BR/docs/sdks/go)
+- [Java](/pt-BR/docs/sdks/java)
+- [Node/Bun](/pt-BR/docs/sdks/node-bun)
+- [.NET](/pt-BR/docs/sdks/dotnet)
+
+Depois siga [Instrumente seu primeiro servico](/pt-BR/docs/workflows/instrument-your-first-service).
+
+### Quero correlacao de frontend com backend
+
+Comece com:
+
+- [Browser SDK](/pt-BR/docs/sdks/browser)
+- [Node/Bun SDK](/pt-BR/docs/sdks/node-bun)
+
+### Quero orientacao por plataforma
+
+Comece com:
+
+- [Visao geral de ambientes](/pt-BR/docs/environments/overview)
+- [Kubernetes](/pt-BR/docs/environments/kubernetes)
+- [Serverless](/pt-BR/docs/environments/serverless)
 
 ## SDKs oficiais
 
-| SDK | Status | Runtime principal | Melhor uso | Docs |
-|---|---|---|---|---|
-| JavaScript Browser | GA | Browser | Telemetria de UX e correlação frontend/backend | [Abrir](/pt-BR/docs/sdks/browser) |
-| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers e serviços JS | [Abrir](/pt-BR/docs/sdks/node-bun) |
-| Python | GA | CPython | FastAPI/Django e serviços de dados | [Abrir](/pt-BR/docs/sdks/python) |
-| Go | GA | Go 1.21+ | Serviços de alto throughput e baixa latência | [Abrir](/pt-BR/docs/sdks/go) |
-| Java | GA | JVM 17+ | Microserviços enterprise e ecossistema Spring | [Abrir](/pt-BR/docs/sdks/java) |
-| .NET | GA | .NET 8+ | APIs ASP.NET e workloads enterprise | [Abrir](/pt-BR/docs/sdks/dotnet) |
-| PHP | GA | PHP 8.2+ | Laravel e stacks web tradicionais | [Abrir](/pt-BR/docs/sdks/php) |
-| Ruby | GA | Ruby 3.2+ | Serviços Rails e jobs de background | [Abrir](/pt-BR/docs/sdks/ruby) |
+| SDK | Status | Runtime principal | Melhor primeiro uso |
+|---|---|---|---|
+| JavaScript Browser | GA | Browser | Telemetria de UX e correlacao frontend/backend |
+| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers e servicos JS |
+| Python | GA | CPython | FastAPI, Django, workers e servicos de dados |
+| Go | GA | Go 1.21+ | APIs de baixa latencia e servicos de alto throughput |
+| Java | GA | JVM 17+ | Spring e microservicos enterprise |
+| .NET | GA | .NET 8+ | APIs ASP.NET e backends enterprise |
+| PHP | GA | PHP 8.2+ | Laravel e web backends tradicionais |
+| Ruby | GA | Ruby 3.2+ | Rails e jobs de background |
 
-## Planejados / Em validação
+## Regras de decisao
 
-| SDK | Status | Observações |
-|---|---|---|
-| Rust | Planejamento Beta | Foco em segurança de transporte e ergonomia de tracing. |
-| Kotlin | Planejamento Beta | Foco em compatibilidade com Ktor e Spring. |
-| Swift | Planejamento Beta | Foco em telemetria iOS e buffer offline. |
-
-## Guia de Seleção
-
-Priorize por:
-
-1. Criticidade do serviço.
-2. Volume de requisições.
-3. Prontidão do time para suporte.
-4. Restrições do runtime (cold start, memória, edge limits).
-
-## Convenções Compartilhadas entre SDKs
-
-1. Modelo de autenticação consistente.
-2. Primitivas centrais alinhadas (log/trace/error + flush/shutdown).
-3. Retry/fila variam por runtime, mas são documentados.
-4. Taxonomia de troubleshooting compartilhada.
-
-## Padrão de Rollout por Runtime
-
-- Comece com um serviço por linguagem.
-- Valide gates de qualidade de dados.
-- Expanda por topologia (API síncrona -> workers -> edge/frontend).
-- Anexe metadados de release e integração de runtime antes de escalar.
-
-## Definição de Pronto (Por SDK)
-
-- Instrumentação aplicada e revisada.
-- Telemetria visível com tags estáveis.
-- Correlação erro/trace validada em simulação de incidente.
-- Runbook de rotação de chave e falha de transporte documentado.
+1. Comece pelo servico que mais dói quando falha.
+2. Prefira um servico relevante em producao a muitos rollouts parciais.
+3. Adicione metadata de release antes de expandir.
+4. So depois avance para ambiente e seguranca.

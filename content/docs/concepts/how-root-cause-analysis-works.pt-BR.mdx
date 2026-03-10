@@ -1,0 +1,27 @@
+---
+title: Como Funciona a Analise de Causa Raiz
+description: Como o Obtrace transforma sintomas em causas provaveis usando evidencias de runtime, diff de deploy e contexto de repositorio.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Como Funciona a Analise de Causa Raiz
+
+A analise de causa raiz no Obtrace e guiada por evidencias. O sistema compara sintomas de runtime com deploys recentes, arquivos alterados, falhas de dependencia e relacoes entre servicos para ranquear causas provaveis.
+
+## Hierarquia de evidencias
+
+1. Stack traces e spans com falha
+2. Deploys e mudancas de configuracao recentes
+3. Impacto em dependencias entre servicos
+4. Recorrencia historica da mesma assinatura
+
+## O que uma boa RCA contem
+
+- Descricao do sintoma
+- Servico e versao suspeitos
+- Mudanca gatilho provavel
+- Nivel de confianca
+- Caminho recomendado de remediation

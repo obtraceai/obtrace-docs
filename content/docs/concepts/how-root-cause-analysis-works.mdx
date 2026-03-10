@@ -1,0 +1,27 @@
+---
+title: How Root Cause Analysis Works
+description: How Obtrace turns symptoms into likely causes using runtime evidence, deploy diffs, and repository context.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# How Root Cause Analysis Works
+
+Root cause analysis in Obtrace is evidence-driven. The system compares runtime symptoms with recent deploys, changed files, dependency failures, and service relationships to rank probable causes.
+
+## Evidence hierarchy
+
+1. Runtime stack traces and failing spans
+2. Recent deploy and configuration changes
+3. Cross-service dependency impact
+4. Historical recurrence for the same signature
+
+## What a strong RCA contains
+
+- Symptom description
+- Suspect service and version
+- Likely triggering change
+- Confidence level
+- Recommended remediation path

@@ -1,81 +1,57 @@
 ---
-title: Documentação Obtrace
-description: Documentação completa de SDKs, guias de projeto, integrações e contexto para IA
+title: Documentacao Obtrace
+description: Documentacao orientada por intencao para setup, investigacao de incidente e fluxos seguros de remediation.
+llm_priority: high
+sourceOfTruth: true
 ---
 
-A Obtrace é uma plataforma de observabilidade com IA para reduzir MTTR e eliminar troca de contexto durante incidentes. Esta documentação não é só referência de API: é um playbook operacional para sair de zero instrumentação até operação em produção.
+# Documentacao Obtrace
 
-## Comece Por Aqui
+Use esta documentacao de acordo com o que voce precisa fazer agora. Ela foi organizada para guiar fluxos completos, nao para obrigar voce a montar passos a partir de referencia espalhada.
 
-Se você está começando agora, siga esta sequência:
+## Escolha seu caminho
 
-1. [Introdução](/pt-BR/docs/guides/intro)
-2. [Quick Start](/pt-BR/docs/guides/quick-start)
-3. [Por que Obtrace](/pt-BR/docs/guides/why-obtrace)
-4. [Autenticação](/pt-BR/docs/guides/auth)
-5. [Como usar](/pt-BR/docs/guides/how-to-use)
+### Quero instrumentar meu primeiro servico
 
-## O Que Você Ganha Com a Obtrace
+Siga este fluxo:
 
-- Causa raiz assistida por IA correlacionando logs, traces, erros e contexto de sessão.
-- Modelo unificado de observabilidade entre frontend e backend.
-- Triagem mais rápida com evidência correlacionada, não dashboards desconectados.
-- Fluxos opcionais de IA (Ask AI, MCP, `llm.txt`) para agentes e assistentes.
+1. [Quickstart](/pt-BR/docs/quickstart)
+2. [Instrumente seu primeiro servico](/pt-BR/docs/workflows/instrument-your-first-service)
+3. [Catalogo de SDKs](/pt-BR/docs/sdks/catalog)
+4. [Visao geral de ambientes](/pt-BR/docs/environments/overview)
 
-## Caminho de Implementação em 30 Minutos
+### Quero investigar um incidente em producao
 
-1. Criar chaves de API e configurar variáveis de ambiente.
-2. Instrumentar um serviço backend com o SDK da sua stack.
-3. Instrumentar um app frontend/browser (se aplicável).
-4. Validar ingestão e sinais básicos.
-5. Configurar uma integração de runtime (Kubernetes, Vercel, Docker etc).
-6. Adicionar visibilidade de CI/CD com [GitHub Actions](/pt-BR/docs/integrations/github-actions).
+Siga este fluxo de diagnostico:
 
-## SDKs
+1. [Investigue seu primeiro incidente](/pt-BR/docs/workflows/investigate-your-first-incident)
+2. [Como o Obtrace detecta incidentes](/pt-BR/docs/concepts/how-obtrace-detects-incidents)
+3. [Como funciona a analise de causa raiz](/pt-BR/docs/concepts/how-root-cause-analysis-works)
+4. [Biblioteca de erros de producao](https://obtrace.ai/errors)
 
-Use os guias por linguagem para setup completo:
+### Quero habilitar remediation PRs com seguranca
 
-- [Catálogo de SDKs](/pt-BR/docs/sdks/catalog)
-- [SDK JavaScript Browser](/pt-BR/docs/sdks/browser)
-- [SDK JavaScript Node/Bun](/pt-BR/docs/sdks/node-bun)
-- [SDK Python](/pt-BR/docs/sdks/python)
-- [SDK Go](/pt-BR/docs/sdks/go)
-- [SDK Java](/pt-BR/docs/sdks/java)
-- [SDK .NET](/pt-BR/docs/sdks/dotnet)
-- [SDK PHP](/pt-BR/docs/sdks/php)
-- [SDK Ruby](/pt-BR/docs/sdks/ruby)
-- [SDK Rust (Planejado)](/pt-BR/docs/sdks/rust)
-- [SDK Kotlin (Planejado)](/pt-BR/docs/sdks/kotlin)
-- [SDK Swift (Planejado)](/pt-BR/docs/sdks/swift)
+Siga este fluxo de governanca:
 
-## Guias de Projeto
+1. [Habilite remediation PRs com seguranca](/pt-BR/docs/workflows/enable-remediation-prs-safely)
+2. [Como a IA decide abrir um PR](/pt-BR/docs/concepts/how-ai-decides-to-open-a-pr)
+3. [Permissoes do GitHub App](/pt-BR/docs/security/github-app-permissions)
+4. [Fluxo de aprovacao de PR](/pt-BR/docs/security/pr-approval-flow)
 
-Use estruturas de projeto de referência para evitar setup ad-hoc e padronizar telemetria:
+## Para que serve cada secao
 
-- [Guias de Projeto](/pt-BR/docs/projects/overview)
+- `Quickstart`: menor caminho ate sinal real em producao
+- `Workflows`: fluxos guiados completos por intencao
+- `Concepts`: modelo mental de deteccao, RCA e remediation
+- `SDKs`: detalhes por linguagem
+- `Environments`: orientacao por runtime
+- `Security`: permissoes e politicas de aprovacao
+- `API Reference`: contratos e integracoes
 
-## Integrações
+## Se voce esta sob pressao de incidente
 
-Integre a Obtrace onde as cargas realmente rodam:
+Comece por:
 
-- [Matriz de Integrações](/pt-BR/docs/integrations/overview)
-- [Kubernetes](/pt-BR/docs/integrations/k8s)
-- [Docker](/pt-BR/docs/integrations/docker)
-- [Vercel](/pt-BR/docs/integrations/vercel)
-- [Railway](/pt-BR/docs/integrations/railway)
-- [Supabase](/pt-BR/docs/integrations/supabase)
-- [Cloudflare](/pt-BR/docs/integrations/cloudflare)
-- [AWS Lambda](/pt-BR/docs/integrations/aws-lambda)
-- [GCP Cloud Run](/pt-BR/docs/integrations/gcp-cloud-run)
-- [Azure Container Apps](/pt-BR/docs/integrations/azure-container-apps)
-- [GitHub Actions](/pt-BR/docs/integrations/github-actions)
-
-## IA e Contexto para Máquinas
-
-- [MCP](/pt-BR/docs/mcp)
-- [Referência](/pt-BR/docs/reference)
-- [Downloads de SDK](/pt-BR/docs/downloads)
-- [llm.txt](/llm.txt)
-- [mcp.json](/mcp.json)
-
-Se quiser fluxo guiado e conversacional, use o botão flutuante **Ask AI** nas páginas de docs.
+- [Investigue seu primeiro incidente](/pt-BR/docs/workflows/investigate-your-first-incident)
+- [Guia de Kubernetes](/pt-BR/docs/environments/kubernetes)
+- [Biblioteca de erros](https://obtrace.ai/errors)

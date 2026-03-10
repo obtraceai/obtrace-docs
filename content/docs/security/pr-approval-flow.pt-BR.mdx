@@ -1,0 +1,17 @@
+---
+title: Fluxo de Aprovacao de PR
+description: Revisao humana, thresholds de confianca e politicas de aprovacao para pull requests de remediation.
+category: security
+intent: workflow
+sourceOfTruth: true
+---
+
+# Fluxo de Aprovacao de PR
+
+Pull requests de remediation devem seguir um caminho de aprovacao previsivel. O Obtrace pode gerar a correcao, mas a politica de merge continua sendo decisao da organizacao.
+
+## Gates recomendados
+
+- Mudancas de alta confianca e baixo risco podem ser abertas automaticamente
+- Mudancas de confianca media devem exigir aprovacao
+- Mudancas destrutivas ou de alto risco devem permanecer manuais

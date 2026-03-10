@@ -1,0 +1,24 @@
+---
+title: Permissoes do GitHub App
+description: Permissoes minimas de repositorio necessarias para pull requests de remediation e correlacao de evidencias.
+category: security
+intent: permissions
+sourceOfTruth: true
+---
+
+# Permissoes do GitHub App
+
+O Obtrace precisa apenas das permissoes necessarias para ler contexto e criar pull requests de remediation. Comece com o escopo mais estreito possivel.
+
+## Permissoes minimas esperadas
+
+- Leitura do conteudo do repositorio
+- Leitura de pull requests
+- Escrita em pull requests se remediation estiver habilitado
+- Leitura de checks e status de workflow
+
+## Nao conceda por padrao
+
+- Permissoes administrativas
+- Acesso a secrets sem relacao com telemetria
+- Escrita ampla em toda a organizacao

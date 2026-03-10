@@ -1,0 +1,29 @@
+---
+title: Kubernetes
+description: Attach Obtrace to Kubernetes workloads so pod failures, rollout changes, and application telemetry are correlated.
+category: environment
+intent: setup
+sourceOfTruth: true
+---
+
+# Kubernetes
+
+Use the Kubernetes environment path when your critical incidents involve pods, deployments, jobs, config maps, or secrets.
+
+## What to capture
+
+- Namespace, cluster, deployment, pod, and container identity
+- Rollout and image metadata
+- Readiness, liveness, and restart signals
+
+## Common production issues
+
+- CrashLoopBackOff
+- ImagePullBackOff
+- OOMKilled
+- Broken readiness probes
+
+## Related pages
+
+- [CrashLoopBackOff guide](https://obtrace.ai/errors/kubernetes/crashloopbackoff)
+- [Kubernetes integration details](/docs/integrations/k8s)

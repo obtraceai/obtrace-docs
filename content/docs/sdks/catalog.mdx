@@ -1,57 +1,57 @@
 ---
 title: SDK Catalog
-description: Coverage of official and planned SDKs
+description: Choose the right SDK rollout path based on what you are trying to instrument first.
 ---
 
-This catalog is a decision layer, not only a list. Use it to choose the right rollout path per runtime and team maturity.
+# SDK Catalog
+
+Use this page to decide what to instrument first. Do not start by language preference alone. Start by incident value and operational risk.
+
+## Choose by intention
+
+### I need backend incident visibility first
+
+Best starting SDKs:
+
+- [Python](/docs/sdks/python)
+- [Go](/docs/sdks/go)
+- [Java](/docs/sdks/java)
+- [Node/Bun](/docs/sdks/node-bun)
+- [.NET](/docs/sdks/dotnet)
+
+Then follow [Instrument your first service](/docs/workflows/instrument-your-first-service).
+
+### I need frontend to backend correlation
+
+Start with:
+
+- [Browser SDK](/docs/sdks/browser)
+- [Node/Bun SDK](/docs/sdks/node-bun)
+
+### I need platform-specific rollout guidance
+
+Start with:
+
+- [Environment Overview](/docs/environments/overview)
+- [Kubernetes](/docs/environments/kubernetes)
+- [Serverless](/docs/environments/serverless)
 
 ## Official SDKs
 
-| SDK | Status | Primary Runtime | Best For | Docs |
-|---|---|---|---|---|
-| JavaScript Browser | GA | Browser | User-facing telemetry and frontend correlation | [Open](/docs/sdks/browser) |
-| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers, edge-compatible JS services | [Open](/docs/sdks/node-bun) |
-| Python | GA | CPython | FastAPI/Django workers and data services | [Open](/docs/sdks/python) |
-| Go | GA | Go 1.21+ | High-throughput services and low-latency APIs | [Open](/docs/sdks/go) |
-| Java | GA | JVM 17+ | Enterprise microservices and Spring ecosystems | [Open](/docs/sdks/java) |
-| .NET | GA | .NET 8+ | ASP.NET APIs and enterprise backend workloads | [Open](/docs/sdks/dotnet) |
-| PHP | GA | PHP 8.2+ | Laravel and traditional web backend stacks | [Open](/docs/sdks/php) |
-| Ruby | GA | Ruby 3.2+ | Rails services and background job ecosystems | [Open](/docs/sdks/ruby) |
+| SDK | Status | Primary Runtime | Best first use |
+|---|---|---|---|
+| JavaScript Browser | GA | Browser | User-facing telemetry and frontend correlation |
+| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers, edge-compatible JS services |
+| Python | GA | CPython | FastAPI, Django, workers, data services |
+| Go | GA | Go 1.21+ | Low-latency APIs and high-throughput services |
+| Java | GA | JVM 17+ | Spring and enterprise microservices |
+| .NET | GA | .NET 8+ | ASP.NET APIs and enterprise backends |
+| PHP | GA | PHP 8.2+ | Laravel and traditional web backends |
+| Ruby | GA | Ruby 3.2+ | Rails and background jobs |
 
-## Planned / In Validation
+## Decision rules
 
-| SDK | Status | Notes |
-|---|---|---|
-| Rust | Beta Planning | Focus on transport safety and tracing ergonomics. |
-| Kotlin | Beta Planning | Focus on Ktor and Spring compatibility. |
-| Swift | Beta Planning | Focus on iOS telemetry and offline buffering. |
-
-## Selection Guide
-
-Choose SDK priority using this order:
-
-1. Service criticality (incident cost if it fails).
-2. Request volume (signal usefulness).
-3. Team readiness (who can own rollout and support).
-4. Runtime constraints (cold starts, memory, edge limits).
-
-## Shared Conventions Across SDKs
-
-1. Auth model is consistent (API key + ingest base URL + tenant/project context).
-2. Core primitives are aligned (log/trace/error + flush/shutdown).
-3. Retry/queue behavior is runtime-specific but documented.
-4. Troubleshooting taxonomy is shared (auth, transport, volume, latency, cardinality).
-
-## Rollout Pattern by Runtime
-
-- Start with one service per language.
-- Validate data quality gates.
-- Expand by topology (sync API -> async workers -> edge/frontend).
-- Add release metadata and runtime integration before scaling rollout.
-
-## Definition of Done (Per SDK Rollout)
-
-- Instrumentation in place and peer-reviewed.
-- Telemetry visible with stable tags.
-- Error and trace correlation proven in at least one incident simulation.
-- Runbook exists for auth rotation and transport failure recovery.
+1. Start with the service that hurts most when it fails.
+2. Prefer one production-relevant service over many partial rollouts.
+3. Add release metadata before expanding.
+4. Move to runtime and security guidance after basic telemetry is healthy.

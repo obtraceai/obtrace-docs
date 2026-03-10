@@ -1,0 +1,17 @@
+---
+title: PR Approval Flow
+description: Human review, confidence thresholds, and approval policies for remediation pull requests.
+category: security
+intent: workflow
+sourceOfTruth: true
+---
+
+# PR Approval Flow
+
+Remediation pull requests should follow a predictable approval path. Obtrace can draft the fix, but merge policy remains an organizational decision.
+
+## Recommended approval gates
+
+- High confidence and low-risk changes may auto-open
+- Medium confidence changes should require reviewer approval
+- High-risk or destructive changes should require manual remediation

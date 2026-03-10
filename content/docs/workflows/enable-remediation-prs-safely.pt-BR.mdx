@@ -1,0 +1,52 @@
+---
+title: Habilite Remediation PRs com Seguranca
+description: Fluxo de ponta a ponta para habilitar remediation pull requests com guardrails, permissoes e politica de aprovacao.
+intent: workflow
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Habilite Remediation PRs com Seguranca
+
+Use este fluxo quando a telemetria ja estiver saudavel e voce quiser que o Obtrace avance do diagnostico para mudancas propostas de codigo.
+
+## Objetivo
+
+Ao final, acesso ao repositorio, politica de aprovacao e regras de confianca devem estar explicitos e seguros.
+
+## Passo 1: Confirme a base de sinais
+
+Nao habilite remediation primeiro. Confirme:
+
+- Telemetria estavel
+- Metadata de release confiavel
+- Evidencia de causa raiz utilizavel
+
+## Passo 2: Revise o modelo de decisao
+
+- [Como a IA decide abrir um PR](/pt-BR/docs/concepts/how-ai-decides-to-open-a-pr)
+- [Como funciona a analise de causa raiz](/pt-BR/docs/concepts/how-root-cause-analysis-works)
+
+## Passo 3: Restrinja permissoes do repositorio
+
+- [Permissoes do GitHub App](/pt-BR/docs/security/github-app-permissions)
+- [Modelo de acesso ao repositorio](/pt-BR/docs/security/repository-access-model)
+
+## Passo 4: Defina politica de aprovacao
+
+- [Fluxo de aprovacao de PR](/pt-BR/docs/security/pr-approval-flow)
+
+## Passo 5: Teste um caminho de remediation de baixo risco
+
+Comece com casos estreitos:
+
+- typo de configuracao
+- binding ausente de env var
+- null guard conhecido
+- ajuste limitado de recurso
+
+## Definicao de pronto
+
+- O acesso ao repositorio esta intencionalmente restrito
+- A politica de aprovacao esta documentada
+- Pelo menos um caminho de remediation de baixo risco foi validado
