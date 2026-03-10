@@ -4,8 +4,8 @@ export function ObtraceLogo() {
       fill="currentColor"
       viewBox="430 190 1190 450"
       xmlns="http://www.w3.org/2000/svg"
-      className="block h-10 w-[240px] max-w-[60vw] text-[hsl(var(--fd-primary))] dark:text-[hsl(var(--fd-foreground))]"
-      style={{ minWidth: 200 }}
+      className="block h-8 w-[192px] max-w-[48vw] text-[hsl(var(--fd-primary))] dark:text-[hsl(var(--fd-foreground))]"
+      style={{ minWidth: 160 }}
       aria-label="Obtrace"
       role="img"
     >
