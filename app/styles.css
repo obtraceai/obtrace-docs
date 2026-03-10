@@ -69,6 +69,7 @@ html.dark {
 .docs-ai-fab[data-state="open"] {
   opacity: 0;
   transform: translateY(0.5rem);
+  pointer-events: none;
 }
 
 .docs-ai-overlay {

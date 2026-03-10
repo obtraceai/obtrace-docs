@@ -192,13 +192,15 @@ export function AISearchInput(props: ComponentProps<'form'>) {
       {...props}
       className={cn('flex items-center gap-3 p-2', props.className)}
       onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       onSubmit={onStart}
     >
       <Input
         ref={inputRef}
         value={input}
         placeholder={isLoading ? t.aiAnswering : t.askQuestion}
-        className="h-11 px-4"
+        className="h-12 px-4"
         disabled={status === 'streaming' || status === 'submitted'}
         onChange={(e) => {
           setInput(e.target.value);
@@ -213,7 +215,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
         <button
           key="bn"
           type="button"
-          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-fd-border bg-fd-secondary px-4 text-sm font-medium text-fd-secondary-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-fd-border bg-fd-secondary px-4 text-sm font-medium text-fd-secondary-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -228,13 +230,15 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           key="bn"
           type="submit"
           aria-label={t.askQuestion}
-          className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-fd-primary text-fd-primary-foreground transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex size-[3.25rem] min-h-[3.25rem] min-w-[3.25rem] shrink-0 items-center justify-center self-center rounded-full bg-fd-primary p-0 text-fd-primary-foreground transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           disabled={input.length === 0}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
             onStart(event);
           }}
+          onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           <Send className="size-4" />
         </button>
@@ -285,7 +289,7 @@ function List(props: Omit<ComponentProps<'div'>, 'dir'>) {
 
 const Input = React.forwardRef<HTMLInputElement, ComponentProps<'input'>>(function Input(props, ref) {
   return (
-    <div className="min-w-0 flex-1 rounded-full border bg-fd-secondary text-fd-secondary-foreground">
+    <div className="flex min-h-12 min-w-0 flex-1 items-center rounded-full border bg-fd-secondary text-fd-secondary-foreground">
       <input
         ref={ref}
         id="nd-ai-input"
@@ -428,6 +432,8 @@ export function AISearchPanel() {
               : 'animate-fd-dialog-out lg:animate-[ask-ai-close_200ms]',
           )}
           onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           <div className="flex flex-col size-full p-3">
             <AISearchPanelHeader />
