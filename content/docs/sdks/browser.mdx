@@ -12,7 +12,7 @@ npm install @obtrace/sdk-js
 ## Configuration
 
 ```ts
-import { initBrowserSDK } from "@obtrace/sdk-js/browser";
+import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-js/browser";
 
 const sdk = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
@@ -20,7 +20,9 @@ const sdk = initBrowserSDK({
   tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
   projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
   appId: "web-app",
-  serviceName: "web-app"
+  serviceName: "web-app",
+  validateSemanticMetrics: true,
+  debug: true
 });
 ```
 
@@ -30,8 +32,11 @@ const sdk = initBrowserSDK({
 const obFetch = sdk.instrumentFetch();
 await obFetch("/api/ping");
 sdk.log("info", "page.loaded");
+sdk.metric(SemanticMetrics.webVitalLcp, 2400, "ms");
 await sdk.shutdown();
 ```
+
+See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 
 ## Production hardening
 

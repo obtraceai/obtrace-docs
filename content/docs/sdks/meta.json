@@ -4,6 +4,7 @@
   "defaultOpen": true,
   "pages": [
     "catalog",
+    "semantic-metrics",
     "browser",
     "node-bun",
     "python",

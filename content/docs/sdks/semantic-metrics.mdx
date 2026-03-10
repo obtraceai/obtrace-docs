@@ -1,0 +1,60 @@
+---
+title: Semantic Metrics
+description: Canonical metric catalog and validation guidance across all Obtrace SDKs
+---
+
+## Why this exists
+
+Different runtimes and OTEL instrumentations emit different physical metric names. Obtrace normalizes them into one product-wide catalog so dashboards, explorer, AI and alerting stay consistent.
+
+## Rule
+
+- Prefer SDK `SemanticMetrics` constants when a metric belongs to the shared catalog.
+- Use free-form names only for truly product-specific signals.
+- Keep custom business detail in span attributes, not by inventing near-duplicate platform metrics.
+
+## Canonical examples
+
+- `http_requests_total`
+- `http_5xx_total`
+- `latency_p95`
+- `runtime.cpu.utilization`
+- `runtime.memory.usage`
+- `runtime.gc.pause`
+- `runtime.eventloop.lag`
+- `cluster.cpu.utilization`
+- `cluster.memory.usage`
+- `db.operation.latency`
+- `db.client.errors`
+- `messaging.consumer.lag`
+- `web.vital.lcp`
+- `web.vital.inp`
+
+## SDK support
+
+- JavaScript and Browser: `SemanticMetrics`, `isSemanticMetricName`, `validateSemanticMetrics`
+- Go: `SemanticMetrics`, `IsSemanticMetric`, `ValidateSemanticMetrics`
+- Python: `SemanticMetrics`, `is_semantic_metric`, `validate_semantic_metrics`
+- Java: `SemanticMetrics`, `validateSemanticMetrics`
+- .NET: `SemanticMetrics`, `ValidateSemanticMetrics`
+- PHP: `SemanticMetrics`, `validateSemanticMetrics`
+- Ruby: `SemanticMetrics`, `validate_semantic_metrics`
+
+## Custom spans
+
+Use spans for domain-specific detail:
+
+```ts
+sdk.span({
+  name: "checkout.charge",
+  attrs: {
+    "feature.name": "checkout",
+    "payment.provider": "stripe",
+    "order.type": "renewal",
+  },
+});
+```
+
+## Validation in development
+
+Set `validateSemanticMetrics` on the SDK config together with debug mode. The SDK will warn when a metric name is outside the canonical catalog, but it will not block the event.

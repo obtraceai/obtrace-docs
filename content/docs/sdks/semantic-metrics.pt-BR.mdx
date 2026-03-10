@@ -1,0 +1,60 @@
+---
+title: Métricas Semânticas
+description: Catálogo canônico de métricas e validação nas SDKs da Obtrace
+---
+
+## Por que isso existe
+
+Cada runtime e instrumentação OTEL pode emitir nomes físicos diferentes. A Obtrace normaliza tudo para um catálogo global único, para dashboards, explorer, IA e alertas continuarem consistentes.
+
+## Regra
+
+- Prefira constantes `SemanticMetrics` da SDK quando a métrica fizer parte do catálogo compartilhado.
+- Use nome livre apenas para sinais realmente específicos do seu produto.
+- Coloque detalhe de negócio em atributos de span, não inventando variações de métricas de plataforma.
+
+## Exemplos canônicos
+
+- `http_requests_total`
+- `http_5xx_total`
+- `latency_p95`
+- `runtime.cpu.utilization`
+- `runtime.memory.usage`
+- `runtime.gc.pause`
+- `runtime.eventloop.lag`
+- `cluster.cpu.utilization`
+- `cluster.memory.usage`
+- `db.operation.latency`
+- `db.client.errors`
+- `messaging.consumer.lag`
+- `web.vital.lcp`
+- `web.vital.inp`
+
+## Suporte por SDK
+
+- JavaScript e Browser: `SemanticMetrics`, `isSemanticMetricName`, `validateSemanticMetrics`
+- Go: `SemanticMetrics`, `IsSemanticMetric`, `ValidateSemanticMetrics`
+- Python: `SemanticMetrics`, `is_semantic_metric`, `validate_semantic_metrics`
+- Java: `SemanticMetrics`, `validateSemanticMetrics`
+- .NET: `SemanticMetrics`, `ValidateSemanticMetrics`
+- PHP: `SemanticMetrics`, `validateSemanticMetrics`
+- Ruby: `SemanticMetrics`, `validate_semantic_metrics`
+
+## Spans customizados
+
+Use spans para detalhe de domínio:
+
+```ts
+sdk.span({
+  name: "checkout.charge",
+  attrs: {
+    "feature.name": "checkout",
+    "payment.provider": "stripe",
+    "order.type": "renewal",
+  },
+});
+```
+
+## Validação em desenvolvimento
+
+Ative `validateSemanticMetrics` junto com `debug` na configuração da SDK. A SDK passa a alertar quando uma métrica sair do catálogo canônico, sem bloquear o envio.

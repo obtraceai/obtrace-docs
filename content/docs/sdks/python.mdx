@@ -12,23 +12,32 @@ pip install obtrace-sdk
 ## Configuration
 
 ```python
-from obtrace import init_sdk
+from obtrace_sdk import ObtraceClient, ObtraceConfig, SemanticMetrics
 
-client = init_sdk(
-    api_key=os.getenv("OBTRACE_API_KEY"),
-    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-    tenant_id=os.getenv("OBTRACE_TENANT_ID"),
-    project_id=os.getenv("OBTRACE_PROJECT_ID"),
-    service_name="python-api",
-    app_id="python-api",
+client = ObtraceClient(
+    ObtraceConfig(
+        api_key=os.getenv("OBTRACE_API_KEY"),
+        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
+        project_id=os.getenv("OBTRACE_PROJECT_ID"),
+        service_name="python-api",
+        app_id="python-api",
+        validate_semantic_metrics=True,
+        debug=True,
+    )
 )
 ```
 
 ## Quick start
 
-1. Initialize SDK on app startup.
-2. Emit one log, one metric, and one span.
-3. Flush on graceful shutdown.
+```python
+client.log("info", "service.started")
+client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.42)
+client.span("db.query", attrs={"db.system": "postgresql", "feature.name": "checkout"})
+client.flush()
+```
+
+See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 
 ## Production hardening
 

@@ -14,7 +14,7 @@ bun add @obtrace/sdk-js
 ## Configuration
 
 ```ts
-import { initNodeSDK } from "@obtrace/sdk-js/node";
+import { initNodeSDK, SemanticMetrics } from "@obtrace/sdk-js/node";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
@@ -23,7 +23,9 @@ const sdk = initNodeSDK({
   projectId: process.env.OBTRACE_PROJECT_ID,
   env: process.env.OBTRACE_ENV,
   appId: "api",
-  serviceName: "api"
+  serviceName: "api",
+  validateSemanticMetrics: true,
+  debug: true
 });
 ```
 
@@ -31,10 +33,18 @@ const sdk = initNodeSDK({
 
 ```ts
 sdk.log("info", "service.started");
-sdk.metric("request.count", 1);
-sdk.span("db.query");
+sdk.metric(SemanticMetrics.runtimeCpuUtilization, 0.42);
+sdk.span({
+  name: "db.query",
+  attrs: {
+    "db.system": "postgresql",
+    "feature.name": "checkout"
+  }
+});
 await sdk.shutdown();
 ```
+
+See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
 
 ## Production hardening
 
