@@ -7,7 +7,6 @@ import { DocsI18nProvider } from "../../components/docs-i18n-provider";
 import { isSupportedLocale } from "../../../lib/i18n";
 import { AISearch, AISearchPanel, AISearchTrigger } from "../../../components/search";
 import { MessageCircleIcon } from "lucide-react";
-import { buttonVariants } from "../../../components/ui/button";
 
 type Props = {
   children: ReactNode;
@@ -30,11 +29,7 @@ export default async function LocalizedDocsLayout({ children, params }: Props) {
           {children}
         </DocsLayout>
         <AISearchTrigger
-          className={buttonVariants({
-            color: "primary",
-            size: "sm",
-            className: "gap-2 rounded-full px-4 py-2 font-semibold shadow-2xl z-[2147483647]"
-          })}
+          className="gap-2 rounded-full border border-fd-border/70 bg-fd-foreground px-4 py-3 text-sm font-semibold text-fd-background shadow-2xl hover:opacity-95"
           position="float"
         >
           <MessageCircleIcon className="size-4" />

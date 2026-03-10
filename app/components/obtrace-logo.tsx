@@ -4,7 +4,7 @@ export function ObtraceLogo() {
       fill="currentColor"
       viewBox="430 190 1190 450"
       xmlns="http://www.w3.org/2000/svg"
-      className="obtrace-logo block h-8 w-full max-w-[192px] text-[hsl(var(--fd-primary))] dark:text-[hsl(var(--fd-foreground))]"
+      className="obtrace-logo block h-5 w-full max-w-[115px] text-[hsl(var(--fd-primary))] dark:text-[hsl(var(--fd-foreground))]"
       aria-label="Obtrace"
       role="img"
     >

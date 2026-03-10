@@ -6,7 +6,7 @@ export function baseOptions(): BaseLayoutProps {
     i18n: true,
     nav: {
       title: (
-        <span className="obtrace-docs-title inline-flex max-w-[min(44vw,192px)] items-center overflow-hidden">
+        <span className="inline-flex items-center">
           <ObtraceLogo />
         </span>
       ),
