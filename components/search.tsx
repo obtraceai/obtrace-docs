@@ -230,7 +230,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           key="bn"
           type="submit"
           aria-label={t.askQuestion}
-          className="inline-flex size-[3.25rem] min-h-[3.25rem] min-w-[3.25rem] shrink-0 items-center justify-center self-center rounded-full bg-fd-primary p-0 text-fd-primary-foreground transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-[35px] w-[35px] min-h-[35px] min-w-[35px] shrink-0 items-center justify-center self-center rounded-full bg-fd-primary p-0 text-fd-primary-foreground transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           disabled={input.length === 0}
           onClick={(event) => {
             event.preventDefault();
