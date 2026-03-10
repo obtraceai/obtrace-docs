@@ -4,50 +4,91 @@
 @import "fumadocs-ui/style.css";
 
 :root {
-  --fd-background: 210 20% 98%;
-  --fd-foreground: 220 25% 10%;
-  --fd-card: 0 0% 100%;
-  --fd-card-foreground: 220 25% 10%;
-  --fd-popover: 0 0% 100%;
-  --fd-popover-foreground: 220 25% 10%;
-  --fd-primary: 215 65% 25%;
-  --fd-primary-foreground: 0 0% 100%;
-  --fd-secondary: 215 20% 96%;
-  --fd-secondary-foreground: 220 25% 10%;
-  --fd-muted: 215 18% 95%;
-  --fd-muted-foreground: 220 10% 46%;
-  --fd-accent: 215 25% 93%;
-  --fd-accent-foreground: 215 65% 45%;
-  --fd-border: 215 12% 92%;
-  --fd-ring: 215 65% 45%;
+  --background: 210 20% 98%;
+  --foreground: 220 25% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 10%;
+  --primary: 215 65% 25%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 215 20% 96%;
+  --secondary-foreground: 220 25% 10%;
+  --muted: 215 18% 95%;
+  --muted-foreground: 220 10% 46%;
+  --accent: 215 25% 93%;
+  --accent-foreground: 215 65% 45%;
+  --border: 215 12% 92%;
+  --ring: 215 65% 45%;
 }
 
 .dark {
-  --fd-background: 222 22% 6%;
-  --fd-foreground: 210 25% 92%;
-  --fd-card: 222 20% 9%;
-  --fd-card-foreground: 210 25% 92%;
-  --fd-popover: 222 20% 9%;
-  --fd-popover-foreground: 210 25% 92%;
-  --fd-primary: 215 65% 58%;
-  --fd-primary-foreground: 222 22% 6%;
-  --fd-secondary: 220 16% 14%;
-  --fd-secondary-foreground: 210 25% 88%;
-  --fd-muted: 220 16% 14%;
-  --fd-muted-foreground: 215 15% 58%;
-  --fd-accent: 220 16% 18%;
-  --fd-accent-foreground: 215 65% 58%;
-  --fd-border: 220 12% 18%;
-  --fd-ring: 215 65% 58%;
+  --background: 222 22% 6%;
+  --foreground: 210 25% 92%;
+  --card: 222 20% 9%;
+  --card-foreground: 210 25% 92%;
+  --popover: 222 20% 9%;
+  --popover-foreground: 210 25% 92%;
+  --primary: 215 65% 58%;
+  --primary-foreground: 222 22% 6%;
+  --secondary: 220 16% 14%;
+  --secondary-foreground: 210 25% 88%;
+  --muted: 220 16% 14%;
+  --muted-foreground: 215 15% 58%;
+  --accent: 220 16% 18%;
+  --accent-foreground: 215 65% 58%;
+  --border: 220 12% 18%;
+  --ring: 215 65% 58%;
 }
 
 body {
   margin: 0;
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  background: hsl(var(--fd-background));
-  color: hsl(var(--fd-foreground));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 html.dark {
   color-scheme: dark;
+}
+
+.docs-ai-fab {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 2147483646;
+  display: inline-flex;
+  min-height: 3rem;
+  min-width: 7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.docs-ai-fab[data-state="open"] {
+  opacity: 0;
+  transform: translateY(0.5rem);
+}
+
+.docs-ai-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483640;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(1px);
+}
+
+.docs-ai-sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 2147483641;
+  height: 100dvh;
+  width: min(460px, 100vw);
+  overflow: hidden;
+  border-left: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.35);
 }

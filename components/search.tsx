@@ -362,8 +362,7 @@ export function AISearchTrigger({
       data-state={open ? 'open' : 'closed'}
       className={cn(
         position === 'float' && [
-          'fixed bottom-6 right-6 z-[2147483646] inline-flex min-h-12 w-auto min-w-28 items-center justify-center gap-2 transition-all pointer-events-auto',
-          open && 'translate-y-2 opacity-0',
+          'docs-ai-fab transition-all',
         ],
         className,
       )}
@@ -403,14 +402,14 @@ export function AISearchPanel() {
       <Presence present={open}>
         <div
           data-state={open ? 'open' : 'closed'}
-          className="fixed inset-0 z-[2147483640] bg-black/45 backdrop-blur-[1px] data-[state=open]:animate-fd-fade-in data-[state=closed]:animate-fd-fade-out"
+          className="docs-ai-overlay data-[state=open]:animate-fd-fade-in data-[state=closed]:animate-fd-fade-out"
           onClick={() => setOpen(false)}
         />
       </Presence>
       <Presence present={open}>
         <div
           className={cn(
-            'fixed top-0 right-0 h-dvh w-[min(460px,100vw)] overflow-hidden z-[2147483641] bg-fd-card text-fd-card-foreground border-l shadow-2xl',
+            'docs-ai-sheet',
             open
               ? 'animate-fd-dialog-in lg:animate-[ask-ai-open_200ms]'
               : 'animate-fd-dialog-out lg:animate-[ask-ai-close_200ms]',
