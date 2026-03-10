@@ -1,13 +1,25 @@
 {
   "mcp_version": "1.0",
   "name": "obtrace-docs-service",
-  "description": "MCP context metadata for Obtrace documentation service",
+  "description": "MCP context metadata for Obtrace documentation service and AI-first support surfaces",
   "resources": [
     { "id": "readme", "path": "README.md", "description": "Service overview" },
     { "id": "docs-home", "path": "content/docs/index.mdx", "description": "Docs home content" },
+    { "id": "docs-quickstart", "path": "content/docs/quickstart.mdx", "description": "Canonical quickstart" },
+    { "id": "docs-workflow-install", "path": "content/docs/workflows/instrument-your-first-service.mdx", "description": "Install your first service workflow" },
+    { "id": "docs-workflow-incident", "path": "content/docs/workflows/investigate-your-first-incident.mdx", "description": "Investigate your first incident workflow" },
+    { "id": "docs-workflow-remediation", "path": "content/docs/workflows/enable-remediation-prs-safely.mdx", "description": "Enable remediation PRs safely workflow" },
+    { "id": "docs-concepts-detection", "path": "content/docs/concepts/how-obtrace-detects-incidents.mdx", "description": "Incident detection concept" },
+    { "id": "docs-concepts-root-cause", "path": "content/docs/concepts/how-root-cause-analysis-works.mdx", "description": "Root cause analysis concept" },
+    { "id": "docs-concepts-pr", "path": "content/docs/concepts/how-ai-decides-to-open-a-pr.mdx", "description": "How AI decides to open a PR" },
+    { "id": "docs-security-permissions", "path": "content/docs/security/github-app-permissions.mdx", "description": "GitHub App permissions" },
+    { "id": "docs-security-access", "path": "content/docs/security/repository-access-model.mdx", "description": "Repository access model" },
+    { "id": "docs-api-overview", "path": "content/docs/api-reference/overview.mdx", "description": "API reference overview" },
     { "id": "docs-auth", "path": "content/docs/auth.mdx", "description": "Authentication setup" },
     { "id": "docs-how-to-use", "path": "content/docs/how-to-use.mdx", "description": "Recommended rollout flow" },
     { "id": "docs-mcp", "path": "content/docs/mcp.mdx", "description": "MCP documentation page" },
+    { "id": "llm-txt", "path": "llm.txt", "description": "Machine-readable authority index for LLMs" },
+    { "id": "mcp-json", "path": "mcp.json", "description": "MCP manifest for documentation resources" },
     { "id": "requirements", "path": "../docs/requirements-docs-service-v1.md", "description": "Normative requirements" }
   ]
 }

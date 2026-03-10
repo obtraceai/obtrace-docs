@@ -149,6 +149,8 @@ export function AISearchInput(props: ComponentProps<'form'>) {
   const isLoading = status === 'streaming' || status === 'submitted';
   const onStart = (e?: SyntheticEvent) => {
     e?.preventDefault();
+    e?.stopPropagation();
+    if (input.trim().length === 0) return;
     void sendMessage({ text: input });
     setInput('');
   };
@@ -172,18 +174,23 @@ export function AISearchInput(props: ComponentProps<'form'>) {
   }, [isLoading]);
 
   return (
-    <form {...props} className={cn('flex items-end gap-2 p-2', props.className)} onSubmit={onStart}>
+    <form
+      {...props}
+      className={cn('flex items-center gap-3 p-2', props.className)}
+      onClick={(event) => event.stopPropagation()}
+      onSubmit={onStart}
+    >
       <Input
         value={input}
         placeholder={isLoading ? t.aiAnswering : t.askQuestion}
         autoFocus
-        className="min-h-24 p-3"
+        className="h-11 px-4"
         disabled={status === 'streaming' || status === 'submitted'}
         onChange={(e) => {
           setInput(e.target.value);
         }}
         onKeyDown={(event) => {
-          if (!event.shiftKey && event.key === 'Enter') {
+          if (event.key === 'Enter') {
             onStart(event);
           }
         }}
@@ -195,7 +202,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           className={cn(
             buttonVariants({
               color: 'secondary',
-              className: 'mb-1 shrink-0 rounded-full gap-2',
+              className: 'h-11 shrink-0 rounded-full px-4',
             }),
           )}
           onClick={stop}
@@ -210,7 +217,7 @@ export function AISearchInput(props: ComponentProps<'form'>) {
           className={cn(
             buttonVariants({
               color: 'primary',
-              className: 'mb-1 h-10 w-10 shrink-0 rounded-full px-0',
+              className: 'h-11 w-11 shrink-0 rounded-full px-0',
             }),
           )}
           disabled={input.length === 0}
@@ -262,24 +269,18 @@ function List(props: Omit<ComponentProps<'div'>, 'dir'>) {
   );
 }
 
-function Input(props: ComponentProps<'textarea'>) {
-  const ref = useRef<HTMLDivElement>(null);
-  const shared = cn('col-start-1 row-start-1', props.className);
-
+function Input(props: ComponentProps<'input'>) {
   return (
-    <div className="grid min-w-0 flex-1 rounded-xl border bg-fd-secondary text-fd-secondary-foreground">
-      <textarea
+    <div className="min-w-0 flex-1 rounded-full border bg-fd-secondary text-fd-secondary-foreground">
+      <input
         id="nd-ai-input"
+        type="text"
         {...props}
-        rows={4}
         className={cn(
-          'resize-none bg-transparent placeholder:text-fd-muted-foreground focus-visible:outline-none',
-          shared,
+          'w-full rounded-full bg-transparent placeholder:text-fd-muted-foreground focus-visible:outline-none',
+          props.className,
         )}
       />
-      <div ref={ref} className={cn(shared, 'break-all invisible')}>
-        {`${props.value?.toString() ?? ''}\n`}
-      </div>
     </div>
   );
 }
@@ -415,6 +416,7 @@ export function AISearchPanel() {
               ? 'animate-fd-dialog-in lg:animate-[ask-ai-open_200ms]'
               : 'animate-fd-dialog-out lg:animate-[ask-ai-close_200ms]',
           )}
+          onClick={(event) => event.stopPropagation()}
         >
           <div className="flex flex-col size-full p-3">
             <AISearchPanelHeader />
