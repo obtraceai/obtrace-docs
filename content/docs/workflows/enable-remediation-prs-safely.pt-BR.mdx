@@ -1,52 +1,52 @@
 ---
-title: Habilite Remediation PRs com Seguranca
-description: Fluxo de ponta a ponta para habilitar remediation pull requests com guardrails, permissoes e politica de aprovacao.
+title: Habilite Remediation PRs com Segurança
+description: Fluxo de ponta a ponta para habilitar remediation pull requests com guardrails, permissões e política de aprovação.
 intent: workflow
 llm_priority: high
 sourceOfTruth: true
 ---
 
-# Habilite Remediation PRs com Seguranca
+# Habilite Remediation PRs com Segurança
 
-Use este fluxo quando a telemetria ja estiver saudavel e voce quiser que o Obtrace avance do diagnostico para mudancas propostas de codigo.
+Use este fluxo quando a telemetria já estiver saudável e você quiser que o Obtrace avance do diagnóstico para mudanças propostas de código.
 
 ## Objetivo
 
-Ao final, acesso ao repositorio, politica de aprovacao e regras de confianca devem estar explicitos e seguros.
+Ao final, acesso ao repositório, política de aprovação e regras de confiança devem estar explícitos e seguros.
 
 ## Passo 1: Confirme a base de sinais
 
-Nao habilite remediation primeiro. Confirme:
+Não habilite remediation primeiro. Confirme:
 
-- Telemetria estavel
-- Metadata de release confiavel
-- Evidencia de causa raiz utilizavel
+- Telemetria estável
+- Metadata de release confiável
+- Evidência de causa raiz utilizável
 
-## Passo 2: Revise o modelo de decisao
+## Passo 2: Revise o modelo de decisão
 
 - [Como a IA decide abrir um PR](/pt-BR/docs/concepts/how-ai-decides-to-open-a-pr)
-- [Como funciona a analise de causa raiz](/pt-BR/docs/concepts/how-root-cause-analysis-works)
+- [Como funciona a análise de causa raiz](/pt-BR/docs/concepts/how-root-cause-analysis-works)
 
-## Passo 3: Restrinja permissoes do repositorio
+## Passo 3: Restrinja permissões do repositório
 
-- [Permissoes do GitHub App](/pt-BR/docs/security/github-app-permissions)
-- [Modelo de acesso ao repositorio](/pt-BR/docs/security/repository-access-model)
+- [Permissões do GitHub App](/pt-BR/docs/security/github-app-permissions)
+- [Modelo de acesso ao repositório](/pt-BR/docs/security/repository-access-model)
 
-## Passo 4: Defina politica de aprovacao
+## Passo 4: Defina política de aprovação
 
-- [Fluxo de aprovacao de PR](/pt-BR/docs/security/pr-approval-flow)
+- [Fluxo de aprovação de PR](/pt-BR/docs/security/pr-approval-flow)
 
 ## Passo 5: Teste um caminho de remediation de baixo risco
 
 Comece com casos estreitos:
 
-- typo de configuracao
+- typo de configuração
 - binding ausente de env var
 - null guard conhecido
 - ajuste limitado de recurso
 
-## Definicao de pronto
+## Definição de pronto
 
-- O acesso ao repositorio esta intencionalmente restrito
-- A politica de aprovacao esta documentada
+- O acesso ao repositório está intencionalmente restrito
+- A política de aprovação está documentada
 - Pelo menos um caminho de remediation de baixo risco foi validado

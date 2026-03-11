@@ -1,13 +1,13 @@
 ---
-title: Catalogo de SDKs
-description: Escolha o caminho certo de rollout do SDK com base no que voce quer instrumentar primeiro.
+title: Catálogo de SDKs
+description: Escolha o caminho certo de rollout do SDK com base no que você quer instrumentar primeiro.
 ---
 
-# Catalogo de SDKs
+# Catálogo de SDKs
 
-Use esta pagina para decidir o que instrumentar primeiro. Nao comece apenas pela linguagem favorita. Comece pelo valor do incidente e pelo risco operacional.
+Use esta página para decidir o que instrumentar primeiro. Não comece apenas pela linguagem favorita. Comece pelo valor do incidente e pelo risco operacional.
 
-## Escolha pela intencao
+## Escolha pela intenção
 
 ### Quero visibilidade de incidentes no backend primeiro
 
@@ -19,20 +19,20 @@ Melhores pontos de partida:
 - [Node/Bun](/pt-BR/docs/sdks/node-bun)
 - [.NET](/pt-BR/docs/sdks/dotnet)
 
-Depois siga [Instrumente seu primeiro servico](/pt-BR/docs/workflows/instrument-your-first-service).
+Depois siga [Instrumente seu primeiro serviço](/pt-BR/docs/workflows/instrument-your-first-service).
 
-### Quero correlacao de frontend com backend
+### Quero correlação de frontend com backend
 
 Comece com:
 
 - [Browser SDK](/pt-BR/docs/sdks/browser)
 - [Node/Bun SDK](/pt-BR/docs/sdks/node-bun)
 
-### Quero orientacao por plataforma
+### Quero orientação por plataforma
 
 Comece com:
 
-- [Visao geral de ambientes](/pt-BR/docs/environments/overview)
+- [Visão geral de ambientes](/pt-BR/docs/environments/overview)
 - [Kubernetes](/pt-BR/docs/environments/kubernetes)
 - [Serverless](/pt-BR/docs/environments/serverless)
 
@@ -40,18 +40,18 @@ Comece com:
 
 | SDK | Status | Runtime principal | Melhor primeiro uso |
 |---|---|---|---|
-| JavaScript Browser | GA | Browser | Telemetria de UX e correlacao frontend/backend |
-| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers e servicos JS |
-| Python | GA | CPython | FastAPI, Django, workers e servicos de dados |
-| Go | GA | Go 1.21+ | APIs de baixa latencia e servicos de alto throughput |
-| Java | GA | JVM 17+ | Spring e microservicos enterprise |
+| JavaScript Browser | GA | Browser | Telemetria de UX e correlação frontend/backend |
+| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers e serviços JS |
+| Python | GA | CPython | FastAPI, Django, workers e serviços de dados |
+| Go | GA | Go 1.21+ | APIs de baixa latência e serviços de alto throughput |
+| Java | GA | JVM 17+ | Spring e microsserviços enterprise |
 | .NET | GA | .NET 8+ | APIs ASP.NET e backends enterprise |
 | PHP | GA | PHP 8.2+ | Laravel e web backends tradicionais |
 | Ruby | GA | Ruby 3.2+ | Rails e jobs de background |
 
-## Regras de decisao
+## Regras de decisão
 
-1. Comece pelo servico que mais dói quando falha.
-2. Prefira um servico relevante em producao a muitos rollouts parciais.
+1. Comece pelo serviço que mais dói quando falha.
+2. Prefira um serviço relevante em produção a muitos rollouts parciais.
 3. Adicione metadata de release antes de expandir.
-4. So depois avance para ambiente e seguranca.
+4. So depois avance para ambiente e segurança.

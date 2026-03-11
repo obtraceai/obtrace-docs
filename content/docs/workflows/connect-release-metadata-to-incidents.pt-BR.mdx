@@ -8,36 +8,36 @@ sourceOfTruth: true
 
 # Conectar Metadata de Release aos Incidentes
 
-Use este fluxo quando o time ja consegue ver telemetria, mas ainda perde tempo respondendo qual release introduziu o problema.
+Use este fluxo quando o time já consegue ver telemetria, mas ainda perde tempo respondendo qual release introduziu o problema.
 
 ## Objetivo
 
-Ao final, todo incidente deve ser rastreavel para uma janela de release, faixa de commits e contexto de deploy.
+Ao final, todo incidente deve ser rastreável para uma janela de release, faixa de commits e contexto de deploy.
 
-## Passo 1: Defina os campos minimos
+## Passo 1: Defina os campos mínimos
 
-Propague no minimo:
+Propague no mínimo:
 
 - commit SHA
 - build id
 - horario do deploy
 - ambiente
-- versao do servico
+- versão do serviço
 
-## Passo 2: Adicione a integracao de CI/CD
+## Passo 2: Adicione a integração de CI/CD
 
-Comece com [Integracao GitHub Actions](/pt-BR/docs/integrations/github-actions).
+Comece com [Integração GitHub Actions](/pt-BR/docs/integrations/github-actions).
 
 ## Passo 3: Verifique que a telemetria carrega o contexto
 
 Resultado esperado:
 
-- traces filtraveis por versao
+- traces filtraveis por versão
 - timeline do incidente mostrando proximidade com deploy
-- regressao comparavel ao ultimo release saudavel
+- regressao comparavel ao ultimo release saudável
 
-## Definicao de pronto
+## Definição de pronto
 
 - Incidentes filtraveis por janela de release
-- Comparacao entre release quebrado e release saudavel
-- RCA nao mais separada do historico de deploy
+- Comparação entre release quebrado e release saudável
+- RCA não mais separada do histórico de deploy

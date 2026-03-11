@@ -61,7 +61,7 @@ const roleName: Record<string, Record<string, string>> = {
     assistant: 'Obtrace AI',
   },
   'pt-BR': {
-    user: 'voce',
+    user: 'você',
     assistant: 'IA da Obtrace',
   },
 };
@@ -342,7 +342,9 @@ function Message({ message, ...props }: { message: UIMessage } & ComponentProps<
               className="block text-xs rounded-lg border p-3 hover:bg-fd-accent hover:text-fd-accent-foreground"
             >
               <p className="font-medium">{item.title}</p>
-              <p className="text-fd-muted-foreground">Reference {item.label}</p>
+              <p className="text-fd-muted-foreground">
+                {locale === 'pt-BR' ? 'Referência' : 'Reference'} {item.label}
+              </p>
             </Link>
           ))}
         </div>

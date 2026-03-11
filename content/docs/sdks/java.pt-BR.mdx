@@ -28,7 +28,7 @@ cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
 ObtraceClient client = new ObtraceClient(cfg);
 ```
 
-## Identidade canonica de runtime
+## Identidade canônica de runtime
 
 ```java
 Map<String, Object> runtimeAttrs = Map.of(
@@ -55,5 +55,5 @@ client.flush();
 ## Checklist de validação
 
 - request e erro usam o mesmo `service`, `env` e `version`
-- nao existe `401/403` na submissao OTLP
+- não existe `401/403` na submissao OTLP
 - incidentes JVM podem ser ligados a uma release

@@ -1,26 +1,26 @@
 ---
-title: Instrumente Seu Primeiro Servico
-description: Fluxo completo para escolher SDK, configurar auth, anexar contexto de ambiente e validar telemetria em producao.
+title: Instrumente Seu Primeiro Serviço
+description: Fluxo completo para escolher SDK, configurar auth, anexar contexto de ambiente e validar telemetria em produção.
 intent: workflow
 llm_priority: high
 sourceOfTruth: true
 ---
 
-# Instrumente Seu Primeiro Servico
+# Instrumente Seu Primeiro Serviço
 
-Use este fluxo quando voce quiser um servico realmente instrumentado e operacionalmente util, nao apenas enviando eventos crus.
+Use este fluxo quando você quiser um serviço realmente instrumentado e operacionalmente útil, não apenas enviando eventos crus.
 
 ## Objetivo
 
-Ao final, um servico relevante em producao deve emitir telemetria com identidade estavel, contexto de deploy e evidencia suficiente para diagnostico de incidentes.
+Ao final, um serviço relevante em produção deve emitir telemetria com identidade estável, contexto de deploy e evidência suficiente para diagnóstico de incidentes.
 
-## Passo 1: Escolha o servico certo
+## Passo 1: Escolha o serviço certo
 
-Comece pelo servico de maior risco operacional, nao pelo demo mais facil.
+Comece pelo serviço de maior risco operacional, não pelo demo mais fácil.
 
 ## Passo 2: Escolha o SDK
 
-Use o [Catalogo de SDKs](/pt-BR/docs/sdks/catalog) e depois abra a pagina da linguagem:
+Use o [Catálogo de SDKs](/pt-BR/docs/sdks/catalog) e depois abra a página da linguagem:
 
 - [Python](/pt-BR/docs/sdks/python)
 - [Go](/pt-BR/docs/sdks/go)
@@ -28,11 +28,11 @@ Use o [Catalogo de SDKs](/pt-BR/docs/sdks/catalog) e depois abra a pagina da lin
 - [Node/Bun](/pt-BR/docs/sdks/node-bun)
 - [.NET](/pt-BR/docs/sdks/dotnet)
 
-## Passo 3: Configure autenticacao
+## Passo 3: Configure autenticação
 
-Leia [Autenticacao](/pt-BR/docs/auth) e use credenciais separadas por ambiente.
+Leia [Autenticação](/pt-BR/docs/auth) e use credenciais separadas por ambiente.
 
-## Passo 4: Adicione atributos canonicos
+## Passo 4: Adicione atributos canônicos
 
 Todo evento deve conter:
 
@@ -98,7 +98,7 @@ O core do ingest espera:
 
 - [Kubernetes](/pt-BR/docs/environments/kubernetes)
 - [Serverless](/pt-BR/docs/environments/serverless)
-- Guias especificos em `/pt-BR/docs/integrations/*`
+- Guias específicos em `/pt-BR/docs/integrations/*`
 
 ## Passo 6: Valide antes de expandir
 
@@ -106,21 +106,21 @@ Resultado esperado:
 
 - Telemetria continua
 - Sem erros `401/403`
-- Tags estaveis entre restarts e deploys
+- Tags estáveis entre restarts e deploys
 - Pelo menos um trace ou erro com contexto suficiente
 
-Validacao minima:
+Validação mínima:
 
 1. Rode um request real.
 2. Confira um log e um trace com o mesmo `service`, `env` e `version`.
-3. Confira `region` se o servico for multi-regiao.
+3. Confira `region` se o serviço for multi-região.
 
 ## Passo 7: Anexe contexto de release
 
 Antes de escalar rollout, conecte metadata de CI/CD para amarrar incidentes a deploys.
 
-## Definicao de pronto
+## Definição de pronto
 
-- Um servico em producao instrumentado
+- Um serviço em produção instrumentado
 - Filtro limpo por `service`, `env` e `version`
-- Evidencia suficiente para diagnostico sem arqueologia manual
+- Evidência suficiente para diagnóstico sem arqueologia manual

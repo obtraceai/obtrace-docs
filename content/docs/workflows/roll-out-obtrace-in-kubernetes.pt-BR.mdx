@@ -1,6 +1,6 @@
 ---
 title: Fazer Rollout do Obtrace em Kubernetes
-description: Fluxo completo de Kubernetes para instrumentar workloads, anexar contexto de rollout e tornar falhas de pod diagnosticaveis.
+description: Fluxo completo de Kubernetes para instrumentar workloads, anexar contexto de rollout e tornar falhas de pod diagnosticáveis.
 intent: workflow
 llm_priority: high
 sourceOfTruth: true
@@ -8,19 +8,19 @@ sourceOfTruth: true
 
 # Fazer Rollout do Obtrace em Kubernetes
 
-Use este fluxo quando seus principais incidentes em producao acontecem em Kubernetes e voce precisa ligar sintomas de pod a mudancas de aplicacao e release.
+Use este fluxo quando seus principais incidentes em produção acontecem em Kubernetes e você precisa ligar sintomas de pod a mudanças de aplicação e release.
 
 ## Objetivo
 
-Ao final, incidentes de Kubernetes devem ser diagnosticaveis por um caminho unico que conecta pods, deploys, traces e contexto de repositorio.
+Ao final, incidentes de Kubernetes devem ser diagnosticáveis por um caminho único que conecta pods, deploys, traces e contexto de repositório.
 
 ## Passo 1: Comece por um deployment critico
 
-Escolha um deployment com custo real de incidente. Nao comece pelo cluster inteiro.
+Escolha um deployment com custo real de incidente. Não comece pelo cluster inteiro.
 
-## Passo 2: Instrumente a aplicacao primeiro
+## Passo 2: Instrumente a aplicação primeiro
 
-Complete [Instrumente seu primeiro servico](/pt-BR/docs/workflows/instrument-your-first-service).
+Complete [Instrumente seu primeiro serviço](/pt-BR/docs/workflows/instrument-your-first-service).
 
 ## Passo 3: Anexe identidade de Kubernetes
 
@@ -50,8 +50,8 @@ Confirme que o setup explica:
 - OOMKilled
 - falhas de readiness probe
 
-## Definicao de pronto
+## Definição de pronto
 
 - Um deployment Kubernetes totalmente diagnosticavel
 - Falhas de pod ligadas a metadata de deploy
-- O time consegue sair do sintoma de restart para uma causa provavel sem navegacao cega
+- O time consegue sair do sintoma de restart para uma causa provável sem navegação cega

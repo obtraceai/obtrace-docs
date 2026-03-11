@@ -36,7 +36,7 @@ O SDK Go envia para:
 - `POST /otlp/v1/traces`
 - `POST /otlp/v1/metrics`
 
-## Identidade canonica de runtime
+## Identidade canônica de runtime
 
 ```go
 runtimeAttrs := map[string]any{
@@ -74,7 +74,7 @@ http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 
 ## Checklist de validação
 
-- `service`, `env` e `version` estaveis entre deploys
+- `service`, `env` e `version` estáveis entre deploys
 - um caminho real emite log e trace
-- nao existe `401/403` na submissao OTLP
-- `cloud.region` existe quando o servico e multi-regiao
+- não existe `401/403` na submissao OTLP
+- `cloud.region` existe quando o serviço é multi-região

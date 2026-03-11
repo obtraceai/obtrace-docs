@@ -1,6 +1,6 @@
 ---
 title: Como a IA Decide Abrir um PR
-description: Thresholds de confianca, guardrails e checagens de permissao que controlam pull requests de remediation.
+description: Thresholds de confiança, guardrails e checagens de permissão que controlam pull requests de remediation.
 category: concept
 intent: explanation
 llm_priority: high
@@ -9,29 +9,29 @@ sourceOfTruth: true
 
 # Como a IA Decide Abrir um PR
 
-O Obtrace nao abre pull requests com base apenas na deteccao de anomalias. O sistema exige uma hipotese coerente de causa raiz, evidencias suficientes e uma politica de repositorio que permita a acao.
+O Obtrace não abre pull requests com base apenas na detecção de anomalias. O sistema exige uma hipótese coerente de causa raiz, evidências suficientes e uma política de repositório que permita a ação.
 
-## Entradas da decisao
+## Entradas da decisão
 
-- Confianca do incidente
-- Confianca da causa raiz
-- Existencia de um caminho de remediation restrito
-- Permissoes de repositorio e branch
-- Politica de aprovacao do ambiente
+- Confiança do incidente
+- Confiança da causa raiz
+- Existência de um caminho de remediation restrito
+- Permissões de repositório e branch
+- Política de aprovação do ambiente
 
-## Fluxo de decisao
+## Fluxo de decisão
 
 ```mermaid
 flowchart TD
   A[Incidente detectado] --> B[Causa raiz ranqueada]
-  B --> C[Checagem de politica e permissao]
+  B --> C[Checagem de política e permissão]
   C --> D[Plano de remediation]
-  D --> E[Abrir PR ou exigir aprovacao]
+  D --> E[Abrir PR ou exigir aprovação]
 ```
 
-## Quando o Obtrace nao deve abrir um PR
+## Quando o Obtrace não deve abrir um PR
 
-- A confianca esta abaixo do threshold
-- O blast radius esta incerto
-- O app do repositorio nao tem permissao
-- A mudanca e destrutiva ou de alto risco
+- A confiança está abaixo do threshold
+- O blast radius está incerto
+- O app do repositório não tem permissão
+- A mudança é destrutiva ou de alto risco

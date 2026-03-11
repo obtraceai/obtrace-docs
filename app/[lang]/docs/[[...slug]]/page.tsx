@@ -32,7 +32,7 @@ export default async function LocalizedDocsSlugPage({ params }: Props) {
         lang: p.lang,
         slug: p.slug,
         title: mdxPage.data.title,
-        description: mdxPage.data.description ?? "Obtrace documentation page"
+        description: mdxPage.data.description ?? (p.lang === "pt-BR" ? "Página da documentação da Obtrace" : "Obtrace documentation page")
       })) }} />
       <DocsTitle>{mdxPage.data.title}</DocsTitle>
       {mdxPage.data.description ? <DocsDescription>{mdxPage.data.description}</DocsDescription> : null}
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     lang: p.lang,
     slug: p.slug,
     title: mdxPage.data.title,
-    description: mdxPage.data.description ?? "Obtrace documentation page"
+    description: mdxPage.data.description ?? (p.lang === "pt-BR" ? "Página da documentação da Obtrace" : "Obtrace documentation page")
   });
 }
 

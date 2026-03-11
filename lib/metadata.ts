@@ -55,7 +55,8 @@ export function buildDocsSchema(input: {
 }) {
   const path = getDocsPath(input.lang, input.slug);
   const url = `${DOCS_SITE_URL}${path}`;
-  const breadcrumbNames = ["Docs", ...(input.slug ?? []).map((segment) => segment.replace(/-/g, " "))];
+  const docsLabel = input.lang === "pt-BR" ? "Documentação" : "Docs";
+  const breadcrumbNames = [docsLabel, ...(input.slug ?? []).map((segment) => segment.replace(/-/g, " "))];
   const breadcrumbPaths = breadcrumbNames.map((_, index) => {
     if (index === 0) {
       return `${DOCS_SITE_URL}${getDocsPath(input.lang)}`;
