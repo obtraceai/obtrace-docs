@@ -1,0 +1,91 @@
+---
+title: Getting Started
+description: Install the Obtrace MCP server and connect it to your AI assistant in under 5 minutes.
+intent: workflow
+llm_priority: high
+---
+
+# Getting Started with Obtrace MCP
+
+## Prerequisites
+
+- An Obtrace account with API access
+- An API key ([create one in Settings → API Keys](https://app.obtrace.ai/settings/api-keys))
+- Go 1.24+ (for building from source) or Docker
+
+## Install
+
+### Option 1: Go install
+
+```bash
+go install github.com/obtraceai/obtrace-mcp/cmd/mcp-obtrace@latest
+```
+
+### Option 2: Docker
+
+```bash
+docker pull ghcr.io/obtraceai/mcp-obtrace:latest
+```
+
+### Option 3: From source
+
+```bash
+git clone https://github.com/obtraceai/obtrace-mcp.git
+cd obtrace-mcp
+make build
+# Binary at ./bin/mcp-obtrace
+```
+
+## Quick start
+
+### 1. Set credentials
+
+```bash
+export OBTRACE_URL=https://api.obtrace.ai
+export OBTRACE_API_KEY=obt_your_api_key_here
+```
+
+### 2. Run the server
+
+```bash
+# Stdio mode (for Claude Desktop, Claude Code, Cursor, etc.)
+mcp-obtrace
+
+# SSE mode (for web-based integrations)
+mcp-obtrace --transport sse --addr :8000
+
+# Streamable HTTP mode
+mcp-obtrace --transport streamable-http --addr :8000
+```
+
+### 3. Connect your AI assistant
+
+See the [Claude Integration](/docs/mcp/claude-integration) page for detailed setup instructions.
+
+## Verify the connection
+
+Once connected, try these prompts in your AI assistant:
+
+- "List my Obtrace projects"
+- "Show me error logs from the last hour"
+- "Search for traces with latency over 1 second in the checkout service"
+- "Summarize system health for the last 24 hours"
+
+## Docker Compose
+
+For self-hosted or development setups:
+
+```bash
+cd obtrace-mcp
+cp .env.example .env
+# Edit .env with your Obtrace URL and API key
+docker compose up
+```
+
+The server will be available at `http://localhost:8000/sse`.
+
+## What's next
+
+- [Configuration](/docs/mcp/configuration) — Fine-tune transport, TLS, and tool categories
+- [Tools Reference](/docs/mcp/tools-reference) — Explore all 44 available tools
+- [Security](/docs/mcp/security) — Production hardening and access control

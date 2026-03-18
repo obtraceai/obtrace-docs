@@ -15,6 +15,7 @@
     "ruby",
     "rust",
     "kotlin",
-    "swift"
+    "swift",
+    "db-agent"
   ]
 }

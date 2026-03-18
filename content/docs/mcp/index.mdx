@@ -1,0 +1,71 @@
+---
+title: MCP Server
+description: Connect AI agents and IDE assistants to your Obtrace observability data via the Model Context Protocol.
+intent: reference
+llm_priority: high
+---
+
+# Obtrace MCP Server
+
+The Obtrace MCP Server exposes your observability platform as a set of [Model Context Protocol](https://modelcontextprotocol.io/) tools. This allows AI assistants like Claude, IDE extensions, and custom agents to query logs, traces, metrics, manage incidents, and run AI-powered analysis directly against your Obtrace data.
+
+## Why MCP?
+
+Instead of copy-pasting log snippets or manually querying dashboards, your AI assistant can:
+
+- **Query logs, traces, and metrics** using natural language or ClickHouse SQL
+- **Investigate incidents** by correlating signals across services
+- **Run root cause analysis** powered by Obtrace AI
+- **Manage dashboards and alerts** without leaving the conversation
+- **Browse session replays** to understand user-facing issues
+
+## Capabilities at a glance
+
+| Category | Tools | Access |
+|---|---|---|
+| Logs | `query_logs`, `search_logs`, `list_log_services`, `log_stats`, `log_patterns` | Read |
+| Traces | `query_traces`, `get_trace`, `search_traces`, `list_trace_services`, `list_trace_operations`, `trace_stats` | Read |
+| Metrics | `query_metrics`, `list_metric_names`, `get_metric_metadata`, `list_metric_label_names`, `list_metric_label_values`, `metric_stats` | Read |
+| Dashboards | `list_dashboards`, `get_dashboard`, `get_dashboard_panels`, `create_dashboard`, `update_dashboard`, `delete_dashboard` | Read + Write |
+| Incidents | `list_incidents`, `get_incident`, `get_incident_timeline`, `create_incident`, `update_incident`, `add_incident_activity` | Read + Write |
+| Alerts | `list_alert_rules`, `get_alert_rule`, `list_alert_history`, `list_contact_points`, `create_alert_rule`, `update_alert_rule`, `delete_alert_rule` | Read + Write |
+| AI | `chat_to_query`, `root_cause_analysis`, `summarize`, `autofix` | Read + Write |
+| Projects | `list_projects`, `get_project`, `list_apps`, `list_teams`, `list_users` | Read |
+| Replay | `list_replay_sessions`, `get_replay_session`, `get_replay_events`, `get_replay_errors` | Read |
+| Search | `global_search`, `generate_deeplink` | Read |
+
+Write tools are disabled by default and require the `--enable-write` flag.
+
+## Architecture
+
+```
+Claude / IDE / Agent
+       │
+       │ MCP Protocol (stdio, SSE, or HTTP)
+       │
+  ┌────▼────┐
+  │ obtrace │
+  │   mcp   │
+  └────┬────┘
+       │
+       │ HTTPS + Bearer token
+       │
+  ┌────▼──────────────┐
+  │  Obtrace API      │
+  │  (query-gateway,  │
+  │   control-plane,  │
+  │   ai-service)     │
+  └───────────────────┘
+```
+
+## Next steps
+
+- [Getting Started](/docs/mcp/getting-started) — Install and connect in under 5 minutes
+- [Configuration](/docs/mcp/configuration) — Environment variables, TLS, and tool categories
+- [Claude Integration](/docs/mcp/claude-integration) — Setup for Claude Desktop and Claude Code
+- [Tools Reference](/docs/mcp/tools-reference) — Full parameter documentation for all 44 tools
+- [Security](/docs/mcp/security) — Authentication, write gating, and best practices
+
+## Source code
+
+The MCP server is open source: [github.com/obtraceai/obtrace-mcp](https://github.com/obtraceai/obtrace-mcp)

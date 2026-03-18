@@ -1,0 +1,165 @@
+---
+title: Claude Integration
+description: Step-by-step setup for Claude Desktop, Claude Code, and other MCP-compatible AI tools.
+intent: workflow
+llm_priority: high
+---
+
+# Claude Integration
+
+## Claude Desktop
+
+Add the Obtrace MCP server to your Claude Desktop configuration.
+
+### Using Go binary
+
+Edit `~/.claude/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "command": "mcp-obtrace",
+      "env": {
+        "OBTRACE_URL": "https://api.obtrace.ai",
+        "OBTRACE_API_KEY": "obt_your_api_key_here",
+        "OBTRACE_PROJECT_ID": "your-project-id"
+      }
+    }
+  }
+}
+```
+
+### Using Docker
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "OBTRACE_URL=https://api.obtrace.ai",
+        "-e", "OBTRACE_API_KEY=obt_your_api_key_here",
+        "ghcr.io/obtraceai/mcp-obtrace:latest",
+        "--transport", "stdio"
+      ]
+    }
+  }
+}
+```
+
+### Using SSE (remote server)
+
+If you have the MCP server running remotely:
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "url": "http://your-server:8000/sse"
+    }
+  }
+}
+```
+
+## Claude Code
+
+Claude Code automatically discovers MCP servers from `~/.claude/mcp.json`. Use the same configuration as Claude Desktop above.
+
+You can also add a project-level configuration in `.claude/mcp.json` at the root of your repository:
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "command": "mcp-obtrace",
+      "env": {
+        "OBTRACE_URL": "https://api.obtrace.ai",
+        "OBTRACE_API_KEY": "obt_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+## Cursor, Windsurf, and other IDEs
+
+Any MCP-compatible IDE can connect to the Obtrace MCP server. The configuration follows the same pattern:
+
+1. Install the binary: `go install github.com/obtraceai/obtrace-mcp/cmd/mcp-obtrace@latest`
+2. Configure the MCP server in your IDE's MCP settings with the `command` and `env` fields above.
+
+## Example prompts
+
+Once connected, try these prompts with your AI assistant:
+
+### Investigating an issue
+
+> "Show me all ERROR logs from the checkout-service in the last 2 hours"
+
+> "Find traces with latency over 2 seconds in the payment-gateway"
+
+> "What's the root cause of the spike in errors between 14:00 and 14:30 UTC today?"
+
+### Understanding system health
+
+> "Summarize system health for the last 24 hours"
+
+> "Which services have the highest error rates right now?"
+
+> "Show me the p99 latency trend for the API gateway this week"
+
+### Managing incidents
+
+> "List all open critical incidents"
+
+> "Create an incident for the checkout service outage with severity critical"
+
+> "Add a note to incident INC-1234: root cause identified as database connection pool exhaustion"
+
+### Exploring data
+
+> "What metrics are available for the user-service?"
+
+> "List all services sending traces"
+
+> "Show me log patterns from the last hour grouped by frequency"
+
+## Write tools
+
+By default, the MCP server runs in read-only mode. To enable write operations (create/update/delete dashboards, incidents, alerts, etc.), start the server with:
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "command": "mcp-obtrace",
+      "args": ["--enable-write"],
+      "env": {
+        "OBTRACE_URL": "https://api.obtrace.ai",
+        "OBTRACE_API_KEY": "obt_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+## Limiting tool categories
+
+To restrict which tools are available:
+
+```json
+{
+  "mcpServers": {
+    "obtrace": {
+      "command": "mcp-obtrace",
+      "args": ["--enabled-tools", "logs,traces,incidents,ai"],
+      "env": {
+        "OBTRACE_URL": "https://api.obtrace.ai",
+        "OBTRACE_API_KEY": "obt_your_api_key_here"
+      }
+    }
+  }
+}
+```

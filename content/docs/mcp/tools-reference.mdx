@@ -1,0 +1,322 @@
+---
+title: Tools Reference
+description: Complete reference for all 44 MCP tools exposed by the Obtrace MCP server.
+intent: reference
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Tools Reference
+
+All tools accept an optional `project_id` parameter to override the default project scope.
+
+## Logs
+
+### `query_logs`
+
+Execute a ClickHouse SQL query against `otel_logs`.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | Yes | ClickHouse SQL query |
+| `time_from` | string | Yes | Start time (RFC3339) |
+| `time_to` | string | Yes | End time (RFC3339) |
+| `limit` | integer | No | Max rows (default 100) |
+
+### `search_logs`
+
+Full-text search across log message bodies.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `text` | string | Yes | Search query |
+| `severity` | string[] | No | Filter by severity (ERROR, WARN, INFO) |
+| `service` | string | No | Service name filter |
+| `time_from` | string | Yes | Start time (RFC3339) |
+| `time_to` | string | Yes | End time (RFC3339) |
+| `limit` | integer | No | Max results (default 50) |
+
+### `list_log_services`
+
+List all services that emitted logs in a time range.
+
+### `log_stats`
+
+Aggregated log statistics grouped by severity, service, or other fields.
+
+### `log_patterns`
+
+Discover recurring log patterns using automatic clustering.
+
+---
+
+## Traces
+
+### `query_traces`
+
+Execute a ClickHouse SQL query against `otel_traces`.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | Yes | ClickHouse SQL query |
+| `time_from` | string | Yes | Start time (RFC3339) |
+| `time_to` | string | Yes | End time (RFC3339) |
+| `limit` | integer | No | Max rows (default 100) |
+
+### `get_trace`
+
+Get the full trace tree for a specific trace ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `trace_id` | string | Yes | The trace ID to retrieve |
+
+### `search_traces`
+
+Search for traces by service, operation, latency, and status.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `service` | string | No | Service name filter |
+| `operation` | string | No | Operation/span name filter |
+| `min_latency` | string | No | Minimum duration (e.g. `500ms`, `1s`) |
+| `max_latency` | string | No | Maximum duration |
+| `status` | string | No | Span status: `OK`, `ERROR`, `UNSET` |
+| `time_from` | string | Yes | Start time (RFC3339) |
+| `time_to` | string | Yes | End time (RFC3339) |
+| `limit` | integer | No | Max traces (default 50) |
+
+### `list_trace_services`
+
+List services that emitted trace spans.
+
+### `list_trace_operations`
+
+List operations for a given service.
+
+### `trace_stats`
+
+Aggregated trace statistics (p50/p95/p99 latency, error rates, throughput).
+
+---
+
+## Metrics
+
+### `query_metrics`
+
+Execute a ClickHouse SQL query against `otel_metrics`.
+
+### `list_metric_names`
+
+List available metric names with optional prefix and service filters.
+
+### `get_metric_metadata`
+
+Get metadata for a metric (type, description, unit).
+
+### `list_metric_label_names`
+
+List label names for a metric.
+
+### `list_metric_label_values`
+
+List values for a specific label of a metric.
+
+### `metric_stats`
+
+Time-series statistics with configurable aggregation step.
+
+---
+
+## Dashboards
+
+### `list_dashboards`
+
+List dashboards with optional search query.
+
+### `get_dashboard`
+
+Get full dashboard details including panel configurations.
+
+### `get_dashboard_panels`
+
+Get the panel configurations and queries for a dashboard.
+
+### `create_dashboard` (write)
+
+Create a new dashboard.
+
+### `update_dashboard` (write)
+
+Update a dashboard's name or description.
+
+### `delete_dashboard` (write)
+
+Delete a dashboard by its ID.
+
+---
+
+## Incidents
+
+### `list_incidents`
+
+List incidents with filters for status, severity, service, and time range.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `status` | string | No | `open`, `acknowledged`, `resolved`, `closed` |
+| `severity` | string | No | `critical`, `high`, `medium`, `low` |
+| `service` | string | No | Affected service name |
+| `time_from` | string | No | Start time (RFC3339) |
+| `time_to` | string | No | End time (RFC3339) |
+| `limit` | integer | No | Max incidents (default 50) |
+
+### `get_incident`
+
+Get full details of a specific incident.
+
+### `get_incident_timeline`
+
+Get the activity timeline for an incident.
+
+### `create_incident` (write)
+
+Create a new incident with title, severity, and affected service.
+
+### `update_incident` (write)
+
+Update incident status or severity.
+
+### `add_incident_activity` (write)
+
+Add a note, status change, or action to an incident's timeline.
+
+---
+
+## Alerts
+
+### `list_alert_rules`
+
+List alert rules with status and severity filters.
+
+### `get_alert_rule`
+
+Get full alert rule details including query and conditions.
+
+### `list_alert_history`
+
+View alert firing and resolution history.
+
+### `list_contact_points`
+
+List notification contact points (email, Slack, PagerDuty, etc.).
+
+### `create_alert_rule` (write)
+
+Create a new alert rule.
+
+### `update_alert_rule` (write)
+
+Update an alert rule.
+
+### `delete_alert_rule` (write)
+
+Delete an alert rule.
+
+---
+
+## AI
+
+### `chat_to_query`
+
+Convert natural language into a ClickHouse query against Obtrace telemetry data.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `question` | string | Yes | Natural language question |
+| `query_type` | string | No | Target: `logs`, `traces`, `metrics` |
+
+### `root_cause_analysis`
+
+AI-powered root cause analysis correlating logs, traces, and metrics.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `incident_id` | string | No | Incident to analyze |
+| `trace_id` | string | No | Trace to analyze |
+| `service` | string | No | Affected service |
+| `time_from` | string | Yes | Start of issue window (RFC3339) |
+| `time_to` | string | Yes | End of issue window (RFC3339) |
+| `symptoms` | string | No | Description of observed symptoms |
+
+### `summarize`
+
+Generate an AI summary of system health for a time window.
+
+### `autofix` (write)
+
+Generate code fix suggestions for errors found in telemetry data.
+
+---
+
+## Projects
+
+### `list_projects`
+
+List all accessible projects.
+
+### `get_project`
+
+Get project details including apps and environments.
+
+### `list_apps`
+
+List applications within a project.
+
+### `list_teams`
+
+List organization teams.
+
+### `list_users`
+
+List organization users.
+
+---
+
+## Replay
+
+### `list_replay_sessions`
+
+List session replay recordings with filters.
+
+### `get_replay_session`
+
+Get session metadata and summary.
+
+### `get_replay_events`
+
+Get the event timeline for a session (clicks, navigations, network, errors).
+
+### `get_replay_errors`
+
+Get all errors from a replay session.
+
+---
+
+## Search
+
+### `global_search`
+
+Search across all Obtrace data types with a single query.
+
+### `generate_deeplink`
+
+Generate a deep link URL to a specific view in the Obtrace UI.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | string | Yes | `logs`, `traces`, `metrics`, `dashboard`, `incident`, `replay` |
+| `resource_id` | string | No | Resource ID |
+| `query` | string | No | Pre-filled query |
+| `time_from` | string | No | Start time |
+| `time_to` | string | No | End time |

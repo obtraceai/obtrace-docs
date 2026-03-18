@@ -1,0 +1,69 @@
+---
+title: Security
+description: Authentication, write-tool gating, TLS, and production best practices for the Obtrace MCP server.
+intent: reference
+---
+
+# MCP Security
+
+## Authentication
+
+The MCP server authenticates to the Obtrace API using an API key sent as a `Bearer` token. The key is read from the `OBTRACE_API_KEY` environment variable at startup.
+
+**Best practices:**
+
+- Never hardcode API keys in configuration files committed to version control
+- Use environment variables or secret managers (Vault, AWS Secrets Manager, etc.)
+- Create distinct API keys per environment (dev, staging, prod)
+- Create distinct API keys per developer when possible
+- Rotate keys regularly and revoke unused keys
+
+## Write-tool gating
+
+Write/mutating tools (create, update, delete operations) are **disabled by default**. They must be explicitly enabled:
+
+```bash
+mcp-obtrace --enable-write
+```
+
+This prevents accidental modifications when the MCP server is used for read-only exploration or investigation. For production use, prefer read-only mode unless write access is specifically needed.
+
+## Scoping
+
+All API requests include tenant and project scope:
+
+- **Tenant ID** (`OBTRACE_TENANT_ID`): Limits all queries to a single tenant
+- **Project ID** (`OBTRACE_PROJECT_ID`): Limits queries to a single project
+
+These can be overridden per-tool via the `project_id` parameter, but the API key's permissions still apply. A key scoped to Project A cannot access Project B's data regardless of the `project_id` parameter.
+
+## TLS
+
+For production deployments:
+
+- Always use HTTPS for the Obtrace API URL
+- Consider mTLS for additional authentication in high-security environments
+- Never set `OBTRACE_TLS_INSECURE=true` in production
+
+```bash
+export OBTRACE_TLS_CA_CERT=/etc/ssl/obtrace/ca.pem
+export OBTRACE_TLS_CLIENT_CERT=/etc/ssl/obtrace/client.pem
+export OBTRACE_TLS_CLIENT_KEY=/etc/ssl/obtrace/client-key.pem
+```
+
+## Network security
+
+When running the MCP server in SSE or HTTP mode:
+
+- Bind to localhost or an internal network interface, not `0.0.0.0` in production
+- Place behind a reverse proxy with authentication if exposing to a network
+- Use firewall rules to restrict access to authorized clients only
+
+## Recommendations
+
+1. Run with the minimum required tool categories enabled (`--enabled-tools`)
+2. Use read-only API keys when write tools are not needed
+3. Monitor API key usage via Obtrace audit logs
+4. Use per-developer API keys for local MCP setups
+5. Prefer stdio transport for single-user setups (no network exposure)
+6. Review the [Obtrace security documentation](/docs/security/overview) for platform-level security controls

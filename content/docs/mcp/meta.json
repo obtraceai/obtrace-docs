@@ -1,0 +1,13 @@
+{
+  "title": "MCP Server",
+  "icon": "Cpu",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "configuration",
+    "tools-reference",
+    "claude-integration",
+    "security"
+  ]
+}

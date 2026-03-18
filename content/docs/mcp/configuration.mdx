@@ -1,0 +1,96 @@
+---
+title: Configuration
+description: Environment variables, TLS, transport modes, and tool category management for the Obtrace MCP server.
+intent: reference
+---
+
+# Configuration
+
+## Environment variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OBTRACE_URL` | Yes | — | Base URL of the Obtrace API (e.g. `https://api.obtrace.ai`) |
+| `OBTRACE_API_KEY` | Yes | — | API key for authentication |
+| `OBTRACE_TENANT_ID` | No | — | Default tenant ID for scoping all queries |
+| `OBTRACE_PROJECT_ID` | No | — | Default project ID for scoping queries |
+| `OBTRACE_TLS_CA_CERT` | No | — | Path to custom CA certificate file |
+| `OBTRACE_TLS_CLIENT_CERT` | No | — | Path to client certificate for mTLS |
+| `OBTRACE_TLS_CLIENT_KEY` | No | — | Path to client key for mTLS |
+| `OBTRACE_TLS_INSECURE` | No | `false` | Skip TLS certificate verification (dev only) |
+
+## CLI flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--transport` | `stdio` | Transport mode: `stdio`, `sse`, `streamable-http` |
+| `--addr` | `:8000` | Listen address for SSE and streamable-http |
+| `--enabled-tools` | all | Comma-separated list of tool categories to enable |
+| `--enable-write` | `false` | Enable write/mutating tools |
+| `--disable-<category>` | `false` | Disable a specific tool category |
+| `--version` | — | Print version and exit |
+
+## Transport modes
+
+### Stdio (default)
+
+Used for local CLI and IDE integrations. The MCP client launches the server as a subprocess and communicates over stdin/stdout.
+
+```bash
+mcp-obtrace
+```
+
+### SSE (Server-Sent Events)
+
+HTTP-based transport for web integrations. The server exposes an SSE endpoint for receiving tool results.
+
+```bash
+mcp-obtrace --transport sse --addr :8000
+```
+
+### Streamable HTTP
+
+Alternative HTTP transport for environments that don't support SSE.
+
+```bash
+mcp-obtrace --transport streamable-http --addr :8000
+```
+
+## Tool categories
+
+Enable or disable tool categories selectively:
+
+```bash
+# Only logs and traces
+mcp-obtrace --enabled-tools logs,traces
+
+# Everything except replay
+mcp-obtrace --disable-replay
+
+# Only incidents with write access
+mcp-obtrace --enable-write --enabled-tools incidents
+```
+
+Available categories: `logs`, `traces`, `metrics`, `dashboards`, `incidents`, `alerts`, `ai`, `projects`, `replay`, `search`.
+
+## TLS / mTLS
+
+For production deployments requiring mutual TLS:
+
+```bash
+export OBTRACE_TLS_CA_CERT=/etc/ssl/obtrace/ca.pem
+export OBTRACE_TLS_CLIENT_CERT=/etc/ssl/obtrace/client.pem
+export OBTRACE_TLS_CLIENT_KEY=/etc/ssl/obtrace/client-key.pem
+mcp-obtrace
+```
+
+Never use `OBTRACE_TLS_INSECURE=true` in production.
+
+## Scoping
+
+All API requests are scoped by tenant and project:
+
+- **Tenant ID**: Set globally via `OBTRACE_TENANT_ID` or per-tool via the `project_id` parameter
+- **Project ID**: Set globally via `OBTRACE_PROJECT_ID` or per-tool via the `project_id` parameter
+
+Per-tool `project_id` overrides the global default when provided.

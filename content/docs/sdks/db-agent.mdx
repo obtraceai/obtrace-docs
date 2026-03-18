@@ -1,0 +1,219 @@
+---
+title: Database Agent
+description: Collect database metrics with zero code changes. Supports PostgreSQL, MySQL, MongoDB, Redis, Cassandra, Elasticsearch, ClickHouse, CockroachDB, and SQLite.
+---
+
+## Overview
+
+The Obtrace Database Agent is a standalone binary that connects to your databases, collects native performance metrics, and sends them as OTLP telemetry to the Obtrace ingest endpoint. No code changes, no sidecars injected into your application -- just point the agent at your databases and it handles the rest.
+
+## Install
+
+### Docker (recommended)
+
+```bash
+docker run -d \
+  --name obtrace-db-agent \
+  -e OBTRACE_INGEST_URL=https://ingest.obtrace.ai \
+  -e OBTRACE_API_KEY=your-api-key \
+  -e DB_CONNECTIONS='[{"type":"postgres","dsn":"postgres://user:pass@host:5432/mydb","name":"primary"}]' \
+  ghcr.io/obtrace/db-agent:latest
+```
+
+### Binary
+
+```bash
+go install github.com/obtrace/db-agent@latest
+```
+
+### From source
+
+```bash
+git clone https://github.com/obtrace/db-agent.git
+cd db-agent
+go build -o db-agent .
+```
+
+## Configuration
+
+Set these environment variables:
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `OBTRACE_API_KEY` | Yes | Project API key | -- |
+| `DB_CONNECTIONS` | Yes | JSON array of database connections | -- |
+| `OBTRACE_INGEST_URL` | No | Ingest endpoint URL | `http://localhost:8080` |
+| `OBTRACE_APP_ID` | No | Application identifier | `db-agent` |
+| `OBTRACE_ENV` | No | Environment name | `prod` |
+| `OBTRACE_TENANT_ID` | No | Tenant identifier | -- |
+| `OBTRACE_PROJECT_ID` | No | Project identifier | -- |
+| `COLLECT_INTERVAL_MS` | No | Collection interval (ms) | `15000` |
+
+## Supported Databases
+
+| Database | Type Value | DSN Format | Metrics Source |
+|----------|-----------|------------|----------------|
+| PostgreSQL | `postgres` | `postgres://user:pass@host:5432/db` | pg_stat_database, pg_stat_activity |
+| MySQL | `mysql` | `user:pass@tcp(host:3306)/db` | SHOW GLOBAL STATUS |
+| MongoDB | `mongodb` | `mongodb://user:pass@host:27017/admin` | serverStatus |
+| Redis | `redis` | `redis://:pass@host:6379/0` | INFO, SLOWLOG |
+| Cassandra | `cassandra` | `http://host:8778/jolokia` | Jolokia JMX / Prometheus |
+| Elasticsearch | `elasticsearch` | `http://host:9200` | _cluster/health, _nodes/stats |
+| ClickHouse | `clickhouse` | `http://user:pass@host:8123` | system.metrics, system.events |
+| CockroachDB | `cockroachdb` | `http://host:8080` | _status/vars |
+| SQLite | `sqlite` | `/path/to/db.sqlite` | PRAGMA queries |
+
+## Quick Start with Docker Compose
+
+Monitor a PostgreSQL database and Redis cache:
+
+```yaml
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  obtrace-db-agent:
+    image: ghcr.io/obtrace/db-agent:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      OBTRACE_INGEST_URL: https://ingest.obtrace.ai
+      OBTRACE_API_KEY: ${OBTRACE_API_KEY}
+      OBTRACE_ENV: staging
+      DB_CONNECTIONS: >-
+        [
+          {"type": "postgres", "dsn": "postgres://postgres:secret@postgres:5432/postgres?sslmode=disable", "name": "primary"},
+          {"type": "redis", "dsn": "redis://redis:6379/0", "name": "cache"}
+        ]
+```
+
+```bash
+export OBTRACE_API_KEY=obt_live_abc123
+docker compose up -d
+```
+
+## Metrics Reference
+
+### PostgreSQL
+
+| Metric | Description |
+|--------|-------------|
+| `db.postgres.connections.active` | Active backend connections |
+| `db.postgres.connections.idle` | Idle connections |
+| `db.postgres.connections.waiting` | Connections waiting on locks |
+| `db.postgres.cache_hit_ratio` | Buffer cache hit ratio (0-1) |
+| `db.postgres.deadlocks` | Total deadlocks detected |
+| `db.postgres.database_size_bytes` | Total database size |
+| `db.postgres.longest_query_seconds` | Longest running query duration |
+| `db.postgres.table.dead_tuples` | Dead tuples per table (top 10) |
+| `db.postgres.query.avg_time_ms` | Average query time (pg_stat_statements) |
+
+### MySQL
+
+| Metric | Description |
+|--------|-------------|
+| `db.mysql.connections.current` | Connected threads |
+| `db.mysql.connections.running` | Running threads |
+| `db.mysql.queries.total` | Total queries |
+| `db.mysql.queries.slow` | Slow queries |
+| `db.mysql.innodb.buffer_pool_hit_ratio` | InnoDB buffer pool hit ratio |
+| `db.mysql.innodb.row_lock_waits` | Row lock wait events |
+
+### MongoDB
+
+| Metric | Description |
+|--------|-------------|
+| `db.mongodb.connections.current` | Current connections |
+| `db.mongodb.opcounters.query` | Query operations |
+| `db.mongodb.memory.resident_mb` | Resident memory |
+| `db.mongodb.replication.lag_seconds` | Replication lag |
+
+### Redis
+
+| Metric | Description |
+|--------|-------------|
+| `db.redis.connections.connected` | Connected clients |
+| `db.redis.memory.used_bytes` | Memory usage |
+| `db.redis.keyspace.hit_ratio` | Keyspace hit ratio |
+| `db.redis.commands.per_second` | Operations per second |
+| `db.redis.evictions` | Evicted keys |
+
+### Cassandra
+
+| Metric | Description |
+|--------|-------------|
+| `db.cassandra.read_latency_ms` | Client read latency |
+| `db.cassandra.write_latency_ms` | Client write latency |
+| `db.cassandra.compactions_pending` | Pending compactions |
+| `db.cassandra.connections.active` | Active connections |
+
+### Elasticsearch
+
+| Metric | Description |
+|--------|-------------|
+| `db.elasticsearch.cluster.status` | Cluster health (0=green, 1=yellow, 2=red) |
+| `db.elasticsearch.cluster.shards.unassigned` | Unassigned shards |
+| `db.elasticsearch.jvm.heap_used_bytes` | JVM heap usage |
+| `db.elasticsearch.indices.search_latency_ms` | Average search latency |
+
+### ClickHouse
+
+| Metric | Description |
+|--------|-------------|
+| `db.clickhouse.queries.active` | Running queries |
+| `db.clickhouse.queries.failed` | Failed queries |
+| `db.clickhouse.memory.tracked_bytes` | Memory tracked |
+| `db.clickhouse.parts.active` | Active data parts |
+
+### CockroachDB
+
+| Metric | Description |
+|--------|-------------|
+| `db.cockroachdb.sql.query_count` | Total SQL queries |
+| `db.cockroachdb.sql.latency_p99` | SQL latency (p99) |
+| `db.cockroachdb.ranges.unavailable` | Unavailable ranges |
+| `db.cockroachdb.liveness.live_nodes` | Live nodes |
+
+### SQLite
+
+| Metric | Description |
+|--------|-------------|
+| `db.sqlite.database_size_bytes` | Database file size |
+| `db.sqlite.page_size` | Page size |
+| `db.sqlite.cache_size_pages` | Cache size |
+
+## Production Hardening
+
+1. Use **read-only database credentials** for all monitored databases.
+2. Set collection interval to **15-60 seconds** for production workloads.
+3. Set container resource limits -- **64MB memory** is sufficient for most setups.
+4. The agent limits itself to **2 connections per database** to minimize overhead.
+5. Store API keys in secret managers, never in plain config files.
+
+## Troubleshooting
+
+- **401 from ingest**: Verify `OBTRACE_API_KEY` matches your project.
+- **No metrics**: Check DSN format, network access, and database user permissions.
+- **High memory**: Reduce `DB_CONNECTIONS` count or increase `COLLECT_INTERVAL_MS`.
+- **Collector skipped**: Check agent logs for the specific error (bad DSN, auth failure, network).
+- **pg_stat_statements missing**: Install the extension with `CREATE EXTENSION pg_stat_statements`.
+
+## Validation Checklist
+
+- Database metrics appear in the Obtrace dashboard within one collection interval
+- No `401/403` errors in agent logs
+- Agent memory stays under 64MB
+- Read-only credentials are used for all databases
+
+See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
