@@ -1,0 +1,219 @@
+---
+title: Database Agent
+description: Colete métricas de banco de dados sem alterar código. Suporta PostgreSQL, MySQL, MongoDB, Redis, Cassandra, Elasticsearch, ClickHouse, CockroachDB e SQLite.
+---
+
+## Visão geral
+
+O Obtrace Database Agent é um binário standalone que conecta nos seus bancos de dados, coleta métricas nativas de performance e envia como telemetria OTLP para o endpoint de ingestão do Obtrace. Sem alteração de código, sem sidecars injetados na aplicação -- basta apontar o agent pros seus bancos e ele cuida do resto.
+
+## Instalação
+
+### Docker (recomendado)
+
+```bash
+docker run -d \
+  --name obtrace-db-agent \
+  -e OBTRACE_INGEST_URL=https://ingest.obtrace.ai \
+  -e OBTRACE_API_KEY=sua-api-key \
+  -e DB_CONNECTIONS='[{"type":"postgres","dsn":"postgres://user:pass@host:5432/mydb","name":"primary"}]' \
+  ghcr.io/obtrace/db-agent:latest
+```
+
+### Binário
+
+```bash
+go install github.com/obtrace/db-agent@latest
+```
+
+### A partir do código fonte
+
+```bash
+git clone https://github.com/obtrace/db-agent.git
+cd db-agent
+go build -o db-agent .
+```
+
+## Configuração
+
+Defina estas variáveis de ambiente:
+
+| Variável | Obrigatória | Descrição | Padrão |
+|----------|-------------|-----------|--------|
+| `OBTRACE_API_KEY` | Sim | API key do projeto | -- |
+| `DB_CONNECTIONS` | Sim | JSON array de conexões de banco | -- |
+| `OBTRACE_INGEST_URL` | Não | URL do endpoint de ingestão | `http://localhost:8080` |
+| `OBTRACE_APP_ID` | Não | Identificador da aplicação | `db-agent` |
+| `OBTRACE_ENV` | Não | Nome do ambiente | `prod` |
+| `OBTRACE_TENANT_ID` | Não | Identificador do tenant | -- |
+| `OBTRACE_PROJECT_ID` | Não | Identificador do projeto | -- |
+| `COLLECT_INTERVAL_MS` | Não | Intervalo de coleta (ms) | `15000` |
+
+## Bancos suportados
+
+| Banco | Valor do tipo | Formato da DSN | Fonte de métricas |
+|-------|--------------|----------------|-------------------|
+| PostgreSQL | `postgres` | `postgres://user:pass@host:5432/db` | pg_stat_database, pg_stat_activity |
+| MySQL | `mysql` | `user:pass@tcp(host:3306)/db` | SHOW GLOBAL STATUS |
+| MongoDB | `mongodb` | `mongodb://user:pass@host:27017/admin` | serverStatus |
+| Redis | `redis` | `redis://:pass@host:6379/0` | INFO, SLOWLOG |
+| Cassandra | `cassandra` | `http://host:8778/jolokia` | Jolokia JMX / Prometheus |
+| Elasticsearch | `elasticsearch` | `http://host:9200` | _cluster/health, _nodes/stats |
+| ClickHouse | `clickhouse` | `http://user:pass@host:8123` | system.metrics, system.events |
+| CockroachDB | `cockroachdb` | `http://host:8080` | _status/vars |
+| SQLite | `sqlite` | `/path/to/db.sqlite` | PRAGMA queries |
+
+## Quick Start com Docker Compose
+
+Monitore um PostgreSQL e um Redis:
+
+```yaml
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  obtrace-db-agent:
+    image: ghcr.io/obtrace/db-agent:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      OBTRACE_INGEST_URL: https://ingest.obtrace.ai
+      OBTRACE_API_KEY: ${OBTRACE_API_KEY}
+      OBTRACE_ENV: staging
+      DB_CONNECTIONS: >-
+        [
+          {"type": "postgres", "dsn": "postgres://postgres:secret@postgres:5432/postgres?sslmode=disable", "name": "primary"},
+          {"type": "redis", "dsn": "redis://redis:6379/0", "name": "cache"}
+        ]
+```
+
+```bash
+export OBTRACE_API_KEY=obt_live_abc123
+docker compose up -d
+```
+
+## Referência de métricas
+
+### PostgreSQL
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.postgres.connections.active` | Conexões backend ativas |
+| `db.postgres.connections.idle` | Conexões idle |
+| `db.postgres.connections.waiting` | Conexões aguardando locks |
+| `db.postgres.cache_hit_ratio` | Taxa de hit do buffer cache (0-1) |
+| `db.postgres.deadlocks` | Total de deadlocks detectados |
+| `db.postgres.database_size_bytes` | Tamanho total do banco |
+| `db.postgres.longest_query_seconds` | Duração da query mais longa em execução |
+| `db.postgres.table.dead_tuples` | Dead tuples por tabela (top 10) |
+| `db.postgres.query.avg_time_ms` | Tempo médio de query (pg_stat_statements) |
+
+### MySQL
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.mysql.connections.current` | Threads conectadas |
+| `db.mysql.connections.running` | Threads executando |
+| `db.mysql.queries.total` | Total de queries |
+| `db.mysql.queries.slow` | Queries lentas |
+| `db.mysql.innodb.buffer_pool_hit_ratio` | Taxa de hit do buffer pool InnoDB |
+| `db.mysql.innodb.row_lock_waits` | Eventos de espera por row lock |
+
+### MongoDB
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.mongodb.connections.current` | Conexões atuais |
+| `db.mongodb.opcounters.query` | Operações de query |
+| `db.mongodb.memory.resident_mb` | Memória residente |
+| `db.mongodb.replication.lag_seconds` | Lag de replicação |
+
+### Redis
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.redis.connections.connected` | Clientes conectados |
+| `db.redis.memory.used_bytes` | Uso de memória |
+| `db.redis.keyspace.hit_ratio` | Taxa de hit do keyspace |
+| `db.redis.commands.per_second` | Operações por segundo |
+| `db.redis.evictions` | Keys removidas por eviction |
+
+### Cassandra
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.cassandra.read_latency_ms` | Latência de leitura do cliente |
+| `db.cassandra.write_latency_ms` | Latência de escrita do cliente |
+| `db.cassandra.compactions_pending` | Compactações pendentes |
+| `db.cassandra.connections.active` | Conexões ativas |
+
+### Elasticsearch
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.elasticsearch.cluster.status` | Saúde do cluster (0=green, 1=yellow, 2=red) |
+| `db.elasticsearch.cluster.shards.unassigned` | Shards não atribuídos |
+| `db.elasticsearch.jvm.heap_used_bytes` | Uso de heap JVM |
+| `db.elasticsearch.indices.search_latency_ms` | Latência média de busca |
+
+### ClickHouse
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.clickhouse.queries.active` | Queries em execução |
+| `db.clickhouse.queries.failed` | Queries com falha |
+| `db.clickhouse.memory.tracked_bytes` | Memória rastreada |
+| `db.clickhouse.parts.active` | Data parts ativas |
+
+### CockroachDB
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.cockroachdb.sql.query_count` | Total de queries SQL |
+| `db.cockroachdb.sql.latency_p99` | Latência SQL (p99) |
+| `db.cockroachdb.ranges.unavailable` | Ranges indisponíveis |
+| `db.cockroachdb.liveness.live_nodes` | Nodes ativos |
+
+### SQLite
+
+| Métrica | Descrição |
+|---------|-----------|
+| `db.sqlite.database_size_bytes` | Tamanho do arquivo do banco |
+| `db.sqlite.page_size` | Tamanho da página |
+| `db.sqlite.cache_size_pages` | Tamanho do cache |
+
+## Hardening para produção
+
+1. Use **credenciais read-only** para todos os bancos monitorados.
+2. Configure o intervalo de coleta entre **15-60 segundos** para workloads de produção.
+3. Defina limites de recursos do container -- **64MB de memória** é suficiente para a maioria dos setups.
+4. O agent limita a **2 conexões por banco** para minimizar overhead.
+5. Armazene API keys em secret managers, nunca em arquivos de config em texto plano.
+
+## Troubleshooting
+
+- **401 do ingest**: Verifique se `OBTRACE_API_KEY` corresponde ao seu projeto.
+- **Sem métricas**: Confira formato da DSN, acesso de rede e permissões do usuário do banco.
+- **Memória alta**: Reduza a quantidade de `DB_CONNECTIONS` ou aumente `COLLECT_INTERVAL_MS`.
+- **Collector pulado**: Verifique os logs do agent para o erro específico (DSN inválida, falha de auth, rede).
+- **pg_stat_statements ausente**: Instale a extensão com `CREATE EXTENSION pg_stat_statements`.
+
+## Checklist de validação
+
+- Métricas de banco aparecem no dashboard do Obtrace dentro de um intervalo de coleta
+- Sem erros `401/403` nos logs do agent
+- Memória do agent fica abaixo de 64MB
+- Credenciais read-only usadas para todos os bancos
+
+Veja também: [Métricas Semânticas](/pt-BR/docs/sdks/semantic-metrics)
