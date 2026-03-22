@@ -69,4 +69,4 @@ jobs:
           script: |
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             crictl pull ghcr.io/obtraceai/docs:latest 2>/dev/null || true
-            kubectl rollout restart deployment/docs -n obtrace 2>/dev/null || true
+            kubectl rollout restart deployment/obtrace-docs -n obtrace 2>/dev/null || true
