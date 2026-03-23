@@ -14,6 +14,7 @@ on:
       - "Dockerfile"
       - "next.config.mjs"
       - "tsconfig.json"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 concurrency:
@@ -34,8 +35,9 @@ jobs:
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             cd /tmp && rm -rf obtrace-docs && git clone https://github.com/obtraceai/obtrace-docs.git
             cd obtrace-docs
-            nerdctl -n k8s.io build -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:latest -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${{ github.sha }} .
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            nerdctl -n k8s.io build -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:latest -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${SHORT_SHA} .
             nerdctl -n k8s.io push obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:latest
-            nerdctl -n k8s.io push obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${{ github.sha }}
+            nerdctl -n k8s.io push obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${SHORT_SHA}
             kubectl rollout restart deployment/obtrace-docs -n obtrace
             rm -rf /tmp/obtrace-docs
