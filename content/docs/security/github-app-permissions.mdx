@@ -22,3 +22,12 @@ Obtrace needs only the repository permissions required to read context and creat
 - Admin permissions
 - Secret manager access unrelated to telemetry
 - Broad organization write access
+
+## Self-hosted instances
+
+The same permission model applies to GitHub Enterprise Server and GitLab self-hosted instances. When connecting a self-hosted instance:
+
+- Register a GitHub App or GitLab OAuth Application with the same minimum permissions
+- Each tenant can connect to a different self-hosted instance via the `host` field in repository configuration
+- API calls are routed to `https://{host}/api/v3` (GitHub Enterprise) or `https://{host}/api/v4` (GitLab)
+- See [GitHub Enterprise integration](/docs/integrations/github-enterprise) and [GitLab Self-Hosted integration](/docs/integrations/gitlab-self-hosted) for setup guides

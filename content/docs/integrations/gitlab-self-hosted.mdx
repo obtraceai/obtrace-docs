@@ -1,0 +1,172 @@
+---
+title: GitLab Self-Hosted
+description: Connect a self-hosted GitLab instance to Obtrace for repository access and automated remediation merge requests.
+---
+
+## Overview
+
+Obtrace supports self-hosted GitLab instances alongside GitLab.com. Each tenant can connect to a different GitLab instance, enabling organizations running their own GitLab infrastructure to use all Obtrace features: repository catalog, file context for AI analysis, automated remediation merge requests, and fix outcome tracking.
+
+## Prerequisites
+
+- GitLab CE/EE 14.0+
+- An OAuth Application registered on your GitLab instance
+- Network connectivity between Obtrace and your GitLab API endpoint
+- TLS certificate trusted by Obtrace
+
+## Step 1: Register an OAuth Application on your GitLab instance
+
+1. Navigate to `https://YOUR-GITLAB-HOST/admin/applications/new` (admin) or User Settings > Applications
+2. Fill in the application details:
+   - **Name**: `Obtrace`
+   - **Redirect URI**: `https://YOUR-OBTRACE-HOST/oauth/callback/gitlab-self`
+   - **Confidential**: Yes
+   - **Scopes**: `api`, `read_user`, `read_api`, `read_repository`, `write_repository`
+3. Save and note the **Application ID** and **Secret**
+
+## Step 2: Configure Obtrace environment variables
+
+Set these environment variables on the `control-plane-api` service:
+
+```bash
+# OAuth provider for self-hosted GitLab
+CONTROL_PLANE_OAUTH_GITLAB_SELF_CLIENT_ID=your-application-id
+CONTROL_PLANE_OAUTH_GITLAB_SELF_CLIENT_SECRET=your-application-secret
+CONTROL_PLANE_OAUTH_GITLAB_SELF_AUTH_URL=https://YOUR-GITLAB-HOST/oauth/authorize
+CONTROL_PLANE_OAUTH_GITLAB_SELF_TOKEN_URL=https://YOUR-GITLAB-HOST/oauth/token
+CONTROL_PLANE_OAUTH_GITLAB_SELF_USERINFO_URL=https://YOUR-GITLAB-HOST/api/v4/user
+CONTROL_PLANE_OAUTH_GITLAB_SELF_REDIRECT_URI=https://YOUR-OBTRACE-HOST/oauth/callback/gitlab-self
+CONTROL_PLANE_OAUTH_GITLAB_SELF_SCOPES="api read_user read_api read_repository write_repository"
+
+# Token encryption key (required for storing OAuth tokens)
+CONTROL_PLANE_GIT_TOKEN_ENC_KEY=base64-encoded-32-byte-key
+```
+
+## Step 3: Connect a repository in the Obtrace UI
+
+1. Go to **Settings > Projects > Your Project > Apps > Your App > Repositories**
+2. Click **Connect Repository**
+3. Select **GitLab** as the provider
+4. Enter your GitLab hostname in the **Host** field (e.g., `gitlab.mycompany.com`)
+5. Authenticate with your GitLab instance when prompted
+6. Select the project (repository) and branch
+7. Save the connection
+
+## Step 4: Configure the webhook (optional)
+
+For fix outcome tracking, configure a webhook on your GitLab project:
+
+1. Go to your GitLab project > Settings > Webhooks
+2. Set the URL to: `https://YOUR-OBTRACE-HOST/webhooks/gitlab`
+3. Set a secret token
+4. Select **Merge request events**
+5. Save the webhook
+
+## How it works
+
+When a repository is connected with a `host` value:
+
+- All GitLab API calls use `https://YOUR-GITLAB-HOST/api/v4` instead of `https://gitlab.com/api/v4`
+- File content is fetched from your GitLab instance for AI root cause analysis
+- Remediation merge requests are created on your GitLab instance
+- Team member suggestions pull collaborators from your GitLab groups
+
+### GitLab API operations
+
+| Operation | GitLab API endpoint | Used for |
+|-----------|-------------------|----------|
+| List projects | `GET /projects?membership=true` | Repository catalog |
+| Get file | `GET /projects/:id/repository/files/:path` | AI code context |
+| List tree | `GET /projects/:id/repository/tree?recursive=true` | File discovery |
+| Get branch | `GET /projects/:id/repository/branches/:branch` | Branch SHA resolution |
+| Create branch | `POST /projects/:id/repository/branches` | Autofix branch |
+| Create/update file | `PUT /projects/:id/repository/files/:path` | Commit fix |
+| Create MR | `POST /projects/:id/merge_requests` | Remediation MR |
+| Add MR note | `POST /projects/:id/merge_requests/:iid/notes` | AI review comment |
+| List groups | `GET /groups` | Team suggestions |
+| List group members | `GET /groups/:id/members` | Team suggestions |
+
+## API reference
+
+### Connect a GitLab repository
+
+```http
+POST /control-panel/projects/{project_id}/apps/{app_id}/repos
+Content-Type: application/json
+
+{
+  "provider": "gitlab",
+  "host": "gitlab.mycompany.com",
+  "org": "my-group/my-subgroup",
+  "name": "my-project",
+  "branch": "main"
+}
+```
+
+The `org` field supports GitLab's nested group structure (e.g., `team/backend/services`).
+
+### List git connections
+
+```http
+GET /control-panel/git/connections?provider=gitlab
+```
+
+Response includes the `host` field for each connection:
+
+```json
+{
+  "items": [
+    {
+      "provider": "gitlab",
+      "email": "user@company.com",
+      "host": "gitlab.mycompany.com",
+      "scopes": ["api", "read_user"],
+      "repo_ready": true
+    }
+  ]
+}
+```
+
+## Multi-tenant self-hosted configuration
+
+Each tenant can connect to a different GitLab instance. The `host` is stored per-connection and per-repository binding, so:
+
+- Tenant A can connect to `gitlab.company-a.com`
+- Tenant B can connect to `gitlab.company-b.com`
+- Tenant C can use `gitlab.com` (no host needed)
+
+All within the same Obtrace deployment.
+
+## Network requirements
+
+| Source | Destination | Port | Protocol |
+|--------|-------------|------|----------|
+| Obtrace control-plane | GitLab API | 443 | HTTPS |
+| GitLab webhooks | Obtrace control-plane | 443 | HTTPS |
+
+## Troubleshooting
+
+### Certificate errors
+
+If your GitLab uses a self-signed or internal CA certificate:
+
+```bash
+SSL_CERT_FILE=/path/to/ca-bundle.crt
+```
+
+### Permission errors on MR creation
+
+Ensure the OAuth application has the `api` scope. The `read_api` scope alone is not sufficient for creating merge requests or committing files.
+
+### Nested groups
+
+GitLab supports deeply nested groups. When connecting a repository, use the full group path:
+
+```
+org: "parent-group/child-group/team"
+name: "my-project"
+```
+
+### Rate limiting
+
+Self-hosted GitLab instances may have different rate limits than GitLab.com. If you encounter `429 Too Many Requests`, adjust your GitLab instance's rate limiting configuration.

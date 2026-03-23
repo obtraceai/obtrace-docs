@@ -13,6 +13,8 @@
     "aws-lambda",
     "gcp-cloud-run",
     "azure-container-apps",
-    "github-actions"
+    "github-actions",
+    "github-enterprise",
+    "gitlab-self-hosted"
   ]
 }

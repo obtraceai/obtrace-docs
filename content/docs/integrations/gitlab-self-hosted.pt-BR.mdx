@@ -1,0 +1,150 @@
+---
+title: GitLab Self-Hosted
+description: Conecte uma instancia self-hosted do GitLab ao Obtrace para acesso a repositorios e merge requests de remediacao automatizados.
+---
+
+## Visao geral
+
+O Obtrace suporta instancias self-hosted do GitLab junto com o GitLab.com. Cada tenant pode se conectar a uma instancia GitLab diferente, permitindo que organizacoes que rodam sua propria infraestrutura GitLab utilizem todas as funcionalidades do Obtrace: catalogo de repositorios, contexto de arquivos para analise de IA, merge requests de remediacao automatizados e rastreamento de resultados de correcoes.
+
+## Pre-requisitos
+
+- GitLab CE/EE 14.0+
+- Uma Aplicacao OAuth registrada na sua instancia GitLab
+- Conectividade de rede entre o Obtrace e o endpoint da API GitLab
+- Certificado TLS confiavel pelo Obtrace
+
+## Passo 1: Registrar uma Aplicacao OAuth na sua instancia GitLab
+
+1. Navegue ate `https://SEU-HOST-GITLAB/admin/applications/new` (admin) ou Configuracoes do Usuario > Aplicacoes
+2. Preencha os detalhes:
+   - **Nome**: `Obtrace`
+   - **URI de Redirecionamento**: `https://SEU-HOST-OBTRACE/oauth/callback/gitlab-self`
+   - **Confidencial**: Sim
+   - **Scopes**: `api`, `read_user`, `read_api`, `read_repository`, `write_repository`
+3. Salve e anote o **Application ID** e o **Secret**
+
+## Passo 2: Configurar variaveis de ambiente do Obtrace
+
+Defina estas variaveis de ambiente no servico `control-plane-api`:
+
+```bash
+# Provider OAuth para GitLab self-hosted
+CONTROL_PLANE_OAUTH_GITLAB_SELF_CLIENT_ID=seu-application-id
+CONTROL_PLANE_OAUTH_GITLAB_SELF_CLIENT_SECRET=seu-application-secret
+CONTROL_PLANE_OAUTH_GITLAB_SELF_AUTH_URL=https://SEU-HOST-GITLAB/oauth/authorize
+CONTROL_PLANE_OAUTH_GITLAB_SELF_TOKEN_URL=https://SEU-HOST-GITLAB/oauth/token
+CONTROL_PLANE_OAUTH_GITLAB_SELF_USERINFO_URL=https://SEU-HOST-GITLAB/api/v4/user
+CONTROL_PLANE_OAUTH_GITLAB_SELF_REDIRECT_URI=https://SEU-HOST-OBTRACE/oauth/callback/gitlab-self
+CONTROL_PLANE_OAUTH_GITLAB_SELF_SCOPES="api read_user read_api read_repository write_repository"
+
+# Chave de criptografia de tokens (obrigatoria para armazenar tokens OAuth)
+CONTROL_PLANE_GIT_TOKEN_ENC_KEY=chave-32-bytes-codificada-em-base64
+```
+
+## Passo 3: Conectar um repositorio na UI do Obtrace
+
+1. Va em **Settings > Projects > Seu Projeto > Apps > Sua App > Repositories**
+2. Clique em **Connect Repository**
+3. Selecione **GitLab** como provider
+4. Insira o hostname do GitLab no campo **Host** (ex: `gitlab.minhaempresa.com`)
+5. Autentique com sua instancia GitLab quando solicitado
+6. Selecione o projeto (repositorio) e a branch
+7. Salve a conexao
+
+## Passo 4: Configurar o webhook (opcional)
+
+Para rastreamento de resultados de correcoes, configure um webhook no seu projeto GitLab:
+
+1. Va em seu projeto GitLab > Settings > Webhooks
+2. Defina a URL para: `https://SEU-HOST-OBTRACE/webhooks/gitlab`
+3. Defina um token secreto
+4. Selecione **Merge request events**
+5. Salve o webhook
+
+## Como funciona
+
+Quando um repositorio e conectado com um valor de `host`:
+
+- Todas as chamadas da API GitLab usam `https://SEU-HOST-GITLAB/api/v4` ao inves de `https://gitlab.com/api/v4`
+- Conteudo de arquivos e obtido da sua instancia GitLab para analise de causa raiz por IA
+- Merge requests de remediacao sao criados na sua instancia GitLab
+- Sugestoes de membros do time buscam colaboradores dos seus grupos GitLab
+
+### Operacoes da API GitLab
+
+| Operacao | Endpoint GitLab API | Usado para |
+|----------|-------------------|------------|
+| Listar projetos | `GET /projects?membership=true` | Catalogo de repositorios |
+| Obter arquivo | `GET /projects/:id/repository/files/:path` | Contexto de codigo para IA |
+| Listar arvore | `GET /projects/:id/repository/tree?recursive=true` | Descoberta de arquivos |
+| Obter branch | `GET /projects/:id/repository/branches/:branch` | Resolucao de SHA da branch |
+| Criar branch | `POST /projects/:id/repository/branches` | Branch de autofix |
+| Criar/atualizar arquivo | `PUT /projects/:id/repository/files/:path` | Commit da correcao |
+| Criar MR | `POST /projects/:id/merge_requests` | MR de remediacao |
+| Adicionar nota no MR | `POST /projects/:id/merge_requests/:iid/notes` | Review de IA |
+| Listar grupos | `GET /groups` | Sugestoes de time |
+| Listar membros do grupo | `GET /groups/:id/members` | Sugestoes de time |
+
+## Referencia da API
+
+### Conectar um repositorio GitLab
+
+```http
+POST /control-panel/projects/{project_id}/apps/{app_id}/repos
+Content-Type: application/json
+
+{
+  "provider": "gitlab",
+  "host": "gitlab.minhaempresa.com",
+  "org": "meu-grupo/meu-subgrupo",
+  "name": "meu-projeto",
+  "branch": "main"
+}
+```
+
+O campo `org` suporta a estrutura de grupos aninhados do GitLab (ex: `equipe/backend/servicos`).
+
+## Configuracao multi-tenant self-hosted
+
+Cada tenant pode se conectar a uma instancia GitLab diferente. O `host` e armazenado por conexao e por vinculacao de repositorio:
+
+- Tenant A pode conectar a `gitlab.empresa-a.com`
+- Tenant B pode conectar a `gitlab.empresa-b.com`
+- Tenant C pode usar `gitlab.com` (sem necessidade de host)
+
+Tudo dentro do mesmo deploy do Obtrace.
+
+## Requisitos de rede
+
+| Origem | Destino | Porta | Protocolo |
+|--------|---------|-------|-----------|
+| Obtrace control-plane | GitLab API | 443 | HTTPS |
+| GitLab webhooks | Obtrace control-plane | 443 | HTTPS |
+
+## Solucao de problemas
+
+### Erros de certificado
+
+Se o GitLab usa certificado auto-assinado ou CA interna:
+
+```bash
+SSL_CERT_FILE=/caminho/para/ca-bundle.crt
+```
+
+### Erros de permissao na criacao de MR
+
+Garanta que a aplicacao OAuth tenha o scope `api`. O scope `read_api` sozinho nao e suficiente para criar merge requests ou fazer commits de arquivos.
+
+### Grupos aninhados
+
+O GitLab suporta grupos profundamente aninhados. Ao conectar um repositorio, use o caminho completo do grupo:
+
+```
+org: "grupo-pai/grupo-filho/equipe"
+name: "meu-projeto"
+```
+
+### Rate limiting
+
+Instancias self-hosted do GitLab podem ter limites de taxa diferentes do GitLab.com. Se voce encontrar `429 Too Many Requests`, ajuste a configuracao de rate limiting da sua instancia GitLab.

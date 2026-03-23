@@ -1,0 +1,140 @@
+---
+title: GitHub Enterprise (Self-Hosted)
+description: Conecte uma instância self-hosted do GitHub Enterprise Server ao Obtrace para acesso a repositórios e PRs de remediação automatizados.
+---
+
+## Visao geral
+
+O Obtrace suporta GitHub Enterprise Server (GHES) junto com o GitHub.com. Cada tenant pode se conectar a uma instancia self-hosted diferente, permitindo que organizacoes que rodam sua propria infraestrutura GitHub utilizem todas as funcionalidades do Obtrace: catalogo de repositorios, contexto de arquivos para analise de IA, PRs de remediacao automatizados e rastreamento de resultados de correcoes.
+
+## Pre-requisitos
+
+- GitHub Enterprise Server 3.0+
+- Um GitHub App registrado na sua instancia GHES
+- Conectividade de rede entre o Obtrace e o endpoint da API GHES
+- Certificado TLS confiavel pelo Obtrace (certificados auto-assinados requerem configuracao do CA bundle)
+
+## Passo 1: Registrar um GitHub App na sua instancia GHES
+
+1. Navegue ate `https://SEU-HOST-GHES/settings/apps/new`
+2. Preencha os detalhes da aplicacao:
+   - **GitHub App name**: `Obtrace`
+   - **Homepage URL**: URL do frontend do Obtrace
+   - **Callback URL**: `https://SEU-HOST-OBTRACE/oauth/callback/github-self`
+   - **Setup URL**: `https://SEU-HOST-OBTRACE/oauth/github-app/setup`
+   - **Webhook URL**: `https://SEU-HOST-OBTRACE/webhooks/github`
+3. Configure as permissoes necessarias:
+   - **Repository contents**: Read & Write
+   - **Pull requests**: Read & Write
+   - **Checks**: Read
+   - **Metadata**: Read (obrigatorio)
+4. Inscreva-se nos eventos:
+   - Pull request
+5. Gere uma chave privada e faca o download
+6. Anote o **App ID**, **Client ID** e **Client secret**
+
+## Passo 2: Configurar variaveis de ambiente do Obtrace
+
+Defina estas variaveis de ambiente no servico `control-plane-api`:
+
+```bash
+# Credenciais do GitHub App (mesmo App registrado no GHES)
+CONTROL_PLANE_GITHUB_APP_ID=seu-app-id
+CONTROL_PLANE_GITHUB_APP_CLIENT_ID=seu-client-id
+CONTROL_PLANE_GITHUB_APP_CLIENT_SECRET=seu-client-secret
+CONTROL_PLANE_GITHUB_APP_PRIVATE_KEY_PEM="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+CONTROL_PLANE_GITHUB_APP_WEBHOOK_SECRET=seu-webhook-secret
+CONTROL_PLANE_GITHUB_APP_SLUG=obtrace
+
+# Provider OAuth para GitHub self-hosted (opcional, apenas se usar GHES para autenticacao)
+CONTROL_PLANE_OAUTH_GITHUB_SELF_CLIENT_ID=seu-oauth-app-client-id
+CONTROL_PLANE_OAUTH_GITHUB_SELF_CLIENT_SECRET=seu-oauth-app-client-secret
+CONTROL_PLANE_OAUTH_GITHUB_SELF_AUTH_URL=https://SEU-HOST-GHES/login/oauth/authorize
+CONTROL_PLANE_OAUTH_GITHUB_SELF_TOKEN_URL=https://SEU-HOST-GHES/login/oauth/access_token
+CONTROL_PLANE_OAUTH_GITHUB_SELF_USERINFO_URL=https://SEU-HOST-GHES/api/v3/user
+CONTROL_PLANE_OAUTH_GITHUB_SELF_EMAILS_URL=https://SEU-HOST-GHES/api/v3/user/emails
+CONTROL_PLANE_OAUTH_GITHUB_SELF_REDIRECT_URI=https://SEU-HOST-OBTRACE/oauth/callback/github-self
+CONTROL_PLANE_OAUTH_GITHUB_SELF_SCOPES="read:user user:email read:org repo"
+
+# Chave de criptografia de tokens (obrigatoria para armazenar tokens OAuth)
+CONTROL_PLANE_GIT_TOKEN_ENC_KEY=chave-32-bytes-codificada-em-base64
+```
+
+## Passo 3: Conectar um repositorio na UI do Obtrace
+
+1. Va em **Settings > Projects > Seu Projeto > Apps > Sua App > Repositories**
+2. Clique em **Connect Repository**
+3. Selecione **GitHub** como provider
+4. Insira o hostname do GHES no campo **Host** (ex: `github.minhaempresa.com`)
+5. Instale o GitHub App na sua instancia GHES quando solicitado
+6. Selecione o repositorio e a branch
+7. Salve a conexao
+
+## Passo 4: Configurar o webhook
+
+Para rastreamento de resultados de correcoes (medir se as correcoes automatizadas reduzem taxas de erro), configure o webhook no GHES:
+
+1. Va nas configuracoes do GitHub App no GHES
+2. Em **Webhook**, defina a URL para: `https://SEU-HOST-OBTRACE/webhooks/github`
+3. Defina o secret para corresponder ao `CONTROL_PLANE_GITHUB_APP_WEBHOOK_SECRET`
+4. Selecione eventos de **Pull request**
+5. Ative o webhook
+
+## Como funciona
+
+Quando um repositorio e conectado com um valor de `host`:
+
+- Todas as chamadas da API GitHub usam `https://SEU-HOST-GHES/api/v3` ao inves de `https://api.github.com`
+- Tokens de instalacao do GitHub App sao criados contra sua instancia GHES
+- PRs de remediacao sao criados na sua instancia GHES
+- Conteudo de arquivos e obtido da sua instancia GHES para contexto de IA
+- Assinaturas de webhook sao verificadas usando o secret configurado
+
+## Referencia da API
+
+### Conectar um repositorio
+
+```http
+POST /control-panel/projects/{project_id}/apps/{app_id}/repos
+Content-Type: application/json
+
+{
+  "provider": "github",
+  "host": "github.minhaempresa.com",
+  "installationId": "12345",
+  "org": "minha-org",
+  "name": "meu-repo",
+  "branch": "main"
+}
+```
+
+### Listar repositorios da instancia self-hosted
+
+```http
+GET /control-panel/github-app/installations/{installation_id}/repositories?host=github.minhaempresa.com
+```
+
+## Requisitos de rede
+
+| Origem | Destino | Porta | Protocolo |
+|--------|---------|-------|-----------|
+| Obtrace control-plane | GHES API | 443 | HTTPS |
+| GHES webhooks | Obtrace control-plane | 443 | HTTPS |
+
+## Solucao de problemas
+
+### Erros de certificado
+
+Se o GHES usa certificado auto-assinado ou CA interna, garanta que o CA bundle esteja disponivel no container do control-plane:
+
+```bash
+SSL_CERT_FILE=/caminho/para/ca-bundle.crt
+```
+
+### Compatibilidade de versao da API
+
+O Obtrace usa a versao da API GitHub `2022-11-28`. Garanta que sua versao do GHES suporte esta versao (GHES 3.0+).
+
+### Falhas na renovacao de tokens
+
+Se a renovacao de tokens OAuth falhar, o usuario pode precisar re-autorizar o GitHub App na instancia GHES. Verifique o status da conexao em **Settings > Git Connections**.
