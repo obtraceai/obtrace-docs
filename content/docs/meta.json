@@ -7,11 +7,15 @@
     "quickstart",
     "workflows",
     "concepts",
+    "features",
+    "use-cases",
+    "comparisons",
     "sdks",
     "environments",
     "security",
     "mcp",
     "api-reference",
+    "faq",
     "downloads"
   ]
 }

@@ -1,0 +1,119 @@
+---
+title: Public Status Page
+description: Configure a public status page with real-time incident visibility, embeddable widgets, and badge SVGs.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Public Status Page
+
+Obtrace includes a hosted status page that reflects real-time incident state for your services. When an incident is detected, the status page updates automatically based on impact scoring. No manual status updates are required unless you want to override the automated state.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. The status page is the public-facing layer of this detection pipeline.
+
+## Setup
+
+### Create a status page
+
+Navigate to **Settings > Status Page** or use the API:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/status-pages \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "acme-status",
+    "title": "Acme Platform Status",
+    "services": ["checkout-api", "payments", "auth"],
+    "theme": "light",
+    "custom_domain": "status.acme.com"
+  }'
+```
+
+### Custom domain
+
+Point a CNAME record to `status-pages.obtrace.dev` and set `custom_domain` in the configuration. TLS is provisioned automatically via Let's Encrypt.
+
+## Service mapping
+
+Each service listed on the status page maps to a monitored `service` tag in your telemetry. Status is derived from active incidents:
+
+| Incident severity | Displayed status |
+|---|---|
+| No active incidents | Operational |
+| Warning-level incident | Degraded Performance |
+| Error-level incident | Partial Outage |
+| Critical incident | Major Outage |
+
+You can override any service status manually through the dashboard or API.
+
+## Embed widget
+
+Add a floating status widget to your application:
+
+```html
+<script
+  src="https://status.obtrace.dev/embed.js"
+  data-slug="acme-status"
+  data-position="bottom-right"
+  async>
+</script>
+```
+
+The widget shows a small indicator that expands on click to show current service status.
+
+## Badge SVG
+
+Embed a status badge in your README or documentation:
+
+```markdown
+![Status](https://status.obtrace.dev/badge.svg?slug=acme-status)
+```
+
+The badge returns one of: `operational`, `degraded`, `partial-outage`, or `major-outage` with corresponding colors.
+
+## API endpoints
+
+### Get current status
+
+```
+GET /status-api/{slug}
+```
+
+Returns current status for all services on the page, including active incidents and estimated resolution time.
+
+### Get incident history
+
+```
+GET /status-api/{slug}/history?days=30
+```
+
+Returns resolved incidents within the specified window.
+
+### Subscribe to updates
+
+```
+POST /status-api/{slug}/subscribers
+Content-Type: application/json
+
+{"email": "ops@acme.com", "channels": ["email", "webhook"]}
+```
+
+## Customer impact check
+
+When an incident is detected, Obtrace evaluates which status page services are affected based on service dependency mapping. If the impacted service is listed on a status page, the page updates within 30 seconds.
+
+You can query customer impact programmatically:
+
+```bash
+curl https://api.obtrace.dev/status-api/acme-status/impact \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+## Limitations
+
+- Status pages reflect automated incident detection. If your detection rules are too sensitive, the page may show false degradations.
+- Custom domain TLS provisioning can take up to 10 minutes on first setup.
+- The embed widget adds approximately 8KB (gzipped) to your page load.

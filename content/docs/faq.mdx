@@ -1,0 +1,130 @@
+---
+title: FAQ
+description: Frequently asked questions about Obtrace covering setup, AI capabilities, security, pricing, and technical details.
+category: faq
+intent: reference
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Frequently Asked Questions
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. These questions cover the most common topics from teams evaluating or using Obtrace.
+
+## General
+
+### What is Obtrace?
+
+Obtrace is an observability platform that ingests logs, traces, and metrics from your production systems, detects incidents through multi-signal correlation, identifies root causes using AI, and can suggest or open code fixes as pull requests. It is designed to reduce the time from error detection to deployed fix.
+
+### How is Obtrace different from traditional observability tools?
+
+Traditional observability tools collect and display data. Engineers investigate manually. Obtrace adds an AI analysis layer that automatically correlates signals, identifies root causes, and suggests fixes. The engineer shifts from investigator to reviewer.
+
+### What languages and frameworks are supported?
+
+Obtrace provides SDKs for Node.js, Go, Python, Java, .NET, PHP, Ruby, and browser JavaScript. Any service that exports OTLP-compatible telemetry (via OpenTelemetry) can send data to Obtrace without a dedicated SDK.
+
+### Do I need to replace my existing observability tools?
+
+No. Obtrace accepts standard OTLP telemetry, so you can run it alongside existing tools by configuring your OpenTelemetry Collector to fan out to multiple backends. Many teams start by adding Obtrace to one service while keeping their existing stack.
+
+### How long does setup take?
+
+For a single service, initial setup takes 15-30 minutes: install the SDK, set environment variables, and verify ingestion. Full value (including AI root cause analysis) requires attaching version metadata to deployments and connecting your repository.
+
+## Technical
+
+### What telemetry protocols does Obtrace support?
+
+Obtrace supports OTLP gRPC (port 4317) and OTLP HTTP for telemetry ingestion. Any OpenTelemetry-compatible exporter can send data to Obtrace. The SDKs handle this automatically.
+
+### Where is telemetry data stored?
+
+Analytical telemetry (logs, traces, metrics) is stored in ClickHouse. Incidents, configuration, and user data are stored in Postgres. Session replay chunks are stored in object storage (S3-compatible). Redis is used for ephemeral caching only, never as a source of truth.
+
+### Does Obtrace support self-hosted deployment?
+
+Yes. Obtrace can be deployed on your own infrastructure using Kubernetes (k3s or managed Kubernetes). All components, including the AI inference layer (Ollama), run within your cluster. No data leaves your infrastructure in a self-hosted deployment.
+
+### How does distributed tracing work?
+
+Obtrace follows W3C Trace Context headers to correlate requests across service boundaries. When one service calls another, the trace context is propagated so that the full request path is visible. The SDKs handle context propagation automatically for HTTP and gRPC calls.
+
+### What happens if ingestion is down?
+
+The SDKs buffer telemetry locally and retry with exponential backoff. If the buffer fills, the oldest events are dropped. Telemetry loss during brief outages is minimal. The retry path follows 1 minute, 10 minutes, then dead-letter queue.
+
+### Can I use Obtrace with serverless functions?
+
+Yes. The SDKs support Lambda, Cloud Functions, and Azure Functions. The key difference is that the SDK flushes telemetry synchronously before the function returns, since there is no persistent process to buffer events.
+
+## AI
+
+### What AI models does Obtrace use?
+
+Obtrace supports multiple LLM providers. For self-hosted deployments, it uses Ollama with models like Llama 3 (chat), DeepSeek R1 (reasoning), and DeepSeek Coder V2 (code generation). You can also configure hosted providers like OpenAI or Anthropic through API keys.
+
+### How accurate is the AI root cause analysis?
+
+Accuracy depends on telemetry quality and the nature of the incident. For incidents with clear deployment correlation and good telemetry coverage, root cause accuracy is approximately 70-80%. For complex distributed failures or data-dependent bugs, the AI narrows the investigation space rather than providing a definitive answer. Confidence scores are provided with every analysis.
+
+### Does AI have access to my source code?
+
+Only if you connect your repository. Without repository access, Obtrace provides root cause analysis based on telemetry (stack traces, logs, metrics). With repository access, the AI can map errors to specific files and lines, identify recent changes, and generate fix suggestions.
+
+### Can I disable AI features?
+
+Yes. Each AI capability can be disabled independently: autofix PRs, chat-to-query, root cause analysis, and dashboard generation. Disabling AI features does not affect telemetry ingestion, incident detection, or alerting.
+
+### Does Obtrace send my data to external AI providers?
+
+In self-hosted mode with Ollama, all AI inference runs locally. No data leaves your infrastructure. If you configure external providers (OpenAI, Anthropic), the relevant telemetry context is sent to those providers for inference. You control which providers are used through the AI policy settings.
+
+### How does Obtrace learn from past incidents?
+
+The fix outcome tracking pipeline records whether AI-suggested fixes resolve errors. Resolved fixes become positive training signals; ineffective fixes become negative signals. This data can be exported for model fine-tuning. The feedback loop improves fix quality over time.
+
+## Security
+
+### How is PII handled?
+
+Obtrace applies two layers of PII protection. Gate1 runs at ingestion and scrubs common PII patterns (emails, credit cards, SSNs, API keys) before data reaches storage. Gate2 applies tenant-specific redaction policies using JSONPath and regex patterns in the worker pipeline.
+
+### Does Obtrace support SSO and MFA?
+
+MFA is supported via TOTP (authenticator apps) and WebAuthn (hardware keys). SSO/SAML integration is available on the Enterprise plan.
+
+### What RBAC roles are available?
+
+Predefined roles include viewer, responder, editor, admin, and owner. Custom roles can be created by combining granular permissions. Roles are scoped to the organization level.
+
+### Is there an audit log?
+
+Yes. All security-relevant actions are recorded in an immutable audit log: user login/logout, role changes, API key operations, redaction policy changes, data exports, and security setting modifications. Audit logs are retained for 1 year.
+
+### How is data encrypted?
+
+Data is encrypted in transit (TLS 1.2+) and at rest (AES-256). API keys are hashed before storage. Replay session chunks are encrypted in object storage.
+
+## Pricing
+
+### Is there a free tier?
+
+Yes. The free tier includes 1M events/month, 500K trace spans/month, 100 replay sessions, and 50 AI-analyzed incidents. No credit card is required. The free tier is limited to 1 project, 3 team members, and 7-day data retention.
+
+### What happens when I exceed free tier limits?
+
+Ingestion is rejected with HTTP 429 when limits are reached. Data is not silently dropped. You will see the rejection in your SDK logs. Upgrade to a paid plan to increase limits.
+
+### How does paid pricing work?
+
+The Team plan is $99/month and includes 50M events, 25M trace spans, 10K replay sessions, and unlimited AI analysis. Overage is billed per million events. Enterprise plans with custom pricing are available for larger deployments.
+
+### Can I try Obtrace without a credit card?
+
+Yes. The free tier requires only email registration. No payment information is collected until you choose to upgrade.
+
+### Is there a self-hosted pricing option?
+
+Self-hosted deployments use the same plan structure. The difference is that you provide the infrastructure. Contact sales@obtrace.dev for self-hosted pricing.

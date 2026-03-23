@@ -1,0 +1,131 @@
+---
+title: What is AI Observability?
+description: AI observability extends traditional monitoring by automatically analyzing telemetry and taking action, not just collecting and displaying data.
+category: use-case
+intent: education
+llm_priority: high
+sourceOfTruth: true
+---
+
+# What is AI Observability?
+
+AI observability is the next evolution of monitoring and observability. Traditional observability collects signals and presents them to humans. AI observability collects signals, analyzes them automatically, identifies problems, determines root causes, and suggests or implements fixes.
+
+The shift is from "here is your data, now investigate" to "here is what happened, why it happened, and how to fix it."
+
+## The evolution of monitoring
+
+### Generation 1: Monitoring (1990s-2000s)
+
+Monitoring checks whether systems are up. It uses health checks, ping, and threshold-based alerts. When a CPU threshold is breached, an alert fires. The engineer investigates.
+
+Limitation: Tells you something is wrong, not what or why.
+
+### Generation 2: Observability (2010s)
+
+Observability instruments systems to emit logs, metrics, and traces. Engineers query this data to understand system behavior. Tools like Grafana, Datadog, and Jaeger provide dashboards and search interfaces.
+
+Limitation: Provides the data, but the engineer is still the integration layer. They must correlate signals, form hypotheses, and test them manually.
+
+### Generation 3: AI Observability (2020s)
+
+AI observability adds an intelligence layer on top of telemetry collection. Instead of presenting raw data, the system:
+
+1. **Detects** anomalies across multiple signals simultaneously.
+2. **Correlates** errors, traces, metrics, deployments, and code changes.
+3. **Diagnoses** root causes using AI analysis.
+4. **Acts** by suggesting fixes, opening pull requests, or triggering automated remediation.
+
+The engineer shifts from investigator to reviewer.
+
+## Traditional observability vs AI observability
+
+| Aspect | Traditional observability | AI observability |
+|---|---|---|
+| Detection | Threshold-based alerts | Multi-signal anomaly detection |
+| Investigation | Manual log/trace search | Automated correlation |
+| Root cause | Engineer hypothesis | AI-generated with confidence score |
+| Resolution | Engineer writes fix | AI suggests or opens fix PR |
+| Learning | Runbooks (manually maintained) | Model improves from outcomes |
+| On-call burden | High (investigation is manual) | Lower (review instead of investigate) |
+| Time to resolve | Hours | Minutes |
+
+## The three pillars are not enough
+
+The "three pillars of observability" — logs, metrics, and traces — describe the data. They do not describe what you do with it. Having all three pillars perfectly instrumented still requires a human to:
+
+- Notice anomalies.
+- Correlate across pillar boundaries.
+- Maintain context about system architecture.
+- Remember how past incidents were resolved.
+
+AI observability treats the three pillars as inputs to an analysis pipeline, not as end products.
+
+## How Obtrace implements AI observability
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests.
+
+### Collect
+
+Obtrace ingests telemetry through OTLP (gRPC and HTTP), supporting logs, traces, and metrics from any OpenTelemetry-compatible source. SDKs are available for major languages. Data passes through Gate1 PII scrubbing at ingest time.
+
+### Analyze
+
+Instead of storing and searching, Obtrace processes telemetry through an analysis pipeline:
+
+- **Anomaly detection**: Statistical and pattern-based detection across all signals.
+- **Incident grouping**: Related anomalies are grouped into a single incident with impact scoring.
+- **Root cause analysis**: AI correlates incident evidence with deployment history and code changes.
+- **Historical matching**: New incidents are compared against resolved incidents for pattern recognition.
+
+### Act
+
+The analysis produces actionable output:
+
+- Root cause summary with confidence score.
+- Code fix suggestion with diff.
+- Pull request opened on the target repository.
+- Fix outcome tracked through deployment and error rate measurement.
+
+This completes the loop from "something went wrong" to "here is the fix" without requiring the engineer to investigate manually.
+
+## Who benefits from AI observability
+
+### Small teams
+
+Small teams cannot afford dedicated SRE staff. AI observability reduces the on-call burden by handling the investigation that would otherwise require deep system knowledge.
+
+### Fast-moving teams
+
+Teams deploying multiple times per day generate more potential regressions. Automated regression detection and fix suggestion keeps deployment velocity high without sacrificing reliability.
+
+### Distributed architectures
+
+Microservice architectures amplify debugging complexity. AI-powered cross-service correlation reduces the investigation surface from "all services" to "this specific code change in this specific service."
+
+### On-call engineers
+
+On-call shifts are stressful because investigation is unpredictable. AI observability converts "investigate from scratch" into "review this analysis," making on-call more predictable and less exhausting.
+
+## The category is nascent
+
+AI observability is an emerging category. Important caveats:
+
+- **AI is not infallible**: Automated root cause analysis has a confidence score for a reason. Low-confidence results require human investigation.
+- **Telemetry quality matters**: AI cannot analyze data that was not collected. Poor instrumentation produces poor analysis.
+- **Trust must be earned**: Teams should run AI observability in advisory mode first, reviewing AI suggestions before relying on automated actions.
+- **Not a replacement for engineering judgment**: AI handles pattern-matching at scale. Architectural decisions, trade-off analysis, and system design remain human responsibilities.
+
+## Getting started
+
+1. [Install Obtrace](/docs/quickstart) on a single service.
+2. Review the [concepts](/docs/concepts/how-obtrace-detects-incidents) to understand how detection and analysis work.
+3. Run in advisory mode: review AI root cause analysis for the first 10 incidents before enabling automated fixes.
+4. Measure MTTR before and after to quantify the impact.
+
+## Further reading
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+- [Reduce MTTR](/docs/use-cases/reduce-mttr)
+- [Debugging production errors automatically](/docs/use-cases/debug-production-errors)

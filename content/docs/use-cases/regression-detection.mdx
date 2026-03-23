@@ -1,0 +1,153 @@
+---
+title: Detecting Regressions After Deploy
+description: Automatically detect silent regressions by correlating release metadata with error rate changes and performance degradation.
+category: use-case
+intent: education
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Detecting Regressions After Deploy
+
+Regressions are bugs introduced by code changes that break previously working functionality. They are the most common cause of production incidents and the most preventable. The challenge is that many regressions are silent — they do not trigger obvious failures immediately but degrade performance or correctness over time.
+
+## The silent regression problem
+
+Not all regressions cause immediate errors. Some manifest as:
+
+- **Latency increases**: A new database query adds 200ms to a critical path. No errors, but user experience degrades.
+- **Partial failures**: A code change breaks one branch of a conditional. The happy path works, but edge cases fail silently.
+- **Resource leaks**: A connection pool or memory allocation is not released. The service works for hours before degrading.
+- **Data correctness issues**: Calculations produce wrong results without throwing exceptions. Users see incorrect data.
+
+Traditional alerting misses these because no threshold is breached. The system appears healthy by conventional metrics.
+
+## How regression detection works
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Regression detection is a core capability built on deployment correlation.
+
+### Release metadata
+
+Obtrace tracks deployments through release metadata attached to telemetry:
+
+- `service.version`: Semantic version or commit SHA.
+- Deploy timestamp from CI/CD webhooks or Kubernetes events.
+- Commit range since the previous deployment.
+- Author and PR information for the changes included.
+
+When a new version is detected in incoming telemetry, Obtrace begins a comparison window.
+
+### Baseline comparison
+
+For each deployment, Obtrace compares post-deploy metrics against the pre-deploy baseline:
+
+| Signal | Comparison method | Regression threshold |
+|---|---|---|
+| Error rate | Rate comparison, same time-of-day | > 2x increase or new error types |
+| p50/p99 latency | Distribution comparison | > 20% increase sustained for 5+ minutes |
+| Throughput | Rate comparison | > 30% drop (possible client-side failure) |
+| Error diversity | New error signatures | Any new exception type not seen in baseline |
+| Resource usage | CPU/memory comparison | > 40% increase |
+
+Thresholds are configurable per service. Start with defaults and adjust based on your system's normal variance.
+
+### Canary detection
+
+If you use canary deployments, Obtrace compares canary instances against stable instances in real time:
+
+```
+Canary (v2.4.1): error_rate=0.8%, p99=420ms
+Stable (v2.4.0): error_rate=0.1%, p99=210ms
+```
+
+When the canary shows statistically significant degradation, Obtrace creates an incident and can trigger a rollback webhook if configured.
+
+### Change attribution
+
+When a regression is detected, Obtrace identifies which specific change is responsible:
+
+1. Fetches the commit range between the previous version and current version.
+2. Maps error stack traces to files changed in those commits.
+3. Identifies the most likely culprit commit based on file overlap and change size.
+4. Generates a root cause summary linking the regression to the specific change.
+
+## Regression timeline
+
+```
+Deploy v2.4.1 at 14:22 UTC
+  → Comparison window opens (5 min warm-up)
+  → 14:27: Baseline established for v2.4.0
+  → 14:32: Error rate comparison: 0.1% → 0.8% (8x increase)
+  → 14:32: New error signature: NullPointerException in processOrder()
+  → 14:33: Incident created with deployment correlation
+  → 14:33: Root cause analysis: commit abc123 removed null check
+  → 14:34: Notification sent to deployer and on-call
+  → 14:35: Fix PR opened (restore null check)
+```
+
+Total time from deploy to identified regression: 10 minutes. Without automated detection, this regression might have been reported by users hours later.
+
+## Configuration
+
+### Enable deployment tracking
+
+Deployment tracking is automatic if your telemetry includes `service.version`. For explicit deploy events:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/deploys \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service": "checkout-api",
+    "version": "v2.4.1",
+    "env": "production",
+    "commit_sha": "abc123def456",
+    "previous_version": "v2.4.0"
+  }'
+```
+
+### Configure regression thresholds
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/regression/thresholds \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service": "checkout-api",
+    "error_rate_multiplier": 2.0,
+    "latency_p99_increase_pct": 20,
+    "warmup_minutes": 5,
+    "comparison_window_minutes": 30
+  }'
+```
+
+### Rollback webhook
+
+Trigger an automatic rollback when a critical regression is detected:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/regression/rollback-webhook \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service": "checkout-api",
+    "webhook_url": "https://ci.acme.com/rollback",
+    "severity_threshold": "critical",
+    "require_confirmation": true
+  }'
+```
+
+When `require_confirmation` is true, the webhook is prepared but requires manual approval in the Obtrace UI.
+
+## Limitations
+
+- The 5-minute warm-up period means very fast regressions (crash on startup) are detected by health checks, not by Obtrace regression detection.
+- Baseline comparison requires sufficient traffic volume. Low-traffic services may not generate enough data for statistical significance within the comparison window.
+- Services without `service.version` tagging cannot use deployment-correlated regression detection. Obtrace falls back to time-based anomaly detection.
+- Canary detection requires that canary and stable instances use different version tags.
+
+## Further reading
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [Fix outcome tracking](/docs/features/fix-outcome-tracking)
+- [Notifications](/docs/features/notifications)

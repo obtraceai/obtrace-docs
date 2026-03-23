@@ -1,0 +1,95 @@
+---
+title: Obtrace vs New Relic
+description: Compare Obtrace and New Relic approaches to APM, incident investigation, and AI-powered observability.
+category: comparison
+intent: evaluation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace vs New Relic
+
+New Relic and Obtrace both provide full-stack observability. New Relic approaches it through a query-first, data-platform model. Obtrace approaches it through an incident-first, AI-automation model. Both collect the same types of data. What they do with that data is fundamentally different.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests.
+
+## Philosophy
+
+### New Relic: data platform with query power
+
+New Relic stores all telemetry in a unified data platform (NRDB) and provides NRQL, a SQL-like query language, to explore it. The product is designed around the idea that observability is a data problem: collect everything, make it queryable, and let engineers find answers.
+
+New Relic's strengths are its query flexibility, the unified data model, and the breadth of integrations. Engineers who are comfortable writing queries can answer almost any question about their systems.
+
+### Obtrace: incident-first with AI analysis
+
+Obtrace starts from the incident. When something goes wrong, the platform correlates signals, identifies the root cause, and suggests a fix. The query layer exists, but it is secondary to the automated analysis pipeline.
+
+The assumption is different: most engineers do not want to query their way to root cause. They want the answer.
+
+## Key differences
+
+### Investigation model
+
+| Aspect | New Relic | Obtrace |
+|---|---|---|
+| Starting point | Alert triggers, engineer opens query | Incident created with evidence attached |
+| Investigation | Engineer writes NRQL queries | AI correlates signals automatically |
+| Root cause | Engineer determines via exploration | AI-generated with confidence score |
+| Fix | Engineer writes and deploys | AI suggests fix, optionally opens PR |
+| Query language | NRQL (powerful, learning curve) | Natural language chat-to-query |
+
+### AI capabilities
+
+New Relic has introduced AI features (New Relic AI, NRAI) for natural language querying and anomaly detection. These are additive features on top of the existing platform.
+
+Obtrace was designed with AI as the core architecture. Root cause analysis, fix suggestion, and outcome tracking are built into the data pipeline, not bolted on. The AI processes every incident, not just the ones where an engineer asks a question.
+
+### Data model
+
+New Relic unifies all telemetry into a single queryable database. This is powerful for ad-hoc analysis but means you need to understand the data model and query language to get value.
+
+Obtrace stores telemetry in purpose-built stores (ClickHouse for analytical queries, Postgres for incidents, MinIO for replay sessions) and presents it through the incident-focused UI. The underlying data is accessible via API, but the primary interface is the incident workflow.
+
+### Pricing
+
+New Relic prices by data ingest volume (GB/month) and user count. All features are available to all users. The pricing model is simple but can be expensive at scale.
+
+Obtrace prices by telemetry volume (events and spans). AI features are included in paid plans. The free tier is more limited in volume but includes all features.
+
+## When to use New Relic
+
+New Relic is a better fit when:
+
+- You have engineers who are skilled at writing queries and prefer exploratory analysis.
+- You need a unified data platform for all telemetry types with powerful ad-hoc query capability.
+- You value the breadth of New Relic's integration ecosystem (500+ integrations).
+- Your organization has existing investment in NRQL dashboards and alert policies.
+- You prefer to build custom investigation workflows rather than use automated analysis.
+
+## When to use Obtrace
+
+Obtrace is a better fit when:
+
+- Your bottleneck is investigation time, not query capability.
+- You want root cause analysis to happen automatically, not on demand.
+- You deploy frequently and need deployment-correlated regression detection.
+- You want the platform to suggest or apply code fixes.
+- Your team has mixed experience levels and you want consistent incident investigation quality regardless of who is on call.
+
+## Migration path
+
+Both platforms accept OTLP telemetry. Running in parallel is straightforward:
+
+1. Configure your OpenTelemetry exporters to send to both endpoints.
+2. Compare incident detection quality and root cause accuracy over 2-4 weeks.
+3. Measure MTTR with each tool for the same incidents.
+4. New Relic's NRQL dashboards can be recreated in Obtrace using AI-assisted dashboard generation.
+
+## Honest assessment
+
+New Relic is a more mature platform with a more powerful query engine. Engineers who think in queries will feel at home. The breadth of integrations and the unified data model are genuine advantages.
+
+Obtrace provides more automation out of the box. If your team's pain is "we have the data but spend too long analyzing it," Obtrace addresses that directly. If your pain is "we need flexible access to all our data," New Relic's query-first approach is stronger.
+
+New Relic requires more expertise to operate effectively. Obtrace requires less expertise but gives less control over the investigation process. Both are valid trade-offs depending on your team.

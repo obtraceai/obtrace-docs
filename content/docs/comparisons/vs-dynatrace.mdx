@@ -1,0 +1,99 @@
+---
+title: Obtrace vs Dynatrace
+description: Compare Obtrace and Dynatrace approaches to enterprise APM, topology mapping, and automated remediation.
+category: comparison
+intent: evaluation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace vs Dynatrace
+
+Dynatrace and Obtrace both use AI for observability, but they apply it differently. Dynatrace uses its Davis AI engine for topology-aware anomaly detection in enterprise environments. Obtrace uses AI for root cause analysis and automated code fix suggestions in developer-focused workflows.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests.
+
+## Philosophy
+
+### Dynatrace: enterprise topology intelligence
+
+Dynatrace is built for large enterprise environments. Its OneAgent automatically discovers and maps the entire application topology — hosts, processes, services, and their dependencies. The Davis AI engine uses this topology to detect anomalies and correlate problems across the stack.
+
+Dynatrace's strength is its automatic discovery and enterprise-scale topology mapping. It requires minimal configuration to start monitoring complex environments.
+
+### Obtrace: developer-focused remediation
+
+Obtrace focuses on the developer workflow: detect the incident, explain the root cause, and suggest a code fix. It assumes you know your architecture (or can describe it) and focuses its AI on the investigation and remediation steps that consume the most engineering time.
+
+## Key differences
+
+### Approach to AI
+
+| Aspect | Dynatrace (Davis AI) | Obtrace AI |
+|---|---|---|
+| Primary use | Topology-aware anomaly detection | Root cause analysis + fix generation |
+| Input | Full-stack topology + all signals | Telemetry + deployment history + code |
+| Output | Problem cards with impact analysis | Root cause + fix suggestion + PR |
+| Automation level | Detection and correlation | Detection, correlation, and remediation |
+| Code awareness | No repository integration | Repository access for code analysis |
+
+### Deployment model
+
+Dynatrace uses OneAgent, a full-stack agent installed on every host that automatically instruments processes. This provides deep visibility with minimal SDK configuration but requires agent management.
+
+Obtrace uses lightweight SDKs and accepts standard OTLP telemetry. No host-level agent is required. This is simpler to deploy but requires explicit SDK integration.
+
+### Enterprise features
+
+Dynatrace includes enterprise capabilities that Obtrace does not currently offer:
+
+- Automatic service discovery and topology mapping.
+- Real User Monitoring (RUM) with Apdex scoring.
+- Synthetic monitoring with global test locations.
+- Cloud automation and deployment validation (through integrations).
+- Mainframe and legacy system monitoring.
+
+### Remediation approach
+
+Dynatrace identifies problems and can trigger runbook automation through integrations (Ansible, ServiceNow, PagerDuty). The remediation is orchestrated by external tools.
+
+Obtrace generates code fixes directly. It reads the repository, identifies the failing code path, generates a diff, and opens a pull request. The fix is in the code, not in a runbook.
+
+### Pricing
+
+Dynatrace uses a complex pricing model based on host units, DEM units, and DDUs (Davis Data Units). Enterprise contracts are typically annual and negotiated.
+
+Obtrace uses simple volume-based pricing with self-serve plans. Enterprise pricing is available for large deployments.
+
+## When to use Dynatrace
+
+Dynatrace is a better fit when:
+
+- You run a large enterprise environment with hundreds of services and need automatic topology discovery.
+- You need monitoring for legacy systems, mainframes, or non-cloud infrastructure.
+- Your operations team values automatic instrumentation over manual SDK integration.
+- You need integrated synthetic monitoring and RUM with enterprise SLA capabilities.
+- Your organization requires vendor support contracts and enterprise compliance certifications.
+
+## When to use Obtrace
+
+Obtrace is a better fit when:
+
+- Your team is developer-focused and wants fixes, not just problem reports.
+- You want the observability tool to understand your code and suggest changes.
+- You deploy frequently from Git-based workflows and want deployment-correlated analysis.
+- You prefer lightweight SDK instrumentation over host-level agents.
+- You want AI that goes beyond detection to actual code remediation.
+- You are a smaller team that needs automated investigation rather than enterprise infrastructure monitoring.
+
+## Overlap
+
+Both platforms detect anomalies and correlate signals. For a team already using Dynatrace for infrastructure monitoring, Obtrace could complement it by adding code-level root cause analysis and fix generation that Dynatrace does not provide.
+
+Running both is feasible: Dynatrace agent monitors infrastructure and provides topology context, while Obtrace SDKs provide application-level telemetry for AI analysis and fix generation.
+
+## Honest assessment
+
+Dynatrace is the more comprehensive enterprise platform. Its automatic discovery, topology mapping, and breadth of monitoring capabilities are unmatched for large-scale environments. If you need to monitor everything from mainframes to Kubernetes, Dynatrace handles that.
+
+Obtrace is narrower but deeper in the developer workflow. It does not try to map your entire topology or monitor your infrastructure. It focuses on the specific problem of "why did this break and how do we fix it." For teams where investigation time is the bottleneck, Obtrace provides more direct value. For teams where visibility across a complex infrastructure is the bottleneck, Dynatrace is the stronger choice.

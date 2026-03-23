@@ -1,0 +1,129 @@
+---
+title: Session Replay
+description: Record and replay browser sessions to understand user experience during incidents.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Session Replay
+
+Obtrace session replay records browser interactions and reconstructs them as watchable sessions. When an error occurs in the browser, the replay provides visual context that stack traces alone cannot convey.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Session replay adds visual evidence to the automated root cause analysis pipeline.
+
+## How it works
+
+1. The browser SDK records DOM mutations, network requests, console logs, and user interactions as incremental snapshots.
+2. Snapshots are batched into chunks and sent to the ingest edge.
+3. Chunks are stored in object storage (MinIO/S3) and indexed in Postgres.
+4. The replay viewer reconstructs the session from stored chunks.
+
+## Browser SDK setup
+
+Install the Obtrace browser SDK and enable replay:
+
+```bash
+npm install @obtrace/browser-sdk
+```
+
+```ts
+import { initBrowserSDK } from "@obtrace/browser-sdk";
+
+const sdk = initBrowserSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: "https://ingest.obtrace.dev",
+  tenantId: "tenant_abc",
+  projectId: "proj_xyz",
+  appId: "web-app",
+  env: "production",
+  replay: {
+    enabled: true,
+    sampleRate: 0.1,
+    maskAllInputs: true,
+    blockSelector: ".sensitive-data",
+  },
+});
+```
+
+### Sample rate
+
+Set `sampleRate` between 0 and 1 to control what percentage of sessions are recorded. Start with 0.1 (10%) and adjust based on storage costs and debugging needs.
+
+### Error-triggered recording
+
+To record only sessions that encounter errors:
+
+```ts
+replay: {
+  enabled: true,
+  sampleRate: 0,
+  errorSampleRate: 1.0,
+  bufferDuration: 30000,
+}
+```
+
+This keeps a rolling 30-second buffer and only persists the recording when an error is captured.
+
+## Privacy controls
+
+Session replay captures DOM state, which can include sensitive information. Obtrace provides multiple privacy layers:
+
+| Control | Effect |
+|---|---|
+| `maskAllInputs: true` | All input values replaced with `***` |
+| `maskAllText: true` | All text nodes replaced with placeholder characters |
+| `blockSelector` | Elements matching the CSS selector are replaced with a placeholder block |
+| `ignoreSelector` | Elements are not recorded at all |
+
+### Gate1 server-side scrubbing
+
+Replay chunks pass through the same Gate1 PII scrubbing pipeline as other telemetry. Patterns configured in your redaction policies (emails, credit cards, SSNs) are scrubbed from replay data before storage.
+
+## Chunk ingestion
+
+The browser SDK sends replay chunks to:
+
+```
+POST /v1/replay/chunks
+Content-Type: application/octet-stream
+X-Obtrace-Session-Id: sess_abc123
+X-Obtrace-Chunk-Seq: 42
+```
+
+Chunks are typically 10-50KB compressed. The ingest edge validates authentication and applies rate limits before forwarding to the replay worker for storage.
+
+## Viewing replays
+
+Replays are accessible from:
+
+- **Incident detail page**: If the incident has associated browser errors, linked replays appear in the evidence panel.
+- **Session explorer**: Browse and search all recorded sessions by user, URL, error, or time range.
+
+The viewer supports playback speed control (1x, 2x, 4x), timeline scrubbing, and network request overlay.
+
+## Replay execution API
+
+Fetch replay data programmatically:
+
+```bash
+curl https://api.obtrace.dev/control-plane/replay/sessions/{session_id} \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+```bash
+curl https://api.obtrace.dev/control-plane/replay/sessions/{session_id}/chunks?from=0&to=100 \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+## Storage and retention
+
+Replay data is stored in object storage (MinIO or S3). Retention follows your project's data retention settings. At 10% sample rate for a moderate-traffic site, expect approximately 1-5GB per month of replay storage.
+
+## Limitations
+
+- Replay recording adds approximately 15KB/minute of bandwidth per session.
+- Canvas and WebGL content is captured as static snapshots, not interactive replays.
+- Cross-origin iframes are not recorded unless they also include the Obtrace SDK.
+- Very long sessions (over 1 hour) may experience slower playback due to chunk volume.

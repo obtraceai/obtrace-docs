@@ -1,0 +1,139 @@
+---
+title: AI Policy Configuration
+description: Control AI model selection, budget limits, fallback behavior, and training data export settings.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# AI Policy Configuration
+
+Obtrace uses AI for root cause analysis, chat-to-query, dashboard generation, and autofix code suggestions. The AI policy settings let you control which models are used, how much they cost, and what data is shared with them.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. The AI policy governs how and when these AI capabilities operate.
+
+## Model selection
+
+Obtrace supports multiple LLM providers. Configure which model handles each capability:
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/ai/policy \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "models": {
+      "chat": "ollama/llama3",
+      "reasoner": "ollama/deepseek-r1",
+      "autofix": "ollama/deepseek-coder-v2"
+    }
+  }'
+```
+
+### Supported model types
+
+| Capability | Used for | Recommended models |
+|---|---|---|
+| `chat` | Chat-to-query, dashboard generation, general Q&A | llama3, gpt-4o, claude-sonnet |
+| `reasoner` | Root cause analysis, incident correlation | deepseek-r1, o1, claude-opus |
+| `autofix` | Code fix generation, PR content | deepseek-coder-v2, gpt-4o, claude-sonnet |
+
+Models are accessed through Ollama for local inference or through API keys for hosted providers. Configure providers in **Settings > Integrations > AI Providers**.
+
+## Budget limits
+
+Set monthly spending caps for AI usage:
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/ai/policy/budget \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "monthly_limit_usd": 500,
+    "per_incident_limit_usd": 10,
+    "alert_threshold_pct": 80
+  }'
+```
+
+When the budget is exhausted:
+
+- AI features degrade to cached/heuristic responses.
+- Incident detection and alerting continue without interruption.
+- A notification is sent to project admins.
+
+## Fallback providers
+
+Configure fallback models for when the primary provider is unavailable:
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/ai/policy/fallback \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fallback_chain": [
+      {"provider": "ollama", "model": "llama3", "timeout_ms": 30000},
+      {"provider": "openai", "model": "gpt-4o-mini", "timeout_ms": 15000}
+    ]
+  }'
+```
+
+Obtrace tries each provider in order. If the first times out or returns an error, the next is attempted.
+
+## Acceptance metrics
+
+Define quality thresholds for AI outputs. If a model's performance drops below these thresholds, Obtrace automatically switches to the fallback:
+
+```json
+{
+  "acceptance": {
+    "rca_confidence_min": 0.7,
+    "autofix_compile_rate_min": 0.8,
+    "user_approval_rate_min": 0.5,
+    "evaluation_window_hours": 168
+  }
+}
+```
+
+These metrics are tracked automatically. View current scores at **Settings > AI > Performance**.
+
+## Training data export
+
+Export anonymized incident-resolution pairs for fine-tuning or analysis:
+
+```bash
+curl https://api.obtrace.dev/control-plane/ai/training-data/export \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -G -d 'format=jsonl' -d 'from=2026-01-01' -d 'to=2026-03-01'
+```
+
+Exported data includes:
+
+- Error context (sanitized stack traces, log snippets)
+- Root cause analysis output
+- Fix suggestions and their outcomes
+- Human feedback signals (accepted, rejected, modified)
+
+All exported data goes through the same redaction pipeline as live telemetry.
+
+## Opt-out controls
+
+Disable specific AI capabilities per project:
+
+```json
+{
+  "opt_out": {
+    "autofix_prs": true,
+    "chat_to_query": false,
+    "rca_analysis": false,
+    "dashboard_generation": false
+  }
+}
+```
+
+Setting `autofix_prs` to `true` disables automatic PR creation while keeping AI analysis available in the UI.
+
+## Limitations
+
+- Local Ollama inference requires GPU resources. CPU-only inference is significantly slower and may time out for complex analysis.
+- Budget tracking for Ollama is estimated based on token counts and average hardware cost. It is less precise than API-based provider billing.
+- Acceptance metrics require at least 20 incidents in the evaluation window to be statistically meaningful.

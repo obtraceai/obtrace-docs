@@ -1,0 +1,126 @@
+---
+title: Notifications
+description: Configure notification channels, routing rules, and delivery verification for incident alerts.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Notifications
+
+Obtrace sends notifications when incidents are detected, escalated, or resolved. Notifications are routed through channels with configurable rules that control which incidents trigger which channels.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Notifications are how that detection reaches your team.
+
+## Supported channels
+
+| Channel | Delivery | Rich content |
+|---|---|---|
+| Slack | Webhook or app integration | Incident card with actions |
+| Microsoft Teams | Incoming webhook | Adaptive card |
+| WhatsApp | Twilio Business API | Text summary with link |
+| Phone (voice) | Twilio Voice | TTS incident summary |
+| Email | SMTP or SES | HTML incident report |
+| Webhook | HTTP POST | Full JSON payload |
+
+## Channel setup
+
+### Create a channel
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/notifications/channels \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "slack",
+    "name": "Engineering On-Call",
+    "config": {
+      "webhook_url": "https://hooks.slack.com/services/T00/B00/xxx",
+      "channel": "#incidents"
+    }
+  }'
+```
+
+### Slack app integration
+
+For richer interaction (acknowledge, assign, escalate from Slack), install the Obtrace Slack app from **Settings > Integrations > Slack**. This provides:
+
+- Threaded incident updates
+- Action buttons for acknowledge/resolve
+- Slash command `/obtrace status`
+
+### Webhook channel
+
+Webhooks receive a POST with the full incident payload:
+
+```json
+{
+  "event": "incident.created",
+  "incident_id": "inc_abc123",
+  "severity": "critical",
+  "title": "Error rate spike in checkout-api",
+  "services": ["checkout-api"],
+  "env": "production",
+  "root_cause_summary": "NullPointerException in PaymentProcessor.charge()",
+  "dashboard_url": "https://app.obtrace.dev/incidents/inc_abc123"
+}
+```
+
+Webhooks that return non-2xx responses are retried 3 times with exponential backoff (1m, 5m, 15m).
+
+## Routing rules
+
+Rules determine which incidents trigger which channels. Create rules via the API:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/notifications/rules \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Critical to phone",
+    "conditions": {
+      "severity": ["critical"],
+      "env": ["production"],
+      "services": ["checkout-api", "payments"]
+    },
+    "channels": ["chan_phone_oncall"],
+    "delay_seconds": 0
+  }'
+```
+
+### Rule evaluation
+
+Rules are evaluated in order. All matching rules fire (not just the first match). Use `delay_seconds` to create escalation chains:
+
+1. Severity critical, delay 0 -> Slack
+2. Severity critical, delay 300 -> Phone on-call
+3. Severity critical, delay 900 -> Phone engineering manager
+
+## Test endpoint
+
+Verify channel configuration before relying on it:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/notifications/{channel_id}/test \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+This sends a synthetic incident notification through the channel and returns the delivery result.
+
+## Delivery log
+
+All notification deliveries are logged with status, latency, and response. Query the delivery log:
+
+```bash
+curl https://api.obtrace.dev/control-plane/notifications/deliveries?channel_id=chan_abc&limit=50 \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Delivery states: `sent`, `delivered`, `failed`, `retrying`.
+
+## Limitations
+
+- WhatsApp and Phone channels require a Twilio account connected in **Settings > Integrations**.
+- Webhook timeout is 10 seconds. Slow endpoints will be marked as failed.
+- Phone notifications are limited to 60-second TTS summaries. Complex incidents link to the dashboard.

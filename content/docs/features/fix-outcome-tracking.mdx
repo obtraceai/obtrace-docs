@@ -1,0 +1,129 @@
+---
+title: Fix Outcome Tracking
+description: Track whether AI-suggested fixes actually resolve production errors using the fix outcome graph.
+category: feature
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Fix Outcome Tracking
+
+Obtrace tracks the full lifecycle of a fix: from error detection, through AI-generated code suggestion, to PR merge, and finally production outcome measurement. This creates a feedback loop that improves AI fix quality over time.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Fix outcome tracking measures whether those fixes actually work.
+
+## Fix outcome graph
+
+The fix outcome graph models the relationship between errors, fixes, and results:
+
+```
+Error detected → Root cause identified → Fix suggested → PR opened
+  → PR merged → Deployed → Error rate measured → Outcome recorded
+```
+
+Each node in the graph is tracked with timestamps and metadata, creating a complete audit trail of the remediation process.
+
+## How it works
+
+### 1. Error-to-fix correlation
+
+When Obtrace detects an incident and generates a fix suggestion, it creates a `fix_attempt` record linking:
+
+- The incident ID
+- The root cause analysis output
+- The generated code diff
+- The target repository and branch
+
+### 2. PR merge webhook
+
+When the PR is merged, Obtrace receives a webhook from GitHub and records the merge event:
+
+```json
+{
+  "fix_attempt_id": "fix_abc123",
+  "pr_url": "https://github.com/acme/checkout/pull/42",
+  "merged_at": "2026-03-23T14:30:00Z",
+  "merged_by": "dev@acme.com",
+  "modifications": "none"
+}
+```
+
+The `modifications` field tracks whether the developer merged the AI suggestion as-is, modified it, or rewrote it entirely. This signal is critical for training data quality.
+
+### 3. Deployment correlation
+
+Obtrace matches the merge to a deployment using release metadata (version tags, deploy timestamps). Once the fix is deployed, the observation window begins.
+
+### 4. Outcome measurement
+
+After deployment, Obtrace measures:
+
+| Metric | Window | Success criteria |
+|---|---|---|
+| Error rate for the same error signature | 24 hours post-deploy | Rate drops below incident threshold |
+| Time-to-fix | From detection to deploy | Recorded for benchmarking |
+| Regression check | 72 hours post-deploy | No new incidents on the same code path |
+| User-reported issues | 7 days post-deploy | No related support tickets (if integrated) |
+
+### 5. Outcome classification
+
+Each fix attempt receives a final outcome:
+
+- **resolved**: Error rate dropped, no regression detected.
+- **partial**: Error rate decreased but did not return to baseline.
+- **ineffective**: Error rate unchanged or increased.
+- **regressed**: The fix introduced a new error.
+- **superseded**: Another fix or rollback addressed the issue first.
+
+## API endpoints
+
+### Query fix outcomes
+
+```bash
+curl https://api.obtrace.dev/control-plane/fix-outcomes?status=resolved&limit=50 \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+### Get outcome for a specific fix
+
+```bash
+curl https://api.obtrace.dev/control-plane/fix-outcomes/{fix_attempt_id} \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+### Aggregate metrics
+
+```bash
+curl https://api.obtrace.dev/control-plane/fix-outcomes/metrics \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Returns overall fix success rate, average time-to-fix, modification rate, and trend over time.
+
+## Training data export
+
+Fix outcome data is the primary input for improving AI fix quality. Export it for fine-tuning or analysis:
+
+```bash
+curl https://api.obtrace.dev/control-plane/ai/training-data/export \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -G -d 'format=jsonl' -d 'include=fix_outcomes'
+```
+
+Each record includes the error context, generated fix, human modifications (if any), and production outcome. Only fixes with a definitive outcome (resolved, ineffective, regressed) are included. Ambiguous outcomes are excluded from training data.
+
+## Dashboard
+
+The fix outcome dashboard in **AI > Fix Outcomes** shows:
+
+- Fix success rate over time
+- Average time from detection to deployed fix
+- Modification rate (how often developers change AI suggestions)
+- Model comparison (if multiple models are configured)
+
+## Limitations
+
+- Outcome measurement requires release metadata. Without version tagging in your deployments, Obtrace cannot correlate merges to deployments.
+- The 24-hour observation window may miss slow-manifesting issues. The 72-hour regression check provides a secondary safety net.
+- Fix outcome tracking only applies to AI-generated fixes. Manual fixes are not tracked unless they reference an Obtrace incident ID in the PR.

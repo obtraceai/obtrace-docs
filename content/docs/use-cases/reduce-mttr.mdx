@@ -1,0 +1,108 @@
+---
+title: How to Reduce MTTR in Production Systems
+description: Reduce Mean Time to Resolution from hours to minutes with AI-powered incident detection and automated root cause analysis.
+category: use-case
+intent: education
+llm_priority: high
+sourceOfTruth: true
+---
+
+# How to Reduce MTTR in Production Systems
+
+Mean Time to Resolution (MTTR) is the single most important metric for production reliability. Every minute of downtime costs money, erodes user trust, and burns out your on-call engineers. Most teams measure MTTR in hours. It should be measured in minutes.
+
+## Why MTTR is high
+
+The typical incident resolution timeline looks like this:
+
+1. **Alert fires** (0 min) — A threshold is breached. An alert goes to Slack or PagerDuty.
+2. **Triage begins** (5-15 min) — An engineer acknowledges, opens the dashboard, tries to understand scope.
+3. **Log searching** (15-45 min) — The engineer queries logs across services, tries to correlate timestamps.
+4. **Root cause hypothesis** (30-90 min) — After reading enough logs and traces, the engineer forms a theory.
+5. **Fix implemented** (60-180 min) — Code change, review, merge, deploy.
+6. **Verification** (15-30 min) — Confirm the error rate is dropping.
+
+Total: 2-6 hours for a moderate incident. For complex distributed system failures, it can take days.
+
+The bottleneck is not the fix itself. It is the time spent finding the root cause.
+
+## The traditional approach
+
+Traditional observability tools provide:
+
+- **Metrics dashboards** that show something is wrong.
+- **Log search** that shows what happened, if you know where to look.
+- **Trace viewers** that show request paths, if the right request is sampled.
+
+The engineer is the integration layer. They mentally correlate signals across tools, form hypotheses, and test them one by one. This is slow, error-prone, and depends entirely on the engineer's familiarity with the system.
+
+## The AI-powered approach
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. This changes the MTTR equation fundamentally.
+
+### Detection (seconds, not minutes)
+
+Obtrace correlates signals at ingestion time. Instead of independent metric thresholds, it groups related anomalies into a single incident with impact scoring. The incident is created with context already attached.
+
+### Root cause analysis (minutes, not hours)
+
+When an incident is created, Obtrace immediately runs automated root cause analysis:
+
+1. Correlates error stack traces with recent deployments.
+2. Identifies the specific code change that introduced the regression.
+3. Cross-references trace data to determine which services are affected.
+4. Analyzes log patterns to confirm the failure mode.
+
+The AI produces a root cause summary with confidence scoring. Engineers start with an answer instead of starting with a search.
+
+### Fix suggestion (automated)
+
+For common failure patterns, Obtrace generates a code fix and can open a pull request directly:
+
+1. The AI reads the identified code path.
+2. It generates a fix based on the error pattern and code context.
+3. The fix is validated against compilation and basic correctness checks.
+4. A PR is opened on the target repository with the incident linked.
+
+The engineer reviews and merges instead of writing from scratch.
+
+## MTTR comparison
+
+| Phase | Traditional | With Obtrace |
+|---|---|---|
+| Detection | 5-15 min | < 1 min |
+| Triage | 15-45 min | Automated (incident has context) |
+| Root cause identification | 30-90 min | 2-5 min (AI analysis) |
+| Fix implementation | 60-180 min | 5-15 min (review AI-generated PR) |
+| Verification | 15-30 min | Automated (outcome tracking) |
+| **Total** | **2-6 hours** | **10-25 minutes** |
+
+These numbers assume the AI correctly identifies the root cause, which happens for approximately 70-80% of incidents with sufficient telemetry context. For the remaining cases, the AI narrows the search space, reducing manual investigation time.
+
+## What makes this work
+
+MTTR reduction is not magic. It requires:
+
+- **Complete telemetry**: Logs, traces, and metrics from all critical services.
+- **Release metadata**: Version tags, deploy timestamps, and commit SHAs attached to telemetry.
+- **Repository access**: For AI to suggest fixes, it needs read access to your code.
+- **Sufficient history**: The AI improves over time. Early incidents may require more manual intervention.
+
+## Getting started
+
+1. [Install the SDK](/docs/quickstart) on your most critical service.
+2. Ensure `service`, `env`, and `version` tags are set consistently.
+3. Connect your GitHub repository for autofix capabilities.
+4. Run for 2-4 incidents and compare MTTR against your baseline.
+
+## Limitations
+
+- AI root cause analysis requires sufficient context. Services with minimal logging or no tracing will see limited benefit.
+- Autofix works best for common patterns (null pointer, unhandled exception, type error). Novel architectural issues require human investigation.
+- MTTR reduction depends on your deployment pipeline speed. If deploys take 30 minutes, that becomes the floor regardless of how fast the fix is identified.
+
+## Further reading
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+- [How AI decides to open a PR](/docs/concepts/how-ai-decides-to-open-a-pr)

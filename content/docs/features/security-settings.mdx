@@ -1,0 +1,151 @@
+---
+title: Security Settings
+description: Configure PII scrubbing, redaction policies, MFA, RBAC, audit logs, and data retention.
+category: feature
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Security Settings
+
+Obtrace provides layered security controls for data privacy, access management, and compliance. Security is enforced at ingestion time and throughout the data lifecycle.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Security settings ensure that this automation operates within your data governance requirements.
+
+## PII scrubbing
+
+### Gate1: Ingest-time scrubbing
+
+Gate1 runs at the ingest edge before data reaches storage or workers. It applies built-in patterns for common PII:
+
+- Email addresses
+- Credit card numbers (PCI patterns)
+- Social Security Numbers
+- Bearer tokens and API keys
+- IP addresses (configurable)
+
+Gate1 scrubbing is always active and cannot be disabled. Matched patterns are replaced with `[REDACTED:<type>]`.
+
+### Gate2: Policy-based scrubbing
+
+Gate2 runs in workers and applies tenant-specific redaction policies using JSONPath and regex patterns:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/security/redaction-policies \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Scrub user PII",
+    "rules": [
+      {
+        "path": "$.body.user.email",
+        "action": "redact"
+      },
+      {
+        "path": "$.attributes.*",
+        "pattern": "\\b[A-Z]{2}\\d{6,10}\\b",
+        "action": "hash"
+      }
+    ]
+  }'
+```
+
+Actions: `redact` (replace with placeholder), `hash` (SHA-256, preserves cardinality), `drop` (remove field entirely).
+
+## Authentication
+
+### MFA / OTP
+
+Enforce multi-factor authentication for all users in your organization:
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/security/mfa \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"required": true, "methods": ["totp", "webauthn"]}'
+```
+
+Supported methods: TOTP (authenticator apps), WebAuthn (hardware keys, passkeys).
+
+### API key management
+
+API keys are scoped to project and environment. Rotate keys without downtime by creating a new key before revoking the old one:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/security/api-keys \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "production-ingest", "scopes": ["ingest"], "env": "production"}'
+```
+
+## RBAC
+
+Role-based access control with predefined and custom roles:
+
+| Role | Capabilities |
+|---|---|
+| `viewer` | Read dashboards, incidents, replays |
+| `responder` | Acknowledge/resolve incidents, view AI analysis |
+| `editor` | Modify dashboards, notification rules, integrations |
+| `admin` | Manage users, security settings, billing |
+| `owner` | Full access including destructive operations |
+
+Create custom roles by combining granular permissions:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/security/roles \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "incident-manager",
+    "permissions": ["incidents:read", "incidents:write", "ai:read", "notifications:write"]
+  }'
+```
+
+## Audit log
+
+All security-relevant actions are recorded in an immutable audit log:
+
+```bash
+curl https://api.obtrace.dev/control-plane/security/audit-log?limit=100 \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Logged events include: user login/logout, role changes, API key creation/revocation, redaction policy changes, data export requests, and security setting modifications.
+
+Audit logs are retained for 1 year regardless of your data retention settings.
+
+## Data retention
+
+Configure how long telemetry data is stored:
+
+```bash
+curl -X PUT https://api.obtrace.dev/control-plane/security/retention \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "logs": "30d",
+    "traces": "14d",
+    "metrics": "90d",
+    "replay_sessions": "7d",
+    "incidents": "365d"
+  }'
+```
+
+Data is hard-deleted after the retention period. There is no soft-delete or recovery after expiration.
+
+## Security settings audit trail
+
+Changes to security settings themselves are tracked separately with before/after diffs:
+
+```bash
+curl https://api.obtrace.dev/control-plane/security/settings-history \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+## Limitations
+
+- Gate1 patterns are not configurable per tenant. Custom patterns require Gate2 policies.
+- RBAC custom roles are limited to 20 per organization.
+- Audit log queries support a maximum time range of 90 days per request. Use pagination for longer periods.

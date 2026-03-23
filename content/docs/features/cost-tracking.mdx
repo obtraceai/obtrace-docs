@@ -1,0 +1,121 @@
+---
+title: Cost Tracking
+description: Attribute cloud infrastructure costs to services and correlate spending with observability data.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Cost Tracking
+
+Obtrace correlates cloud infrastructure costs with service telemetry. This lets you attribute spending to specific services, environments, and teams, and understand how incidents or traffic changes affect your cloud bill.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Cost tracking extends this by connecting infrastructure spending to the services Obtrace already monitors.
+
+## Provider setup
+
+### Connect a cloud provider
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/cost/providers \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "aws",
+    "config": {
+      "role_arn": "arn:aws:iam::123456789012:role/ObtraceCosting",
+      "cur_bucket": "acme-cost-reports",
+      "cur_prefix": "daily/"
+    }
+  }'
+```
+
+Supported providers:
+
+| Provider | Data source | Sync frequency |
+|---|---|---|
+| AWS | Cost and Usage Reports (CUR) | Daily |
+| GCP | BigQuery billing export | Daily |
+| Azure | Cost Management API | Daily |
+
+### Required permissions
+
+Each provider needs read-only access to billing data. Obtrace never provisions or modifies infrastructure. See the provider-specific setup guides for IAM role templates.
+
+## Cost mappings
+
+Obtrace maps cloud resources to services using tags and naming conventions. Configure mappings to define how resources are attributed:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/cost/mappings \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rules": [
+      {
+        "match": {"tag": "service", "pattern": "*"},
+        "attribute_to": "service"
+      },
+      {
+        "match": {"tag": "env", "pattern": "production"},
+        "attribute_to": "env"
+      },
+      {
+        "match": {"resource_name_prefix": "checkout-"},
+        "attribute_to_service": "checkout-api"
+      }
+    ]
+  }'
+```
+
+Unmapped resources are grouped under "Unattributed" in cost reports.
+
+## Monthly estimates
+
+Obtrace projects monthly costs based on current burn rate:
+
+```bash
+curl https://api.obtrace.dev/control-plane/cost/estimate?period=monthly \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Response includes per-service breakdown, trend compared to previous period, and anomaly flags for unusual spending.
+
+## Savings recommendations
+
+Based on usage patterns observed in telemetry, Obtrace identifies potential savings:
+
+```bash
+curl https://api.obtrace.dev/control-plane/cost/recommendations \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Recommendations include:
+
+- **Idle resources**: Services with minimal traffic but significant compute cost.
+- **Overprovisioned services**: CPU/memory utilization consistently below 20%.
+- **Reserved instance opportunities**: Stable workloads that would benefit from commitments.
+
+Recommendations are suggestions only. Obtrace does not make infrastructure changes.
+
+## Cost in incident context
+
+When an incident is detected, the incident detail includes estimated cost impact if the affected service has cost data. This helps prioritize incidents by business impact rather than technical severity alone.
+
+## API reference
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/control-plane/cost/providers` | POST | Connect cloud provider |
+| `/control-plane/cost/mappings` | POST | Configure resource-to-service mapping |
+| `/control-plane/cost/summary` | GET | Current period cost summary |
+| `/control-plane/cost/estimate` | GET | Projected monthly costs |
+| `/control-plane/cost/recommendations` | GET | Savings recommendations |
+| `/control-plane/cost/by-service` | GET | Per-service cost breakdown |
+
+## Limitations
+
+- Cost data is synced daily. Real-time cost tracking is not supported.
+- Shared resources (load balancers, databases used by multiple services) require manual mapping rules.
+- Savings recommendations are based on heuristics, not provider-specific pricing APIs. Always verify with your provider's tools before acting.

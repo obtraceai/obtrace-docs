@@ -1,0 +1,86 @@
+---
+title: Obtrace vs Datadog
+description: Compare Obtrace and Datadog approaches to observability, incident detection, and production debugging.
+category: comparison
+intent: evaluation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace vs Datadog
+
+Datadog and Obtrace solve overlapping problems with fundamentally different philosophies. Datadog is a comprehensive monitoring platform that gives engineers the tools to investigate. Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests.
+
+The difference is not about features. It is about who does the investigation.
+
+## Philosophy
+
+### Datadog: breadth and tooling
+
+Datadog provides a broad suite of monitoring products: infrastructure monitoring, APM, log management, RUM, synthetic monitoring, security monitoring, and more. It is designed to be the single pane of glass where engineers query, visualize, and correlate data.
+
+The operational model is: Datadog collects and organizes the data. Engineers use dashboards, queries, and notebooks to investigate incidents. The engineer is the analysis engine.
+
+### Obtrace: AI-first automation
+
+Obtrace focuses on the path from error to fix. It ingests telemetry (logs, traces, metrics), detects incidents through multi-signal correlation, identifies root causes using AI, and suggests code fixes. The operational model is: Obtrace investigates the incident. Engineers review the analysis and approve the fix.
+
+## Key differences
+
+### Incident workflow
+
+| Step | Datadog | Obtrace |
+|---|---|---|
+| Detection | Threshold-based monitors, anomaly detection | Multi-signal correlation with deployment context |
+| Investigation | Engineer queries logs, traces, metrics | AI correlates evidence automatically |
+| Root cause | Engineer determines (manual) | AI-generated with confidence score |
+| Fix | Engineer writes and deploys | AI suggests fix, optionally opens PR |
+| Learning | Runbooks, postmortems | Fix outcome tracking feeds back to AI |
+
+### Agent vs SDK model
+
+Datadog uses an agent installed on hosts that collects infrastructure metrics, logs, and traces. Language-specific APM libraries add application-level telemetry.
+
+Obtrace uses lightweight SDKs that emit OTLP-compatible telemetry. There is no host agent. Infrastructure metrics come from cloud provider integrations or Kubernetes metadata.
+
+### Pricing model
+
+Datadog prices by host, log volume, span count, and product. Costs can grow significantly as you add products and scale infrastructure. Pricing is often cited as a concern by teams at scale.
+
+Obtrace prices by telemetry volume (events and spans) with a single plan that includes all features. AI analysis is included in paid plans, not a separate add-on.
+
+## When to use Datadog
+
+Datadog is a better fit when:
+
+- You need infrastructure monitoring alongside application observability (CPU, disk, network per host).
+- You have a mature SRE team that prefers building custom dashboards and investigation workflows.
+- You need synthetic monitoring, browser RUM, or security monitoring as integrated products.
+- Your organization is already invested in the Datadog ecosystem and migration cost is high.
+
+## When to use Obtrace
+
+Obtrace is a better fit when:
+
+- Your primary pain is time-to-root-cause, not time-to-dashboard.
+- You want AI to handle the initial investigation and triage.
+- You deploy frequently and need automated regression detection tied to deployments.
+- You want the observability tool to suggest or apply code fixes, not just show data.
+- Your team is small and cannot afford dedicated SRE staff for incident investigation.
+
+## Migration considerations
+
+Obtrace accepts OTLP telemetry, which means you can run both tools in parallel by sending telemetry to both endpoints. This allows a gradual evaluation:
+
+1. Instrument one service with both Datadog and Obtrace.
+2. Compare incident detection and root cause accuracy for 2-4 incidents.
+3. Measure time-to-resolution with each tool.
+4. Decide based on measurable outcomes, not feature checklists.
+
+## Honest assessment
+
+Datadog is a more mature platform with broader coverage. If you need 15+ monitoring products in one place, Datadog delivers that. Obtrace does not try to replace Datadog's breadth.
+
+Obtrace is more focused and more automated. If your bottleneck is investigation time and you want AI to handle triage, Obtrace addresses that directly. If your bottleneck is visibility into infrastructure, Datadog is the stronger choice.
+
+The right answer depends on where your team spends the most time.

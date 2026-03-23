@@ -1,0 +1,127 @@
+---
+title: Obtrace vs Grafana Stack
+description: Compare Obtrace with the Grafana open-source stack (Grafana, Loki, Tempo, Mimir) for observability.
+category: comparison
+intent: evaluation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace vs Grafana Stack
+
+The Grafana stack (Grafana, Loki, Tempo, Mimir, and related projects) and Obtrace represent two fundamentally different approaches to observability. Grafana provides open-source building blocks you assemble. Obtrace provides an integrated platform with AI automation.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests.
+
+## The Grafana stack
+
+The Grafana ecosystem consists of several independent projects:
+
+| Component | Purpose |
+|---|---|
+| Grafana | Visualization and dashboarding |
+| Loki | Log aggregation (label-indexed) |
+| Tempo | Distributed tracing backend |
+| Mimir | Metrics storage (Prometheus-compatible) |
+| Alloy (formerly Agent) | Telemetry collection and forwarding |
+| OnCall | Incident management and alerting |
+| k6 | Load testing |
+
+These components can be self-hosted or used through Grafana Cloud (managed service).
+
+## Philosophy
+
+### Grafana: open-source composability
+
+Grafana's approach is modular. Each component handles one concern (logs, traces, metrics, visualization) and they integrate through standard protocols (PromQL, LogQL, TraceQL). You choose which components to deploy, how to configure them, and how to connect them.
+
+This gives maximum flexibility and avoids vendor lock-in. The trade-off is operational complexity: you are responsible for deploying, scaling, and maintaining each component.
+
+### Obtrace: integrated platform with AI
+
+Obtrace bundles collection, storage, analysis, and remediation into a single platform. The components are not independently deployable — they are designed to work together. The benefit is that correlation, analysis, and AI features work out of the box without assembly.
+
+## Key differences
+
+### Assembly vs integration
+
+| Aspect | Grafana stack | Obtrace |
+|---|---|---|
+| Deployment | Deploy each component separately | Single platform deployment |
+| Configuration | Configure each component independently | Unified configuration |
+| Correlation | Manual (exemplars, trace-to-logs links) | Automatic (ingestion-time correlation) |
+| Maintenance | Scale/upgrade each component | Platform handles scaling |
+| Customization | Highly customizable | Opinionated workflow |
+
+### Investigation workflow
+
+With the Grafana stack, investigating an incident involves:
+
+1. Open Grafana dashboard, notice anomaly in metrics.
+2. Click through to Loki, query logs for the affected service.
+3. Find a trace ID in the logs, open it in Tempo.
+4. Manually correlate what you see across the three tools.
+5. Form a hypothesis, test it with more queries.
+
+With Obtrace:
+
+1. Incident is created with all correlated evidence.
+2. AI root cause analysis is already attached.
+3. Review the analysis and suggested fix.
+
+### AI capabilities
+
+The Grafana stack does not include AI root cause analysis or fix generation. Grafana Cloud has added some AI features (natural language queries, anomaly detection), but the core open-source stack does not include these.
+
+Obtrace includes AI analysis for every incident: root cause identification, confidence scoring, fix suggestion, and outcome tracking.
+
+### Cost model
+
+The Grafana open-source stack is free to run but costs in engineering time: deployment, configuration, scaling, upgrades, and troubleshooting the observability infrastructure itself.
+
+Grafana Cloud provides a managed option with usage-based pricing similar to other SaaS observability tools.
+
+Obtrace charges for telemetry volume with all features included. No component management is required.
+
+## When to use the Grafana stack
+
+The Grafana stack is a better fit when:
+
+- You want full control over your observability infrastructure.
+- You have a platform team that can operate and maintain the stack.
+- You need maximum flexibility in dashboarding and visualization.
+- You want to avoid vendor lock-in for your observability data.
+- You already use Prometheus and want compatible long-term metrics storage.
+- You need to keep observability data on-premises for compliance reasons.
+- Your team enjoys building and customizing infrastructure.
+
+## When to use Obtrace
+
+Obtrace is a better fit when:
+
+- You want observability that works without assembling components.
+- You do not have a platform team to maintain observability infrastructure.
+- Your bottleneck is investigation time, not dashboard flexibility.
+- You want automated root cause analysis and fix suggestions.
+- You prefer to spend engineering time on your product, not your monitoring stack.
+- You deploy frequently and need deployment-correlated regression detection.
+
+## Hybrid approach
+
+Some teams use Grafana for visualization and Obtrace for AI analysis. This works if:
+
+- You have existing Grafana dashboards your team relies on.
+- You want to add AI-powered incident analysis without replacing your visualization layer.
+- Your telemetry pipeline can fan out to both systems (using OpenTelemetry Collector).
+
+Obtrace does not replace Grafana as a general-purpose visualization tool. Grafana does not replace Obtrace as an AI analysis and remediation platform.
+
+## Honest assessment
+
+The Grafana stack offers unmatched flexibility and community ecosystem. If you have the team to operate it, it provides best-in-class visualization and full control over your data. The open-source nature means no vendor lock-in.
+
+The cost is operational complexity. Running Loki, Tempo, and Mimir at scale requires significant infrastructure expertise. Many teams underestimate this when starting with the Grafana stack and eventually migrate to Grafana Cloud or a managed alternative.
+
+Obtrace trades flexibility for automation. You get less control over visualization and storage, but you get AI-powered investigation and fix suggestion without operating any infrastructure. For teams where the bottleneck is analysis rather than visualization, this is a worthwhile trade-off.
+
+For teams with an existing, well-operated Grafana stack, adding Obtrace alongside it for AI analysis is a reasonable incremental step that does not require replacing what already works.

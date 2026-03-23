@@ -1,0 +1,141 @@
+---
+title: Debugging Production Errors Automatically
+description: Automate the path from production error to root cause and fix suggestion without manual log searching.
+category: use-case
+intent: education
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Debugging Production Errors Automatically
+
+Production debugging is fundamentally different from local debugging. You cannot attach a debugger, reproduce the issue on demand, or inspect state in real time. You are working backwards from symptoms to cause, using whatever evidence the system recorded.
+
+Most teams spend 60-80% of their incident response time on this investigation phase. Automating it changes the economics of running production systems.
+
+## The manual debugging workflow
+
+When a production error appears, the typical investigation follows this pattern:
+
+1. **Find the error**: Search logs for the error message or exception type. Hope the right service is logging at the right level.
+2. **Establish timeline**: Determine when the error started. Correlate with deployments, config changes, or traffic shifts.
+3. **Trace the request**: Find the trace ID (if available) and follow the request across services. Identify where it failed.
+4. **Read the stack trace**: Determine which code path triggered the failure. Open the repository and find the file and line.
+5. **Identify the root cause**: Understand why the code failed. Was it a recent change? A data issue? A dependency failure?
+6. **Write the fix**: Modify the code, write tests, open a PR, get it reviewed, merge, deploy.
+
+Each step requires a different tool, a different query language, and context-switching between terminals, dashboards, and code editors. The cognitive load is enormous.
+
+## How automated debugging works
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Here is how the automated pipeline operates.
+
+### Signal correlation
+
+When an error is ingested, Obtrace does not treat it as an isolated event. It correlates the error with:
+
+- **Other errors** from the same service in the same time window.
+- **Trace data** showing the full request path and where it broke.
+- **Deployment events** identifying what changed recently.
+- **Metric anomalies** (latency spikes, throughput drops) that coincide with the error burst.
+
+This correlation happens automatically at ingestion time. By the time an incident is created, the evidence is already assembled.
+
+### Stack trace analysis
+
+Obtrace parses stack traces and maps them to your repository:
+
+```
+Error: Cannot read properties of undefined (reading 'id')
+    at processOrder (src/orders/processor.ts:142:23)
+    at handleCheckout (src/routes/checkout.ts:87:12)
+```
+
+The AI identifies:
+
+- The file and line where the error occurred.
+- The function chain leading to the failure.
+- Recent commits that modified these files.
+- Whether this code path has failed before.
+
+### Root cause determination
+
+The AI combines stack trace analysis, deployment correlation, and historical patterns to produce a root cause assessment:
+
+```
+Root cause: NullPointerException in processOrder()
+Confidence: 0.92
+
+The order.customer field is undefined when processOrder() is called
+from the new bulk checkout path added in commit abc123 (deployed
+2 hours ago). The original checkout path always populates customer
+from the session, but the bulk path reads from the request body
+where the field is optional.
+
+Suggested fix: Add null check for order.customer in processOrder()
+or make customer required in the bulk checkout schema.
+```
+
+### Automated fix suggestion
+
+For errors with high-confidence root causes, Obtrace generates a code fix:
+
+1. Reads the identified file from the connected repository.
+2. Generates a minimal diff that addresses the root cause.
+3. Validates that the fix compiles (for compiled languages) or parses correctly.
+4. Opens a PR with the incident context, root cause explanation, and fix.
+
+The PR includes a link back to the incident so reviewers can see the production evidence.
+
+## What makes automated debugging reliable
+
+### Telemetry quality
+
+Automated debugging is only as good as the data available. Requirements for reliable results:
+
+- **Structured logging**: Key-value pairs, not free-form text. The AI can parse both, but structured data is more reliable.
+- **Distributed tracing**: Trace context propagated across service boundaries. Without this, cross-service correlation is impossible.
+- **Error context**: Stack traces with source maps (for JavaScript), deobfuscated symbols, and relevant local variable state.
+- **Version metadata**: `service.version` attached to every span and log entry.
+
+### Repository context
+
+Obtrace needs read access to your repository to:
+
+- Map stack traces to current source code.
+- Identify recent changes in the affected code path.
+- Generate fix suggestions that are syntactically correct.
+
+Without repository access, Obtrace still provides root cause analysis based on telemetry. Fix suggestions require code access.
+
+## Real-world example
+
+A team running a Go microservices platform connected Obtrace to their checkout service. Within the first week:
+
+- 3 incidents were detected with automated root cause analysis.
+- 2 of 3 root causes were correct on first attempt.
+- 1 incident received an automated fix PR that was merged with minor modifications.
+- Average time from detection to deployed fix dropped from 4 hours to 22 minutes.
+
+The third incident involved a database connection pool exhaustion that required architectural changes beyond what automated fix generation can handle. The root cause analysis correctly identified the problem, but the fix required human design decisions.
+
+## When automated debugging falls short
+
+- **Architectural issues**: Problems that require design changes, not code changes. The AI can identify the symptom but not redesign your system.
+- **Data-dependent bugs**: Errors caused by specific data patterns that are not visible in stack traces or logs.
+- **Infrastructure failures**: Network partitions, hardware failures, or cloud provider outages are detected but not fixable through code changes.
+- **Insufficient telemetry**: Services with minimal logging produce minimal evidence. The AI cannot analyze what was not recorded.
+
+## Getting started
+
+1. Instrument your service with the [Obtrace SDK](/docs/quickstart).
+2. Ensure stack traces include source information (source maps, debug symbols).
+3. Tag all telemetry with `service`, `env`, and `version`.
+4. Connect your GitHub repository in **Settings > Integrations**.
+5. Review the first few AI-generated root cause analyses to calibrate trust.
+
+## Further reading
+
+- [How root cause analysis works](/docs/concepts/how-root-cause-analysis-works)
+- [Fix outcome tracking](/docs/features/fix-outcome-tracking)
+- [AI policy configuration](/docs/features/ai-policy)

@@ -1,0 +1,137 @@
+---
+title: Billing
+description: Manage plans, usage tracking, Stripe-powered checkout, and billing portal access.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Billing
+
+Obtrace offers a free tier for small teams and paid plans for production workloads. Billing is managed through Stripe with usage-based pricing for telemetry volume.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Billing scales with the volume of telemetry processed and AI features used.
+
+## Plans
+
+### Free tier
+
+| Resource | Limit |
+|---|---|
+| Events ingested | 1M / month |
+| Traces | 500K spans / month |
+| Replay sessions | 100 sessions / month |
+| AI analysis | 50 incidents / month |
+| Data retention | 7 days |
+| Team members | 3 |
+| Projects | 1 |
+
+The free tier is designed for evaluating Obtrace on a single service. No credit card is required.
+
+### Team plan
+
+| Resource | Included | Overage |
+|---|---|---|
+| Events | 50M / month | $1.50 per additional 1M |
+| Traces | 25M spans / month | $2.00 per additional 1M |
+| Replay sessions | 10K / month | $0.10 per additional session |
+| AI analysis | Unlimited | Included |
+| Data retention | 30 days | Configurable up to 90 days |
+| Team members | 20 | $10 / additional seat |
+| Projects | 10 | $20 / additional project |
+
+Base price: $99/month.
+
+### Enterprise plan
+
+Custom pricing with:
+
+- Unlimited events and traces
+- Configurable retention up to 365 days
+- Dedicated infrastructure option
+- SLA with uptime guarantees
+- SSO/SAML integration
+- Priority support
+
+Contact sales@obtrace.dev for enterprise pricing.
+
+## Usage tracking
+
+Monitor current usage against plan limits:
+
+```bash
+curl https://api.obtrace.dev/control-plane/billing/usage \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Response:
+
+```json
+{
+  "period": "2026-03",
+  "events": {"used": 12500000, "limit": 50000000, "pct": 25},
+  "traces": {"used": 8200000, "limit": 25000000, "pct": 32.8},
+  "replay_sessions": {"used": 1240, "limit": 10000, "pct": 12.4},
+  "ai_incidents": {"used": 87, "limit": null, "pct": null},
+  "projected_overage_usd": 0
+}
+```
+
+Usage data updates hourly. Set up alerts for approaching limits in **Settings > Billing > Alerts**.
+
+## Stripe integration
+
+### Checkout
+
+Initiate a plan upgrade programmatically:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/billing/checkout \
+  -H "Authorization: Bearer $OBTRACE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"plan": "team", "billing_cycle": "monthly"}'
+```
+
+Returns a Stripe Checkout URL. The user completes payment there and is redirected back to Obtrace.
+
+### Customer portal
+
+Give users access to manage their subscription, update payment methods, and download invoices:
+
+```bash
+curl -X POST https://api.obtrace.dev/control-plane/billing/portal \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+Returns a Stripe Customer Portal URL.
+
+### Webhook handling
+
+Obtrace processes Stripe webhooks for subscription lifecycle events:
+
+- `checkout.session.completed` — activates the plan
+- `invoice.paid` — records payment
+- `invoice.payment_failed` — sends payment failure notification
+- `customer.subscription.deleted` — downgrades to free tier
+
+Webhook signature verification uses the Stripe webhook secret configured in your environment.
+
+## Plan changes
+
+Upgrades take effect immediately. Downgrades take effect at the end of the current billing period. When downgrading, data exceeding the new plan's retention limit is deleted after the transition.
+
+## Invoices
+
+Access invoices through the Stripe Customer Portal or the API:
+
+```bash
+curl https://api.obtrace.dev/control-plane/billing/invoices \
+  -H "Authorization: Bearer $OBTRACE_API_KEY"
+```
+
+## Limitations
+
+- Usage tracking has up to 1 hour of delay. Real-time usage is not available.
+- Plan changes mid-cycle are prorated by Stripe. Obtrace does not apply custom proration.
+- The free tier has a hard limit. Ingestion is rejected (HTTP 429) once limits are reached, not silently dropped.

@@ -1,0 +1,97 @@
+---
+title: Obtrace vs Sentry
+description: Compare Obtrace and Sentry approaches to error tracking, root cause analysis, and production debugging.
+category: comparison
+intent: evaluation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace vs Sentry
+
+Sentry and Obtrace both detect production errors. Where they diverge is what happens after detection. Sentry surfaces errors with context and helps you prioritize. Obtrace takes the next step: it identifies root causes automatically and suggests code fixes.
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. Sentry is an error tracking and performance monitoring platform focused on surfacing and organizing errors.
+
+## Philosophy
+
+### Sentry: error-centric visibility
+
+Sentry excels at capturing, deduplicating, and contextualizing errors. It groups similar errors into issues, provides stack traces with source context, shows breadcrumbs (user actions before the error), and tracks error frequency over releases. Sentry's strength is making errors visible and manageable.
+
+The operational model: Sentry shows you the errors. You investigate, prioritize, and fix them.
+
+### Obtrace: error-to-fix automation
+
+Obtrace treats error detection as the starting point, not the end product. After detecting an error, it correlates the error with traces, metrics, and deployment events to determine the root cause. For common patterns, it generates a fix and can open a pull request.
+
+The operational model: Obtrace shows you the error, tells you why it happened, and offers a fix.
+
+## Key differences
+
+### Scope of analysis
+
+| Signal | Sentry | Obtrace |
+|---|---|---|
+| Errors/exceptions | Primary focus | One of multiple signals |
+| Stack traces | Detailed with source context | Mapped to repository + recent changes |
+| Performance (transactions) | Supported | Supported (traces) |
+| Logs | Limited (via breadcrumbs) | Full log correlation |
+| Metrics | Limited | Full metrics correlation |
+| Deployment correlation | Release tracking | Active regression detection |
+| Root cause analysis | Manual | AI-automated |
+| Fix suggestions | Not available | AI-generated with optional PR |
+
+### Client-side vs full-stack
+
+Sentry has traditionally been strongest on the client side: JavaScript, mobile SDKs, and frontend error tracking. Its server-side SDKs are capable but the product experience is optimized for frontend and mobile teams.
+
+Obtrace is designed for full-stack observability with an emphasis on backend services and distributed architectures. Browser session replay is included, but the core value is in backend root cause analysis and fix automation.
+
+### Issue management
+
+Sentry has a mature issue management workflow: assignment, status tracking, SLA, integrations with project management tools (Jira, Linear, GitHub Issues). It functions as a lightweight issue tracker for production errors.
+
+Obtrace focuses on incident management rather than issue tracking. Incidents are created from correlated signals, tracked through resolution, and measured for outcome. For longer-lived issue tracking, Obtrace integrates with external tools.
+
+### Pricing
+
+Sentry prices primarily by error event volume and data retention. The free tier is generous for small projects. Paid plans scale with event count.
+
+Obtrace prices by total telemetry volume (events + traces). AI features are included in paid plans. The free tier has lower event limits but includes all features.
+
+## When to use Sentry
+
+Sentry is a better fit when:
+
+- Your primary concern is frontend and mobile error tracking.
+- You want a mature issue management workflow for production errors.
+- You do not need automated root cause analysis or fix suggestions.
+- Your team prefers to investigate errors manually with good tooling.
+- You need broad language/framework support with minimal configuration.
+
+## When to use Obtrace
+
+Obtrace is a better fit when:
+
+- Your pain is not "finding errors" but "understanding why they happen."
+- You want AI to correlate errors with deployments, traces, and metrics automatically.
+- You want fix suggestions or automated PRs for common error patterns.
+- You run distributed backend services where cross-service correlation matters.
+- You want to measure whether fixes actually resolve errors (outcome tracking).
+
+## Using both
+
+Some teams use Sentry for frontend error tracking and Obtrace for backend observability and AI analysis. This is a reasonable approach if:
+
+- Your frontend team has established Sentry workflows they do not want to change.
+- Your backend team needs automated root cause analysis and fix suggestions.
+- You are willing to maintain two telemetry pipelines.
+
+Obtrace does not ingest from Sentry directly. Both tools would receive telemetry from separate SDK configurations.
+
+## Honest assessment
+
+Sentry is more mature for error tracking specifically. It has years of refinement in error grouping, deduplication, and the issue management workflow. If error visibility is your primary need, Sentry is excellent.
+
+Obtrace goes further in the incident lifecycle by automating investigation and suggesting fixes. This is more valuable for backend services with complex failure modes. The trade-off is that Obtrace's error tracking UX is less refined than Sentry's because the product emphasis is on what happens after detection.

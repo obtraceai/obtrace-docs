@@ -1,0 +1,145 @@
+---
+title: Automated Root Cause Analysis for Software Teams
+description: How AI-powered root cause analysis correlates logs, traces, metrics, and code to identify why production failures happen.
+category: use-case
+intent: education
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Automated Root Cause Analysis for Software Teams
+
+Root cause analysis (RCA) is the process of determining why a production failure occurred. It is the most time-consuming part of incident response and the most dependent on individual expertise. Automating RCA changes on-call from a heroic investigation to a review process.
+
+## What is root cause analysis
+
+RCA answers the question: "Why did this break?" Not just what broke (the symptom), but the underlying cause. In software systems, the root cause is typically one of:
+
+- A code change that introduced a bug.
+- A configuration change that altered behavior.
+- A dependency failure (database, API, infrastructure).
+- A data condition that triggered an unhandled edge case.
+- A capacity issue (traffic spike, resource exhaustion).
+
+Identifying which category and pinpointing the specific cause is the core challenge.
+
+## Why manual RCA is slow
+
+Manual root cause analysis requires:
+
+1. **Cross-signal correlation**: The engineer must query logs, traces, and metrics separately, then mentally correlate the results.
+2. **Service knowledge**: Understanding which services interact, what each service does, and where failures propagate.
+3. **Change awareness**: Knowing what was deployed, when, and by whom. This information lives in CI/CD systems, not observability tools.
+4. **Pattern recognition**: Recognizing whether this failure matches a known pattern or is a novel issue.
+
+A senior engineer who built the system can do this in 30 minutes. A junior engineer on their first on-call rotation might take 4 hours or escalate. This creates a bottleneck on specific individuals and makes on-call rotations uneven.
+
+## How AI-powered RCA works
+
+Obtrace is an AI-powered observability platform that detects production errors, finds root causes automatically, and suggests or opens code fixes as pull requests. The RCA pipeline operates in stages.
+
+### Stage 1: Evidence collection
+
+When an incident is created, Obtrace assembles all relevant evidence:
+
+- Error logs from the affected service and time window.
+- Distributed traces that include the error or anomalous latency.
+- Metric time series showing when the anomaly began.
+- Deployment events from the past 24 hours.
+- Recent code changes in the affected repository paths.
+
+This collection happens in parallel and completes within seconds.
+
+### Stage 2: Signal correlation
+
+The AI correlates signals to establish causality:
+
+- **Temporal correlation**: Did the error start immediately after a deployment? Within a specific time window of a config change?
+- **Service correlation**: Is the error in service A caused by a change in service B that it depends on?
+- **Code correlation**: Do the stack traces point to code that was recently modified?
+- **Pattern matching**: Does this error signature match a previously resolved incident?
+
+### Stage 3: Root cause hypothesis
+
+The AI generates a root cause hypothesis with:
+
+- A natural language explanation of what went wrong.
+- Confidence score (0-1) based on evidence strength.
+- The specific commit, file, and function identified as the cause.
+- Supporting evidence (log snippets, trace segments, metric graphs).
+
+Example output:
+
+```
+Root cause: Timeout in UserService.getProfile()
+Confidence: 0.88
+
+Analysis: The error rate in checkout-api increased at 14:23 UTC,
+coinciding with the deployment of user-service v2.4.1. The new
+version added a database join in getProfile() that increases
+query time from 50ms to 800ms under load. Checkout-api has a
+500ms timeout for user-service calls, causing cascading failures.
+
+Evidence:
+- Trace abc123: user-service.getProfile latency p99 jumped
+  from 48ms to 812ms at 14:23
+- Deploy event: user-service v2.4.1 at 14:22
+- Commit def456: Added JOIN on user_preferences table
+- 847 timeout errors in checkout-api in the first 10 minutes
+```
+
+### Stage 4: Confidence calibration
+
+Not all RCA results are equally reliable. Obtrace provides confidence scores based on:
+
+| Factor | Effect on confidence |
+|---|---|
+| Clear deployment correlation | +0.3 |
+| Stack trace matches recent commit | +0.2 |
+| Error pattern seen before | +0.15 |
+| Multiple corroborating signals | +0.15 |
+| Sparse telemetry | -0.3 |
+| Multiple possible causes | -0.2 |
+| No deployment correlation | -0.15 |
+
+Results below 0.5 confidence are flagged as "low confidence" and presented as hypotheses rather than conclusions.
+
+## When to trust automated RCA
+
+Automated RCA is most reliable when:
+
+- The failure correlates clearly with a recent change (deployment or config).
+- The affected code path has good telemetry coverage (traces and structured logs).
+- The error pattern is common (null pointer, timeout, type mismatch).
+- The system has historical data from previous similar incidents.
+
+Automated RCA is less reliable when:
+
+- The failure is caused by a data condition with no code change.
+- Multiple changes were deployed simultaneously.
+- The affected service has minimal instrumentation.
+- The failure involves complex distributed state (consensus issues, race conditions).
+
+For these cases, the AI narrows the investigation space rather than providing a definitive answer.
+
+## Measuring RCA quality
+
+Obtrace tracks RCA accuracy over time through the [fix outcome tracking](/docs/features/fix-outcome-tracking) pipeline. If an AI-identified root cause leads to a fix that resolves the error, the RCA is confirmed correct. This creates a feedback loop:
+
+1. More incidents processed means more training data.
+2. Better training data means higher RCA accuracy.
+3. Higher accuracy means more trust from engineers.
+4. More trust means faster adoption of AI suggestions.
+
+## Getting started
+
+1. Ensure your services have [distributed tracing](/docs/quickstart) with trace context propagation.
+2. Attach `service.version` to all telemetry so Obtrace can correlate with deployments.
+3. Connect your repository for code-level analysis.
+4. Review the first 10 RCA results manually to calibrate trust for your specific system.
+
+## Further reading
+
+- [How Obtrace detects incidents](/docs/concepts/how-obtrace-detects-incidents)
+- [How AI decides to open a PR](/docs/concepts/how-ai-decides-to-open-a-pr)
+- [AI policy configuration](/docs/features/ai-policy)
