@@ -21,23 +21,28 @@ concurrency:
   group: build-docs
   cancel-in-progress: true
 
+env:
+  REGISTRY: obtrace-registry.obtrace-infra.svc.cluster.local:5000
+
 jobs:
   build-deploy:
-    runs-on: ubuntu-latest
+    runs-on: obtrace-runners
+    timeout-minutes: 15
     steps:
-      - name: Build and deploy
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-            cd /tmp && rm -rf obtrace-docs && git clone https://github.com/obtraceai/obtrace-docs.git
-            cd obtrace-docs
-            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            nerdctl -n k8s.io build -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:latest -t obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${SHORT_SHA} .
-            nerdctl -n k8s.io push obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:latest
-            nerdctl -n k8s.io push obtrace-registry.obtrace-infra.svc.cluster.local:5000/docs:${SHORT_SHA}
-            kubectl rollout restart deployment/obtrace-docs -n obtrace
-            rm -rf /tmp/obtrace-docs
+      - uses: actions/checkout@v4
+
+      - name: Build and push
+        env:
+          DOCKER_HOST: tcp://localhost:2376
+          DOCKER_TLS_VERIFY: "1"
+          DOCKER_CERT_PATH: /certs/client
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          docker build \
+            -t ${REGISTRY}/docs:latest \
+            -t ${REGISTRY}/docs:${SHORT_SHA} .
+          docker push ${REGISTRY}/docs:latest
+          docker push ${REGISTRY}/docs:${SHORT_SHA}
+
+      - name: Restart deployment
+        run: kubectl rollout restart deployment/obtrace-docs -n obtrace
