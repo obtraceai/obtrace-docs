@@ -1,0 +1,16 @@
+{
+  "title": "Obtrace Zero",
+  "icon": "Rocket",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "how-it-works",
+    "quickstart",
+    "strategies",
+    "language-agents",
+    "ebpf",
+    "cli-reference",
+    "crd-reference",
+    "troubleshooting"
+  ]
+}

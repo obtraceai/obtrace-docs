@@ -1,0 +1,80 @@
+---
+title: Obtrace Zero
+description: Zero-touch auto-instrumentation for Kubernetes. One command, full cluster observability — no code changes required.
+category: feature
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Obtrace Zero
+
+Obtrace Zero is a Kubernetes operator that automatically instruments every workload in your cluster with traces, logs, and metrics — without changing a single line of application code.
+
+## The problem
+
+Manual instrumentation does not scale:
+
+- Every service needs SDK imports, initialization, middleware registration, and shutdown hooks
+- Every Kubernetes deploy needs Secrets, ConfigMaps, and 5+ environment variables injected per Pod
+- Compiled languages (Go, Rust, C++) have no runtime injection mechanism at all
+- New services ship without observability for weeks. Legacy services never get instrumented
+
+The result: partial coverage, blind spots in production, and incidents that take longer to diagnose.
+
+## The solution
+
+```bash
+obtrace-zero install --api-key=obt_live_xxx
+```
+
+From that moment, every Pod created in the cluster is intercepted, analyzed, and instrumented automatically.
+
+## What it does
+
+| Capability | How |
+|------------|-----|
+| Detects language and framework | Analyzes container image, command, args, and labels |
+| Injects SDK for interpreted languages | Uses runtime-native hooks (NODE_OPTIONS, PYTHONSTARTUP, JAVA_TOOL_OPTIONS, etc.) |
+| Injects eBPF sidecar for compiled languages | Captures HTTP/gRPC/DB traffic at kernel level |
+| Resolves service identity automatically | Reads Pod labels, generateName, namespace |
+| Propagates trace context | W3C traceparent header injection and extraction |
+| Collects runtime metrics | Memory, CPU, GC, threads — per language |
+| Captures exceptions and errors | Stack traces, unhandled rejections, fatal crashes |
+| Works with GitOps | Declarative CRD, compatible with ArgoCD and Flux |
+
+## Supported languages
+
+| Language | Detection patterns | Strategy | Framework detection |
+|----------|-------------------|----------|-------------------|
+| Node.js | `node`, `bun`, `deno`, `npm`, `next` | SDK | Express, NestJS, Next.js, Elysia |
+| Python | `python`, `uvicorn`, `gunicorn`, `flask` | SDK | FastAPI, Flask, Django |
+| Java | `openjdk`, `temurin`, `corretto`, `spring` | SDK | Spring, Quarkus, Micronaut |
+| .NET | `dotnet`, `aspnet` | SDK | ASP.NET Core |
+| PHP | `php`, `laravel`, `symfony`, `artisan` | SDK | Laravel, Symfony, WordPress |
+| Ruby | `ruby`, `rails`, `puma`, `sidekiq` | SDK | Rails, Sidekiq |
+| Go | `golang`, distroless binaries | eBPF | — |
+| Rust | `rust` | eBPF | — |
+| Unknown | Any other image | eBPF | — |
+
+## How it compares
+
+| Feature | Obtrace Zero | OTel Operator | Datadog Agent | Dynatrace OneAgent |
+|---------|-------------|---------------|---------------|-------------------|
+| Installation | 1 command | 5+ YAMLs | Helm + DaemonSet | Helm + DaemonSet |
+| Language detection | Automatic | Requires per-Pod annotation | Automatic | Automatic |
+| Go / Rust support | eBPF fallback | Not supported | USM (eBPF) | OneAgent module |
+| Hybrid mode (SDK + eBPF) | Yes | No | No | No |
+| Intermediate collector | Not needed | Requires OTel Collector | Requires Datadog Agent | Requires ActiveGate |
+| Per-node overhead | None (sidecar only when needed) | None | ~256MB per node | ~500MB+ per node |
+| CLI with dry-run discovery | Yes | No | No | No |
+| Cost | Open source | Open source | Paid per host | Paid per host |
+
+## Next steps
+
+- [How it works](/docs/obtrace-zero/how-it-works) — understand the architecture and mutation flow
+- [Quickstart](/docs/obtrace-zero/quickstart) — instrument your cluster in 5 minutes
+- [Strategies](/docs/obtrace-zero/strategies) — choose between SDK, eBPF, and hybrid
+- [Language agents](/docs/obtrace-zero/language-agents) — what each agent captures per language
+- [CLI reference](/docs/obtrace-zero/cli-reference) — all commands and flags
+- [CRD reference](/docs/obtrace-zero/crd-reference) — declarative configuration for GitOps

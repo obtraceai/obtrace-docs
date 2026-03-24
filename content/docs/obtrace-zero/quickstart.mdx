@@ -1,0 +1,170 @@
+---
+title: Quickstart
+description: Instrument your entire Kubernetes cluster in 5 minutes with zero code changes.
+category: quickstart
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Quickstart
+
+Go from zero to full cluster observability in 5 minutes.
+
+## Prerequisites
+
+- A running Kubernetes cluster (any provider)
+- `kubectl` configured and pointing to the cluster
+- An Obtrace API key (`obt_live_...`)
+
+## Step 1: Install the CLI
+
+```bash
+curl -fsSL https://github.com/obtrace/obtrace-zero/releases/latest/download/obtrace-zero-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) \
+  -o /usr/local/bin/obtrace-zero && chmod +x /usr/local/bin/obtrace-zero
+```
+
+Verify:
+
+```bash
+obtrace-zero version
+# obtrace-zero v0.1.0
+```
+
+## Step 2: Discover what would be instrumented
+
+Before installing anything, see what the operator would do:
+
+```bash
+obtrace-zero discover
+```
+
+```
+NAMESPACE    NAME              KIND         LANGUAGE  FRAMEWORK  STRATEGY  IMAGE
+production   checkout-api      Deployment   nodejs    nextjs     sdk       node:20-alpine
+production   payment-svc       Deployment   java      spring     sdk       eclipse-temurin:21
+production   api-gateway       Deployment   go                   ebpf      my-registry/gateway:v2
+staging      ml-pipeline       Deployment   python    fastapi    sdk       python:3.12-slim
+
+4 workloads discovered. Run 'obtrace-zero install --api-key=xxx' to instrument them.
+```
+
+This is a dry run — nothing is installed yet.
+
+## Step 3: Install the operator
+
+```bash
+obtrace-zero install --api-key=obt_live_xxx
+```
+
+The CLI will:
+1. Check cluster connectivity
+2. Install the operator via Helm (falls back to `kubectl apply` if Helm is not available)
+3. Create the `obtrace-system` namespace
+4. Deploy the webhook, RBAC, and default ObtraceInstrumentation
+
+Output:
+
+```
+🔍 Checking cluster connectivity...
+📦 Installing obtrace-zero operator...
+
+✅ obtrace-zero installed successfully!
+   Operator is now watching for pods and auto-instrumenting.
+   Strategy: auto
+   Ingest: https://ingest-edge.obtrace.svc.cluster.local:8080
+   Namespaces: all (cluster-wide)
+
+   Run 'obtrace-zero status' to check instrumentation state.
+```
+
+## Step 4: Trigger a rollout
+
+Existing Pods are not modified — instrumentation is applied on Pod creation. Trigger a rollout restart to instrument existing workloads:
+
+```bash
+kubectl rollout restart deployment -n production
+```
+
+New Pods will be created with instrumentation automatically injected.
+
+## Step 5: Verify
+
+```bash
+obtrace-zero status
+```
+
+```
+Operator:
+NAMESPACE        NAME                              READY   STATUS    AGE
+obtrace-system   obtrace-zero-operator-7f8b9...    1/1     Running   2m
+
+Instrumented Pods:
+NAMESPACE    NAME                         LANGUAGE  STRATEGY  FRAMEWORK
+production   checkout-api-6b8f9...        nodejs    sdk       nextjs
+production   payment-svc-8a2c4...         java      sdk       spring
+production   api-gateway-3c7d1...         go        ebpf
+staging      ml-pipeline-5d9e2...         python    sdk       fastapi
+```
+
+You can also check individual Pods:
+
+```bash
+kubectl get pods -l obtrace.io/instrumented=true --all-namespaces
+```
+
+Or inspect annotations on a specific Pod:
+
+```bash
+kubectl get pod checkout-api-6b8f9 -n production -o jsonpath='{.metadata.annotations}' | jq
+```
+
+```json
+{
+  "obtrace.io/injected": "true",
+  "obtrace.io/detected-language": "nodejs",
+  "obtrace.io/strategy": "sdk",
+  "obtrace.io/detected-framework": "nextjs"
+}
+```
+
+## Step 6: See telemetry in the Obtrace dashboard
+
+Open the Obtrace frontend. Within seconds of the rollout completing, you will see:
+
+- **Traces** — HTTP server spans for every inbound request, with method, route, status code, and duration
+- **Logs** — Errors, warnings, and uncaught exceptions with stack traces, correlated to the trace that caused them
+- **Metrics** — Memory usage, CPU time, GC pressure, and HTTP latency histograms per service
+
+All of this without touching application code.
+
+## Scoping to specific namespaces
+
+If you prefer to instrument only specific namespaces:
+
+```bash
+obtrace-zero install --api-key=obt_live_xxx --namespaces=production,staging
+```
+
+Or instrument one namespace at a time:
+
+```bash
+obtrace-zero instrument --namespace=production --api-key=obt_live_xxx
+```
+
+## Choosing a strategy
+
+By default, Obtrace Zero uses `auto` — SDK for interpreted languages, eBPF for compiled. You can force a specific strategy:
+
+```bash
+obtrace-zero install --api-key=obt_live_xxx --strategy=ebpf
+```
+
+See [Strategies](/docs/obtrace-zero/strategies) for details on when to use each.
+
+## Next steps
+
+- [How it works](/docs/obtrace-zero/how-it-works) — understand the mutation and injection flow
+- [Language agents](/docs/obtrace-zero/language-agents) — what each agent captures
+- [CRD reference](/docs/obtrace-zero/crd-reference) — advanced configuration via GitOps
+- [Troubleshooting](/docs/obtrace-zero/troubleshooting) — common issues and fixes

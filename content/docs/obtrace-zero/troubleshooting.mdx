@@ -1,0 +1,194 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when using Obtrace Zero auto-instrumentation.
+category: reference
+intent: reference
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Troubleshooting
+
+## Pod is not being instrumented
+
+**Check 1: Is the operator running?**
+
+```bash
+kubectl get pods -n obtrace-system
+```
+
+The operator pod should be `Running` with `1/1` ready.
+
+**Check 2: Is the namespace excluded?**
+
+```bash
+kubectl get namespace <namespace> -o jsonpath='{.metadata.labels}'
+```
+
+If `obtrace.io/exclude=true` is set, the namespace is skipped.
+
+**Check 3: Does an ObtraceInstrumentation exist?**
+
+```bash
+kubectl get oti
+```
+
+If no resources exist, create one:
+
+```bash
+obtrace-zero instrument --namespace=<namespace> --api-key=<key>
+```
+
+**Check 4: Is the Pod excluded?**
+
+```bash
+kubectl get pod <pod> -o jsonpath='{.metadata.annotations.obtrace\.io/exclude}'
+```
+
+**Check 5: Is the Pod already instrumented?**
+
+```bash
+kubectl get pod <pod> -o jsonpath='{.metadata.annotations.obtrace\.io/injected}'
+```
+
+If `true`, the Pod was already mutated. Delete and recreate it to re-instrument.
+
+## Telemetry not arriving in Obtrace
+
+**Check 1: Agent startup message**
+
+Check container logs for the agent startup message:
+
+```bash
+kubectl logs <pod> -c <container> | grep obtrace-zero
+```
+
+Expected: `[obtrace-zero] auto-instrumentation active for <service> (<env>)`
+
+If missing, the agent did not load. Check that the init container completed:
+
+```bash
+kubectl describe pod <pod> | grep -A5 obtrace-agent-init
+```
+
+**Check 2: Ingest endpoint reachable**
+
+From inside the Pod:
+
+```bash
+kubectl exec <pod> -- curl -s -o /dev/null -w "%{http_code}" \
+  -X POST ${OBTRACE_INGEST_URL}/otlp/v1/traces \
+  -H "X-API-Key: ${OBTRACE_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Expected: `400` (bad request, but reachable). If `000` or connection refused, the ingest endpoint is unreachable.
+
+**Check 3: API key valid**
+
+If you see `401` or `403` responses, the API key is invalid or expired.
+
+## Wrong language detected
+
+**Option 1: Use a language hint**
+
+Add a label to your Pod template:
+
+```yaml
+metadata:
+  labels:
+    obtrace.io/language: python
+```
+
+**Option 2: Use CRD language hints**
+
+```yaml
+spec:
+  languageHints:
+    "my-deployment": "python"
+```
+
+**Option 3: Use an environment variable**
+
+Add to your container spec:
+
+```yaml
+env:
+  - name: OBTRACE_LANGUAGE
+    value: python
+```
+
+## NODE_OPTIONS conflict
+
+If your application already uses `NODE_OPTIONS`, the injected `--require` flag is appended. If there is a conflict, you can set `obtrace.io/exclude: "true"` and instrument manually with the [Node.js SDK](/docs/sdks/node-bun).
+
+## JAVA_TOOL_OPTIONS conflict
+
+Similar to NODE_OPTIONS — if you already use `JAVA_TOOL_OPTIONS` for other JVM flags, the `-javaagent` flag is appended. The JVM handles multiple `JAVA_TOOL_OPTIONS` entries by concatenating them.
+
+## eBPF sidecar OOMKilled
+
+If the eBPF sidecar is OOMKilled, your workload may have unusually high connection counts. Increase the memory limit by creating a custom values override:
+
+```bash
+helm upgrade obtrace-zero deploy/helm \
+  --set ebpf.resources.limits.memory=256Mi
+```
+
+## eBPF capabilities denied
+
+If your cluster has PodSecurityPolicies or PodSecurityStandards that restrict capabilities, the eBPF sidecar will fail to start. Options:
+
+1. Add an exemption for the `obtrace-ebpf` container
+2. Switch to `strategy: sdk` for namespaces with strict policies
+3. Use a namespace-level PodSecurity exemption:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+```
+
+## Webhook timeout
+
+If Pod creation is slow after installing Obtrace Zero, check the webhook timeout:
+
+```bash
+kubectl get mutatingwebhookconfiguration obtrace-zero -o yaml | grep timeout
+```
+
+Default is 10 seconds. The webhook uses `failurePolicy: Ignore`, so if the operator is unresponsive, Pods are created without instrumentation rather than being blocked.
+
+## Operator logs
+
+```bash
+kubectl logs -n obtrace-system deployment/obtrace-zero-operator -f
+```
+
+The operator logs discovery results, webhook mutation events, and errors. Look for:
+
+- `discovered N workloads` — periodic discovery scan
+- `lang=nodejs framework=express strategy=sdk confidence=0.9` — per-workload detection
+- `error` — any operational issues
+
+## Removing instrumentation from a Pod
+
+Add the exclude annotation and restart:
+
+```bash
+kubectl annotate pod <pod> obtrace.io/exclude=true
+kubectl delete pod <pod>
+```
+
+The new Pod will be created without instrumentation.
+
+To remove instrumentation from an entire namespace:
+
+```bash
+kubectl label namespace <namespace> obtrace.io/exclude=true
+kubectl rollout restart deployment -n <namespace>
+```

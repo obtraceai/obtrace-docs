@@ -1,0 +1,227 @@
+---
+title: Language Agents
+description: Per-language breakdown of what each auto-instrumentation agent captures — traces, logs, metrics, and framework integrations.
+category: reference
+intent: reference
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Language Agents
+
+Each language agent is a single file that loads at process startup via a native runtime mechanism. Agents are stateless, have no external dependencies, and send OTLP JSON directly to ingest-edge.
+
+All agents share the same behavior:
+
+- Queue-based batching (max 500 items in memory)
+- Flush every 2 seconds
+- Final flush on process shutdown
+- W3C traceparent header extraction and injection
+- Probabilistic sampling based on `OBTRACE_TRACE_SAMPLE_RATIO`
+
+## Node.js
+
+**File:** `obtrace-loader.js`
+**Mechanism:** `NODE_OPTIONS=--require /obtrace/obtrace-loader.js`
+**Works with:** Node.js, Bun, any V8-based runtime
+
+### What it instruments
+
+**HTTP server** — Patches `http.createServer` to wrap the `request` event listener. Every inbound request generates a span with:
+- `http.method`, `http.url`, `http.route`, `http.status_code`
+- `http.user_agent`, `net.peer.ip`
+- Duration in milliseconds
+- Response header `X-Obtrace-Trace-Id` injected automatically
+
+**HTTP client** — Patches `http.request` to trace outbound calls. Injects `traceparent` and `X-Obtrace-Trace-Id` headers for distributed tracing.
+
+**Console capture** — Wraps `console.error` and `console.warn` to emit log records correlated to the active trace context.
+
+**Exceptions** — Handles `uncaughtException` and `unhandledRejection` events. Captures error class, message, and full stack trace as FATAL log records.
+
+**Runtime metrics** (every 15 seconds):
+- `process.runtime.nodejs.memory.heap.used` (bytes)
+- `process.runtime.nodejs.memory.heap.total` (bytes)
+- `process.runtime.nodejs.memory.rss` (bytes)
+- `process.cpu.time` (microseconds, monotonic)
+
+### Framework support
+
+Express, NestJS, Next.js, Fastify, Koa, Elysia, and any framework built on `http.createServer` are instrumented automatically — the patch is at the Node.js core level.
+
+---
+
+## Python
+
+**File:** `obtrace_loader.py`
+**Mechanism:** `PYTHONSTARTUP=/obtrace/obtrace_loader.py`
+**Works with:** CPython 3.8+
+
+### What it instruments
+
+**FastAPI** — Patches `FastAPI.__init__` to inject a Starlette `BaseHTTPMiddleware`. Every request generates a span with method, route, status, user-agent, and client IP. Extracts traceparent from headers.
+
+**Flask** — Patches `Flask.__init__` to register `before_request` and `after_request` hooks. Same span attributes as FastAPI.
+
+**urllib** — Patches `urllib.request.urlopen` to trace outbound HTTP calls as client spans.
+
+**logging** — Adds an `ObtraceHandler` to the root logger. All log records (DEBUG through FATAL) are captured with logger name, filename, line number, and correlated trace context.
+
+**Exceptions** — Replaces `sys.excepthook` to capture uncaught exceptions with class name, message, and traceback.
+
+**Runtime metrics** (every 15 seconds):
+- `process.runtime.cpython.memory.rss` (bytes)
+- `process.cpu.time` (seconds, user + system)
+- `process.runtime.cpython.gc.count` (cumulative)
+- `process.thread.count` (gauge)
+
+### Thread safety
+
+- `threading.Lock()` for queue access
+- `threading.local()` for trace context propagation
+- Daemon threads for flush loop and metrics collection
+
+---
+
+## Java
+
+**File:** `ObtraceAgent.java` (packaged as `obtrace-agent.jar`)
+**Mechanism:** `JAVA_TOOL_OPTIONS=-javaagent:/obtrace/obtrace-agent.jar`
+**Works with:** Java 17+, any JVM
+
+### What it instruments
+
+**Servlet** — Registers a `ClassFileTransformer` for `javax.servlet.http.HttpServlet` and `jakarta.servlet.http.HttpServlet`. Captures server-side HTTP spans.
+
+**Public API** — Exposes `ObtraceAgent.recordSpan()`, `recordLog()`, `setContext()`, `clearContext()` for framework-specific integration.
+
+**Runtime metrics** (every 15 seconds):
+- `process.runtime.jvm.memory.heap.used` (bytes)
+- `process.runtime.jvm.memory.heap.max` (bytes)
+- `process.runtime.jvm.threads.count` (gauge)
+- `process.runtime.jvm.gc.count.<collector>` (per GC collector)
+
+### Concurrency
+
+- `ConcurrentLinkedQueue` for lock-free span/log/metric queuing
+- `ThreadLocal` for trace context
+- `ScheduledExecutorService` (daemon) for flush timer
+- Shutdown hook for final flush
+
+### JSON serialization
+
+Hand-rolled serializer with zero external dependencies — keeps the agent JAR minimal.
+
+---
+
+## .NET
+
+**File:** `ObtraceAutoInstrument.cs` (compiled as `Obtrace.AutoInstrument.dll`)
+**Mechanism:** `DOTNET_STARTUP_HOOKS=/obtrace/Obtrace.AutoInstrument.dll`
+**Works with:** .NET 6+
+
+### What it instruments
+
+**ASP.NET Core** — Subscribes to `DiagnosticListener` for `Microsoft.AspNetCore` events. Captures request/response spans from the Kestrel pipeline.
+
+**HttpClient** — Subscribes to `HttpHandlerDiagnosticListener` for outbound HTTP call tracing.
+
+**Exceptions** — `AppDomain.CurrentDomain.UnhandledException` handler captures fatal errors with full stack trace.
+
+**Runtime metrics** (every 15 seconds):
+- `process.runtime.dotnet.memory.working_set` (bytes)
+- `process.runtime.dotnet.gc.heap_size` (bytes)
+- `process.runtime.dotnet.gc.collections.gen0/gen1/gen2` (counts)
+- `process.runtime.dotnet.thread_pool.threads_count` (gauge)
+
+### Concurrency
+
+- `ConcurrentQueue<object>` for thread-safe queuing
+- `AsyncLocal<string>` for trace context propagation across async/await
+- `System.Threading.Timer` for flush and metrics
+
+---
+
+## PHP
+
+**File:** `obtrace_loader.php`
+**Mechanism:** `PHP_INI_SCAN_DIR` with `auto_prepend_file=/obtrace/obtrace_loader.php`
+**Works with:** PHP 8.0+, PHP-FPM, Apache mod_php
+
+### What it instruments
+
+**HTTP request** — The loader initializes at request start and registers `register_shutdown_function` to capture the complete request lifecycle as a single span. Captures:
+- `REQUEST_METHOD`, `REQUEST_URI`, `http_response_code()`
+- User-agent, client IP
+
+**Exceptions** — `set_exception_handler` captures uncaught exceptions with class, message, and trace as FATAL log records.
+
+**Metrics** (per request):
+- `process.runtime.php.memory.peak` (bytes, from `memory_get_peak_usage`)
+- `http.server.duration` (nanoseconds)
+
+### Execution model
+
+PHP is synchronous and request-scoped. The agent initializes, captures the request, and flushes everything in `register_shutdown_function` — there is no background thread.
+
+---
+
+## Ruby
+
+**File:** `obtrace_loader.rb`
+**Mechanism:** `RUBYOPT=-r /obtrace/obtrace_loader`
+**Works with:** Ruby 2.7+, MRI
+
+### What it instruments
+
+**Rack middleware** — The `ObtraceZero::RackMiddleware` wraps every HTTP request with a span. Captures method, path, status code, user-agent, and client IP.
+
+**Rails** — If `defined?(Rails)` is true at load time, the middleware is auto-inserted at position 0 in the Rails middleware stack.
+
+**Exceptions** — `rescue StandardError` in the middleware captures request-scoped exceptions.
+
+### Concurrency
+
+- `Mutex` for queue synchronization
+- Background `Thread.new` (daemon) for 2-second flush loop
+- `at_exit` handler for final flush
+
+---
+
+## Common telemetry format
+
+All agents produce OTLP JSON with consistent resource attributes:
+
+```json
+{
+  "resourceSpans": [{
+    "resource": {
+      "attributes": [
+        {"key": "service.name", "value": {"stringValue": "checkout-api"}},
+        {"key": "deployment.environment", "value": {"stringValue": "production"}},
+        {"key": "k8s.pod.name", "value": {"stringValue": "checkout-api-6b8f9..."}},
+        {"key": "k8s.namespace.name", "value": {"stringValue": "production"}},
+        {"key": "k8s.node.name", "value": {"stringValue": "worker-2"}},
+        {"key": "telemetry.sdk.name", "value": {"stringValue": "obtrace-zero"}},
+        {"key": "telemetry.sdk.language", "value": {"stringValue": "nodejs"}},
+        {"key": "process.runtime.version", "value": {"stringValue": "20.11.0"}},
+        {"key": "process.pid", "value": {"stringValue": "1"}}
+      ]
+    },
+    "scopeSpans": [{
+      "scope": {"name": "obtrace-zero-nodejs"},
+      "spans": [...]
+    }]
+  }]
+}
+```
+
+Severity levels used across all agents:
+
+| Level | Number | When |
+|-------|--------|------|
+| DEBUG | 5 | Verbose debug logs |
+| INFO | 9 | Normal operations |
+| WARN | 13 | `console.warn`, Python WARNING |
+| ERROR | 17 | `console.error`, exceptions, 5xx responses |
+| FATAL | 21 | Uncaught exceptions, unhandled rejections, process crashes |

@@ -1,0 +1,160 @@
+---
+title: CLI Reference
+description: Complete reference for the obtrace-zero command-line tool — install, discover, instrument, status, and uninstall.
+category: reference
+intent: reference
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# CLI Reference
+
+The `obtrace-zero` CLI manages the operator lifecycle and provides cluster introspection tools.
+
+## Installation
+
+```bash
+curl -fsSL https://github.com/obtrace/obtrace-zero/releases/latest/download/obtrace-zero-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) \
+  -o /usr/local/bin/obtrace-zero && chmod +x /usr/local/bin/obtrace-zero
+```
+
+Available binaries: `linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`.
+
+## Commands
+
+### install
+
+Deploy the operator to the cluster.
+
+```bash
+obtrace-zero install [flags]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--api-key` | `$OBTRACE_API_KEY` | Obtrace API key (required) |
+| `--ingest` | `$OBTRACE_INGEST_URL` or in-cluster service | Ingest endpoint URL |
+| `--namespaces` | all | Comma-separated list of namespaces to instrument |
+| `--strategy` | `auto` | Global instrumentation strategy: `auto`, `sdk`, `ebpf`, `hybrid` |
+| `--image-tag` | `0.1.0` | Docker image tag for operator and agents |
+
+The CLI tries Helm first. If Helm is not installed or the install fails, it falls back to generating and applying Kubernetes manifests via `kubectl apply`.
+
+The fallback manifest includes: Namespace, ServiceAccount, ClusterRole, ClusterRoleBinding, Deployment, Service, MutatingWebhookConfiguration, and ObtraceInstrumentation.
+
+```bash
+obtrace-zero install --api-key=obt_live_xxx
+obtrace-zero install --api-key=obt_live_xxx --ingest=https://ingest.mycompany.io
+obtrace-zero install --api-key=obt_live_xxx --namespaces=production,staging
+obtrace-zero install --api-key=obt_live_xxx --strategy=hybrid --image-tag=0.2.0
+```
+
+### discover
+
+Scan the cluster and show what would be instrumented without installing anything.
+
+```bash
+obtrace-zero discover [flags]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--namespace` | all | Scan a specific namespace only |
+| `--output` | table | Output format: `table` or `json` |
+
+The discover command lists all Deployments, StatefulSets, and DaemonSets, runs language detection on their container images, and shows the result.
+
+System namespaces are always excluded: `kube-system`, `kube-public`, `kube-node-lease`, `cert-manager`, `linkerd`, `linkerd-viz`, `argocd`, `obtrace-system`, `obtrace-infra`.
+
+```bash
+obtrace-zero discover
+obtrace-zero discover --namespace=production
+obtrace-zero discover --output=json
+```
+
+Table output:
+
+```
+NAMESPACE    NAME              KIND         LANGUAGE  FRAMEWORK  STRATEGY  IMAGE
+production   checkout-api      Deployment   nodejs    nextjs     sdk       node:20-alpine
+production   payment-svc       Deployment   java      spring     sdk       eclipse-temurin:21
+production   api-gateway       Deployment   go                   ebpf      my-registry/gateway:v2
+```
+
+JSON output:
+
+```json
+[
+  {
+    "namespace": "production",
+    "name": "checkout-api",
+    "kind": "Deployment",
+    "image": "node:20-alpine",
+    "language": "nodejs",
+    "framework": "nextjs",
+    "strategy": "sdk"
+  }
+]
+```
+
+### instrument
+
+Create an ObtraceInstrumentation CRD for a specific namespace.
+
+```bash
+obtrace-zero instrument [flags]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--namespace` | — | Target namespace (required) |
+| `--api-key` | `$OBTRACE_API_KEY` | Obtrace API key (required) |
+| `--strategy` | `auto` | Instrumentation strategy |
+| `--ingest` | in-cluster service | Ingest endpoint URL |
+
+This command creates the CRD via `kubectl apply`. Existing Pods in the namespace are not modified — they will be instrumented on next restart or rollout.
+
+```bash
+obtrace-zero instrument --namespace=production --api-key=obt_live_xxx
+obtrace-zero instrument --namespace=staging --api-key=obt_live_xxx --strategy=ebpf
+```
+
+### status
+
+Show operator health and all instrumented Pods.
+
+```bash
+obtrace-zero status
+```
+
+Displays two sections:
+
+1. **Operator** — Pods in `obtrace-system` namespace with status
+2. **Instrumented Pods** — All Pods with label `obtrace.io/instrumented=true`, showing detected language, strategy, and framework
+
+### uninstall
+
+Remove obtrace-zero from the cluster.
+
+```bash
+obtrace-zero uninstall
+```
+
+Runs `helm uninstall obtrace-zero --namespace obtrace-system`. If Helm is not available, deletes the `obtrace-system` namespace via kubectl.
+
+### version
+
+Print the CLI version.
+
+```bash
+obtrace-zero version
+# obtrace-zero v0.1.0
+```
+
+## Environment variables
+
+| Variable | Used by | Description |
+|----------|---------|-------------|
+| `OBTRACE_API_KEY` | `install`, `instrument` | Default API key when `--api-key` flag is not provided |
+| `OBTRACE_INGEST_URL` | `install`, `instrument` | Default ingest endpoint when `--ingest` flag is not provided |
+| `KUBECONFIG` | all commands | Kubernetes config file path (standard kubectl behavior) |

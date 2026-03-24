@@ -1,0 +1,293 @@
+---
+title: CRD Reference
+description: Complete reference for the ObtraceInstrumentation custom resource — declarative configuration for GitOps workflows.
+category: reference
+intent: reference
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# CRD Reference
+
+The `ObtraceInstrumentation` custom resource defines how workloads in your cluster are instrumented. It is the primary configuration mechanism for Obtrace Zero and is fully compatible with GitOps tools like ArgoCD and Flux.
+
+## Resource definition
+
+```yaml
+apiVersion: obtrace.io/v1alpha1
+kind: ObtraceInstrumentation
+metadata:
+  name: obtrace-production
+```
+
+Short names for kubectl: `oti`, `obtrace`
+
+```bash
+kubectl get oti
+kubectl describe obtrace obtrace-production
+```
+
+## Spec fields
+
+### apiKey
+
+Direct API key for authenticating with ingest-edge.
+
+```yaml
+spec:
+  apiKey: "obt_live_xxx"
+```
+
+For production, use `apiKeySecretRef` instead to avoid storing secrets in Git.
+
+### apiKeySecretRef
+
+Reference to a Kubernetes Secret containing the API key.
+
+```yaml
+spec:
+  apiKeySecretRef:
+    name: obtrace-credentials
+    key: api-key
+```
+
+The Secret must exist in a namespace accessible by the operator. The operator reads the Secret at injection time and injects the value as an environment variable.
+
+### ingestEndpoint
+
+URL of the ingest-edge service.
+
+```yaml
+spec:
+  ingestEndpoint: "https://ingest.obtrace.io"
+```
+
+Default (in-cluster): `https://ingest-edge.obtrace.svc.cluster.local:8080`
+
+### strategy
+
+Global instrumentation strategy. See [Strategies](/docs/obtrace-zero/strategies) for details.
+
+```yaml
+spec:
+  strategy: "auto"  # auto | sdk | ebpf | hybrid | disable
+```
+
+### namespaces
+
+List of namespaces to instrument. If empty or not set, all namespaces are targeted (excluding system namespaces).
+
+```yaml
+spec:
+  namespaces:
+    - "production"
+    - "staging"
+```
+
+Use `"*"` to explicitly instrument all namespaces:
+
+```yaml
+spec:
+  namespaces:
+    - "*"
+```
+
+### excludeNames
+
+List of workload names (Deployment, StatefulSet, DaemonSet) to skip.
+
+```yaml
+spec:
+  excludeNames:
+    - "debug-pod"
+    - "test-runner"
+    - "legacy-cron"
+```
+
+### selector
+
+Kubernetes label selector to restrict which Pods are instrumented.
+
+```yaml
+spec:
+  selector:
+    matchLabels:
+      team: platform
+    matchExpressions:
+      - key: tier
+        operator: In
+        values: ["api", "worker"]
+```
+
+### languageHints
+
+Override detected language for specific workloads. The key is the Deployment/StatefulSet/DaemonSet name.
+
+```yaml
+spec:
+  languageHints:
+    "api-gateway": "go"
+    "legacy-service": "nodejs"
+    "ml-worker": "python"
+```
+
+Valid values: `nodejs`, `python`, `java`, `go`, `dotnet`, `php`, `ruby`, `rust`, `unknown`.
+
+Go and Rust hints force eBPF strategy. All other languages force SDK strategy.
+
+### sampling
+
+Controls trace sampling rates.
+
+```yaml
+spec:
+  sampling:
+    traceRatio: 0.5
+    rulesPerService:
+      "checkout-api": 1.0
+      "health-checker": 0.01
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `traceRatio` | float (0.0-1.0) | Global sampling ratio. `1.0` = sample everything, `0.1` = 10% |
+| `rulesPerService` | map[string]float | Per-service override. Key is the resolved service name |
+
+### propagation
+
+Controls trace context header injection and extraction.
+
+```yaml
+spec:
+  propagation:
+    injectHeaders: true
+    extractHeaders: true
+```
+
+When `injectHeaders` is true, agents add `traceparent` and `X-Obtrace-Trace-Id` to outbound HTTP requests. When `extractHeaders` is true, agents read these headers from inbound requests to continue distributed traces.
+
+### resourceAttributes
+
+Custom key-value attributes added to every telemetry resource.
+
+```yaml
+spec:
+  resourceAttributes:
+    "team": "platform"
+    "cost_center": "engineering"
+    "region": "us-east-1"
+```
+
+These are injected as `OBTRACE_ATTR_*` environment variables and included in the OTLP resource attributes of every span, log, and metric.
+
+## Status fields
+
+The operator populates the status subresource with discovery and instrumentation state.
+
+```yaml
+status:
+  phase: "Active"
+  instrumentedPods: 47
+  discoveredWorkloads:
+    - name: checkout-api
+      namespace: production
+      kind: Deployment
+      language: nodejs
+      framework: express
+      strategy: sdk
+      instrumented: true
+      lastDetectedAt: "2026-03-23T10:30:00Z"
+  conditions:
+    - type: Ready
+      status: "True"
+      lastTransitionTime: "2026-03-23T10:00:00Z"
+      reason: OperatorHealthy
+      message: "Webhook serving, discovery active"
+```
+
+| Field | Description |
+|-------|-------------|
+| `phase` | Current operator phase |
+| `instrumentedPods` | Count of Pods with `obtrace.io/instrumented=true` |
+| `discoveredWorkloads` | Array of all detected workloads with language, framework, strategy |
+| `conditions` | Standard Kubernetes conditions |
+
+## Printer columns
+
+`kubectl get oti` displays:
+
+```
+NAME                 STRATEGY   INSTRUMENTED   PHASE    AGE
+obtrace-production   auto       47             Active   2d
+```
+
+## Complete example
+
+```yaml
+apiVersion: obtrace.io/v1alpha1
+kind: ObtraceInstrumentation
+metadata:
+  name: obtrace-production
+spec:
+  apiKeySecretRef:
+    name: obtrace-credentials
+    key: api-key
+
+  ingestEndpoint: "https://ingest.obtrace.io"
+
+  strategy: "auto"
+
+  namespaces:
+    - "production"
+    - "staging"
+
+  excludeNames:
+    - "debug-pod"
+    - "load-test-runner"
+
+  languageHints:
+    "api-gateway": "go"
+    "legacy-service": "nodejs"
+
+  sampling:
+    traceRatio: 0.5
+    rulesPerService:
+      "checkout-api": 1.0
+      "search-service": 0.1
+
+  propagation:
+    injectHeaders: true
+    extractHeaders: true
+
+  resourceAttributes:
+    "team": "platform"
+    "cost_center": "engineering"
+```
+
+## Multiple CRDs
+
+You can create multiple ObtraceInstrumentation resources for different scopes:
+
+```yaml
+apiVersion: obtrace.io/v1alpha1
+kind: ObtraceInstrumentation
+metadata:
+  name: obtrace-production
+spec:
+  namespaces: ["production"]
+  strategy: "hybrid"
+  sampling:
+    traceRatio: 1.0
+---
+apiVersion: obtrace.io/v1alpha1
+kind: ObtraceInstrumentation
+metadata:
+  name: obtrace-staging
+spec:
+  namespaces: ["staging"]
+  strategy: "sdk"
+  sampling:
+    traceRatio: 0.1
+```
+
+The operator matches Pods to the first ObtraceInstrumentation whose `namespaces` field includes the Pod's namespace.
