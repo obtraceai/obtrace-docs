@@ -1,0 +1,87 @@
+---
+title: Coolify
+description: Auto-instrument Coolify services with Obtrace using a shared agent container — zero code changes for any language.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Coolify
+
+Coolify is a self-hosted PaaS. Obtrace instruments Coolify services using the same auto-instrumentation approach as [Obtrace Zero](/docs/obtrace-zero) — a shared agent container copies language-specific loaders, and runtime env vars activate them.
+
+## Step 1: Add the agent service
+
+In your Coolify application settings, add a Docker Compose service for the Obtrace agent:
+
+```yaml
+services:
+  obtrace-agent:
+    image: ghcr.io/obtrace/obtrace-zero-agent:latest
+    volumes:
+      - obtrace-agent:/obtrace
+
+volumes:
+  obtrace-agent:
+```
+
+## Step 2: Mount the volume on your app
+
+Add the shared volume to your application service:
+
+```yaml
+services:
+  my-app:
+    image: node:20
+    volumes:
+      - obtrace-agent:/obtrace:ro
+    environment:
+      - OBTRACE_API_KEY=obt_live_xxxxx
+      - OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+      - OBTRACE_PLATFORM=coolify
+      - NODE_OPTIONS=--require /obtrace/obtrace-loader.js
+    depends_on:
+      - obtrace-agent
+```
+
+## Language-specific env vars
+
+| Language | Environment variable |
+|----------|---------------------|
+| Node.js | `NODE_OPTIONS=--require /obtrace/obtrace-loader.js` |
+| Python | `PYTHONSTARTUP=/obtrace/obtrace_loader.py` |
+| Java | `JAVA_TOOL_OPTIONS=-javaagent:/obtrace/obtrace-agent.jar` |
+| .NET | `DOTNET_STARTUP_HOOKS=/obtrace/Obtrace.AutoInstrument.dll` |
+| PHP | `PHP_INI_SCAN_DIR=/obtrace/php.d/` |
+| Ruby | `RUBYOPT=-r /obtrace/obtrace_loader` |
+
+## What you get
+
+The auto-instrumentation agents capture:
+
+- HTTP server request/response traces
+- HTTP client outbound call traces with trace context propagation
+- Runtime metrics (memory, CPU, GC)
+- Console errors and uncaught exceptions with stack traces
+- Framework-specific spans (Express, FastAPI, Spring, Rails, Laravel)
+
+All without changing application code.
+
+## Alternative: SDK only
+
+If you prefer not to use the shared volume approach, add the SDK directly to your application and set the env vars in Coolify's service environment settings:
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-coolify-app",
+});
+```

@@ -1,0 +1,73 @@
+---
+title: Fly.io
+description: Add Obtrace to Fly.io apps with secrets and OTLP export for any language.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Fly.io
+
+Fly.io apps are instrumented by setting secrets and adding the Obtrace SDK or using OTLP export.
+
+## Step 1: Set secrets
+
+```bash
+fly secrets set \
+  OBTRACE_API_KEY=obt_live_xxxxx \
+  OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai \
+  OBTRACE_PLATFORM=flyio
+```
+
+Your app will restart with the new secrets.
+
+## Step 2: Add the SDK
+
+### Node.js
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: process.env.FLY_APP_NAME || "my-app",
+});
+```
+
+### Python / Go / Java
+
+Same pattern — read `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` from environment.
+
+## OTLP native export
+
+For any language with OpenTelemetry instrumentation:
+
+```bash
+fly secrets set \
+  OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.obtrace.ai \
+  OTEL_EXPORTER_OTLP_HEADERS="x-api-key=obt_live_xxxxx"
+```
+
+Obtrace's ingest-edge accepts standard OTLP HTTP (JSON and Protobuf) on `/otlp/v1/traces`, `/otlp/v1/logs`, and `/otlp/v1/metrics`.
+
+## Fly.io metadata
+
+The SDK auto-detects these Fly.io environment variables:
+
+| Fly Variable | Mapped to |
+|-------------|-----------|
+| `FLY_APP_NAME` | `service.name` |
+| `FLY_REGION` | `cloud.region` |
+| `FLY_ALLOC_ID` | `service.instance.id` |
+| `FLY_MACHINE_ID` | `host.id` |
+| `FLY_IMAGE_REF` | `service.version` |
+
+## Fly.io Prometheus metrics
+
+Fly.io exposes built-in Prometheus metrics. You can forward these to Obtrace by deploying a Prometheus remote-write proxy or configuring the Fly Metrics token to push to Obtrace's metrics endpoint.

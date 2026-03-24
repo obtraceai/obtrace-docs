@@ -1,0 +1,52 @@
+---
+title: Platform Integrations
+description: Plug-and-play observability for every hosting platform — Vercel, Render, Railway, Fly.io, Coolify, Supabase.
+category: feature
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Platform Integrations
+
+Obtrace integrates with the platforms you already deploy to. Each integration is designed to be as close to zero-config as possible.
+
+## Choose your platform
+
+| Platform | Setup | What you get |
+|----------|-------|-------------|
+| [Vercel](/docs/platforms/vercel) | Install from marketplace | Env vars auto-injected, Log Drain streams all Function/Edge logs, SDK for traces + metrics |
+| [Render](/docs/platforms/render) | Run setup script or add env vars | Log Stream sends all service logs, SDK for traces + metrics |
+| [Railway](/docs/platforms/railway) | Run setup script or add env vars | Env vars set via CLI, SDK for traces + metrics |
+| [Fly.io](/docs/platforms/flyio) | Run setup script | Secrets set via `fly secrets`, OTLP export supported natively |
+| [Coolify](/docs/platforms/coolify) | Add docker-compose service | Auto-instrumentation via shared volume, works with any language |
+| [Supabase](/docs/platforms/supabase) | Connect DB agent | Query monitoring, connection tracking, performance insights |
+
+## How it works
+
+Every integration follows the same pattern:
+
+1. **Configure credentials** — API key and ingest URL are set as environment variables on your platform
+2. **Add the SDK** (optional) — For full traces and metrics, add the Obtrace SDK to your app (`npm install @obtrace/sdk-js`, `pip install obtrace-sdk`, etc.)
+3. **Platform logs flow automatically** — Log drains and streams capture platform-level logs without any code changes
+
+The SDK auto-detects which platform it is running on and enriches telemetry with platform-specific metadata (deployment ID, region, instance ID, etc.).
+
+## What's captured without the SDK
+
+Even without adding the SDK to your code, platform integrations capture:
+
+- Application stdout/stderr logs
+- HTTP request logs (method, path, status code, duration)
+- Build logs and deploy events
+- Platform-specific errors (function timeouts, cold starts, OOM)
+
+## What the SDK adds
+
+With the SDK installed, you also get:
+
+- Distributed traces across services
+- Custom spans for database queries, external API calls, etc.
+- Runtime metrics (memory, CPU, GC, event loop)
+- Exception tracking with full stack traces
+- Trace context propagation (W3C traceparent)

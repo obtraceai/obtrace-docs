@@ -1,0 +1,77 @@
+---
+title: Render
+description: Stream all Render service logs to Obtrace via Log Streams, and add the SDK for full trace and metric coverage.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Render
+
+Render supports Log Streams over syslog TLS. Obtrace receives these logs, converts them to OTLP, and correlates them with SDK traces and metrics.
+
+## Step 1: Configure Log Stream
+
+In the Render dashboard:
+
+1. Go to **Workspace Settings** → **Integrations** → **Observability**
+2. Set **Log Endpoint** to: `ingest.obtrace.ai:6514`
+3. Set **Token** to your Obtrace API key (`obt_live_...`)
+4. Save
+
+All services in your workspace will start streaming logs to Obtrace.
+
+### Alternative: Setup script
+
+```bash
+export RENDER_API_KEY=rnd_xxxxx
+./render-setup.sh obt_live_xxxxx
+```
+
+## Step 2: Add environment variables
+
+In your Render service settings, add:
+
+| Variable | Value |
+|----------|-------|
+| `OBTRACE_API_KEY` | `obt_live_...` |
+| `OBTRACE_INGEST_BASE_URL` | `https://ingest.obtrace.ai` |
+| `OBTRACE_PLATFORM` | `render` |
+
+Or via Render Blueprint (`render.yaml`):
+
+```yaml
+services:
+  - type: web
+    name: my-api
+    env: node
+    envVars:
+      - key: OBTRACE_API_KEY
+        sync: false
+      - key: OBTRACE_INGEST_BASE_URL
+        value: https://ingest.obtrace.ai
+      - key: OBTRACE_PLATFORM
+        value: render
+```
+
+## Step 3: Add the SDK (optional)
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-render-service",
+});
+```
+
+## What you get
+
+- **Without SDK:** All application logs streamed via syslog
+- **With SDK:** Full traces, custom spans, runtime metrics, exception tracking, distributed context propagation

@@ -1,0 +1,14 @@
+{
+  "title": "Plataformas",
+  "icon": "PlugZap",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "vercel",
+    "render",
+    "railway",
+    "flyio",
+    "coolify",
+    "supabase"
+  ]
+}

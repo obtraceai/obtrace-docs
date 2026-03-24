@@ -1,0 +1,106 @@
+---
+title: Railway
+description: Add Obtrace observability to Railway services with environment variables and the SDK.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Railway
+
+Railway services are instrumented by setting environment variables and adding the Obtrace SDK.
+
+## Step 1: Set environment variables
+
+### Via Railway CLI
+
+```bash
+railway variables set \
+  OBTRACE_API_KEY=obt_live_xxxxx \
+  OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai \
+  OBTRACE_PLATFORM=railway
+```
+
+### Via Railway dashboard
+
+Go to your service → **Variables** tab → add:
+
+| Variable | Value |
+|----------|-------|
+| `OBTRACE_API_KEY` | `obt_live_...` |
+| `OBTRACE_INGEST_BASE_URL` | `https://ingest.obtrace.ai` |
+| `OBTRACE_PLATFORM` | `railway` |
+
+## Step 2: Add the SDK
+
+### Node.js
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: process.env.RAILWAY_SERVICE_NAME || "my-service",
+});
+```
+
+### Python
+
+```bash
+pip install obtrace-sdk
+```
+
+```python
+from obtrace_sdk import ObtraceClient, ObtraceConfig
+import os
+
+client = ObtraceClient(ObtraceConfig(
+    api_key=os.environ["OBTRACE_API_KEY"],
+    ingest_base_url=os.environ["OBTRACE_INGEST_BASE_URL"],
+    service_name=os.environ.get("RAILWAY_SERVICE_NAME", "my-service"),
+))
+```
+
+### Go
+
+```bash
+go get github.com/obtrace/sdk-go
+```
+
+```go
+client := obtrace.NewClient(obtrace.Config{
+    APIKey:        os.Getenv("OBTRACE_API_KEY"),
+    IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+    ServiceName:   os.Getenv("RAILWAY_SERVICE_NAME"),
+})
+```
+
+## Railway metadata
+
+The SDK auto-detects these Railway environment variables when available:
+
+| Railway Variable | Mapped to |
+|-----------------|-----------|
+| `RAILWAY_SERVICE_NAME` | `service.name` |
+| `RAILWAY_ENVIRONMENT` | `deployment.environment` |
+| `RAILWAY_REPLICA_ID` | `service.instance.id` |
+| `RAILWAY_GIT_COMMIT_SHA` | `service.version` |
+| `RAILWAY_GIT_BRANCH` | `vcs.branch` |
+
+## OpenTelemetry native export
+
+Railway apps can also export OTLP directly:
+
+```bash
+railway variables set \
+  OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.obtrace.ai \
+  OTEL_EXPORTER_OTLP_HEADERS="x-api-key=obt_live_xxxxx"
+```
+
+This works with any OpenTelemetry-instrumented application in any language.

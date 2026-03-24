@@ -1,0 +1,136 @@
+---
+title: Vercel
+description: One-click observability for Vercel — auto-configured env vars, Log Drain for Function and Edge logs, full SDK support for Next.js.
+category: feature
+intent: setup
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Vercel
+
+The Vercel integration gives you observability with zero configuration. Install from the marketplace and every project gets instrumented automatically.
+
+## What you get
+
+| Signal | Source | Code changes? |
+|--------|--------|--------------|
+| Function logs | Log Drain (automatic) | No |
+| Edge logs | Log Drain (automatic) | No |
+| Build logs | Log Drain (automatic) | No |
+| HTTP traces | SDK | 1 line |
+| Custom spans | SDK | 1 line |
+| Runtime metrics | SDK | 1 line |
+| Web Vitals | Browser SDK | 1 line |
+
+## Step 1: Install the integration
+
+Go to the [Obtrace integration on Vercel Marketplace](https://vercel.com/integrations/obtrace) and click **Add Integration**.
+
+The integration will:
+
+1. Authenticate via OAuth
+2. Provision an Obtrace project for your team
+3. Inject environment variables into all your Vercel projects:
+   - `OBTRACE_API_KEY`
+   - `OBTRACE_INGEST_BASE_URL`
+   - `OBTRACE_PLATFORM=vercel`
+   - `OBTRACE_AUTO_INSTRUMENT=true`
+4. Configure a Log Drain that streams all Function, Edge, Static, and Build logs to Obtrace
+
+After installation, **redeploy** any project and its logs will start flowing immediately.
+
+## Step 2: Add the SDK (optional, for traces + metrics)
+
+Install the SDK:
+
+```bash
+npm install @obtrace/sdk-js
+```
+
+### Next.js (App Router)
+
+```ts
+// app/layout.tsx
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-nextjs-app",
+});
+```
+
+### Next.js (Route Handler)
+
+```ts
+// app/api/checkout/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  // The SDK auto-instruments if NODE_OPTIONS is set
+  // Otherwise, use the wrapper:
+  return NextResponse.json({ ok: true });
+}
+```
+
+### Edge Functions
+
+```ts
+// middleware.ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-app-edge",
+});
+```
+
+## Step 3: Add the Browser SDK (optional, for Web Vitals)
+
+```bash
+npm install @obtrace/sdk-browser
+```
+
+```ts
+// app/providers.tsx
+"use client";
+import { initBrowserSDK } from "@obtrace/sdk-browser/browser";
+
+const sdk = initBrowserSDK({
+  apiKey: process.env.NEXT_PUBLIC_OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-app-browser",
+});
+```
+
+## What the Log Drain captures
+
+The Vercel Log Drain streams these fields for every log entry:
+
+| Field | Description |
+|-------|-------------|
+| `source` | `lambda`, `edge`, `static`, `build`, `external` |
+| `message` | Log message content |
+| `level` | `info`, `warn`, `error` |
+| `timestamp` | Unix timestamp |
+| `projectId` | Vercel project ID |
+| `deploymentId` | Deployment that generated the log |
+| `requestId` | Request ID for correlation |
+| `host` | Request hostname |
+| `path` | Request path |
+| `statusCode` | HTTP status code |
+| `method` | HTTP method |
+| `environment` | `production`, `preview`, `development` |
+
+All fields are preserved as attributes on the OTLP log record in Obtrace.
+
+## Environment variables injected
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `OBTRACE_API_KEY` | `obt_live_...` | Authentication |
+| `OBTRACE_INGEST_BASE_URL` | `https://ingest.obtrace.ai` | Ingest endpoint |
+| `OBTRACE_PLATFORM` | `vercel` | Platform detection |
+| `OBTRACE_AUTO_INSTRUMENT` | `true` | Enable auto-instrumentation |

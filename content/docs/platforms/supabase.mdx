@@ -1,0 +1,74 @@
+---
+title: Supabase
+description: Monitor Supabase database performance with the Obtrace DB Agent — query tracking, connection monitoring, and slow query detection.
+category: feature
+intent: setup
+llm_priority: medium
+sourceOfTruth: true
+---
+
+# Supabase
+
+Supabase runs on Postgres. The [Obtrace DB Agent](/docs/sdks/db-agent) connects to your Supabase database and monitors query performance, connection counts, lock contention, and slow queries.
+
+## Step 1: Get your Supabase connection string
+
+In your Supabase dashboard:
+
+1. Go to **Settings** → **Database**
+2. Copy the **Connection string** (URI format)
+3. Use the **Session mode** connection string for monitoring
+
+## Step 2: Deploy the DB Agent
+
+### Docker
+
+```bash
+docker run -d \
+  -e OBTRACE_API_KEY=obt_live_xxxxx \
+  -e OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai \
+  -e DB_TYPE=postgres \
+  -e DB_DSN="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" \
+  -e SERVICE_NAME=supabase-db \
+  ghcr.io/obtrace/obtrace-db-agent:latest
+```
+
+### On Railway/Render/Fly.io
+
+Deploy the DB Agent as a separate service on the same platform as your application, with the env vars above.
+
+## What you get
+
+| Metric | Description |
+|--------|-------------|
+| Active connections | Current connection count by state |
+| Query duration | P50, P95, P99 latency per query pattern |
+| Slow queries | Queries exceeding configurable threshold |
+| Lock contention | Blocked queries waiting for locks |
+| Table sizes | Row counts and disk usage per table |
+| Index usage | Hit ratios and unused indexes |
+| Replication lag | Replica delay (if using read replicas) |
+
+## Correlating with application traces
+
+If your application uses the Obtrace SDK, database spans from your app are correlated with the DB Agent metrics in the Obtrace dashboard — giving you end-to-end visibility from HTTP request to database query.
+
+## For your application code
+
+If your application connects to Supabase via the client library, add the SDK for HTTP-level instrumentation:
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+import { createClient } from "@supabase/supabase-js";
+
+const sdk = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "my-supabase-app",
+});
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+```
