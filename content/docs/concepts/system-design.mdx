@@ -1,0 +1,157 @@
+---
+title: System Design
+description: End-to-end architecture of Obtrace — from SDK telemetry emission through ingestion, streaming, storage, AI analysis, and frontend serving.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# System Design
+
+## Full Architecture
+
+```mermaid
+flowchart TD
+    subgraph Sources["Telemetry Sources"]
+        SDK_JS["SDK JS/Browser"]
+        SDK_GO["SDK Go"]
+        SDK_PY["SDK Python"]
+        SDK_JAVA["SDK Java"]
+        SDK_NET["SDK .NET"]
+        SDK_OTHER["SDK PHP/Ruby"]
+        OTLP_EXT["External OTLP"]
+        ZERO["Obtrace Zero\neBPF + Auto-inject"]
+    end
+
+    subgraph Ingest["Gate 1 — Ingestion"]
+        EDGE["ingest-edge\n:4317 gRPC / HTTP"]
+        AUTH["Auth + API Key"]
+        RATE["Rate Limit"]
+        QUOTA["Billing Gate\nplan quota check"]
+        PII1["PII Scrub\nbasic patterns"]
+        RETENTION["Retention Tier\nfrom plan → Redis"]
+    end
+
+    subgraph Stream["Streaming Layer"]
+        KAFKA["Redpanda / Kafka\n3-broker TLS cluster"]
+        DLQ["Dead Letter Queue"]
+    end
+
+    subgraph Workers["Gate 2 — Processing"]
+        W_OTLP["worker-otlp\nnormalize + enrich"]
+        W_REPLAY["worker-replay\nsession chunking"]
+        W_RECIPES["worker-recipes\ncustom transforms"]
+        W_ENGINE["incident-engine\ndetect + correlate"]
+        W_PROJ["incident-projector\nread model"]
+        W_ACTIONS["worker-incident-actions\nalert + remediate"]
+        PII2["Policy Scrub\nJSONPath/regex per tenant"]
+    end
+
+    subgraph Storage["Storage Layer"]
+        CH["ClickHouse\nlogs, traces, metrics"]
+        PG["Postgres\nauth, projects, incidents\nbilling, config"]
+        MINIO["MinIO / S3\nreplay blobs"]
+        REDIS["Redis\ncache, locks\nbilling gate state"]
+    end
+
+    subgraph Serving["Serving Layer"]
+        QGW["query-gateway\nClickHouse queries"]
+        CP["control-plane-api\nCRUD, auth, config"]
+        RP["replay-proxy\nblob streaming"]
+        AI["ai-service\nOllama LLM inference"]
+    end
+
+    subgraph Frontend["Frontend"]
+        UI["React SPA\nVite + Radix/shadcn\nZustand + TanStack Query"]
+    end
+
+    Sources -->|OTLP gRPC/HTTP| EDGE
+    EDGE --> AUTH --> RATE --> QUOTA --> PII1 --> RETENTION
+    RETENTION -->|envelope with tier| KAFKA
+
+    KAFKA --> W_OTLP
+    KAFKA --> W_REPLAY
+    KAFKA --> W_RECIPES
+    KAFKA --> W_ENGINE
+    W_ENGINE --> W_PROJ
+    W_ENGINE --> W_ACTIONS
+
+    W_OTLP --> PII2
+    PII2 --> CH
+    W_OTLP --> PG
+    W_REPLAY --> MINIO
+    W_RECIPES --> CH
+    W_ENGINE --> PG
+    W_PROJ --> PG
+
+    KAFKA -->|retry 1m → 10m| DLQ
+
+    CH --> QGW
+    PG --> CP
+    MINIO --> RP
+    PG --> AI
+    CH --> AI
+
+    QGW --> UI
+    CP --> UI
+    RP --> UI
+    AI --> UI
+```
+
+## Data Path
+
+Every telemetry event follows the same pipeline:
+
+1. **SDK or OTLP source** emits spans, logs, or metrics
+2. **ingest-edge** authenticates, rate-limits, checks billing quota, scrubs basic PII, stamps retention tier
+3. **Redpanda/Kafka** distributes events to topic partitions by tenant
+4. **Workers** normalize, enrich, apply tenant-specific scrubbing policies, detect incidents
+5. **Storage** persists analytical data (ClickHouse), state (Postgres), blobs (MinIO), ephemeral cache (Redis)
+6. **Serving** exposes data via specialized APIs — queries, CRUD, replay streaming, AI inference
+7. **Frontend** renders the product UI
+
+## Tenant Isolation
+
+All data is scoped by `tenant_id / project_id / app_id / env`. ClickHouse queries always filter by tenant. Postgres uses row-level policies. Kafka topics are partitioned by tenant ID.
+
+## Wire Format
+
+JSON by default. Avro optionally, configurable via `WIRE_FORMAT` env var. Workers auto-detect format from the envelope header.
+
+## Internal Communication
+
+| Path | Protocol |
+|------|----------|
+| SDK → ingest-edge | OTLP gRPC (:4317) or HTTP |
+| ingest-edge → Kafka | Kafka producer |
+| Kafka → workers | Kafka consumer groups |
+| workers → storage | Native drivers (ClickHouse, Postgres, S3) |
+| serving → storage | Native drivers |
+| frontend → serving | HTTP REST |
+| ai-service → Ollama | HTTP |
+
+## Billing Gate
+
+```mermaid
+flowchart LR
+    subgraph Source["Source of Truth"]
+        PG_BILL["Postgres\nbilling.plan\nbilling.subscription\nbilling.usage"]
+    end
+
+    subgraph Projection["Hot Path"]
+        GATE["billing.Gate\nprojects plan state\nevery 30s"]
+        REDIS_G["Redis\ngate key per tenant"]
+    end
+
+    subgraph Consumers["Enforcement"]
+        IE["ingest-edge\nGate.Check()\n5ms timeout, fail-open"]
+        AIS["ai-service\nGate.Check()"]
+    end
+
+    PG_BILL --> GATE --> REDIS_G
+    REDIS_G --> IE
+    REDIS_G --> AIS
+```
+
+Plans: free, indie, startup, growth, scale. Each defines limits for ingest bytes/mo, RCA/mo, autofix/mo, replay/mo, max services, max users, retention days.

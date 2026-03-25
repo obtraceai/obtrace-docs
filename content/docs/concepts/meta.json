@@ -3,6 +3,8 @@
   "icon": "Sparkles",
   "defaultOpen": true,
   "pages": [
+    "system-design",
+    "failure-flow",
     "how-obtrace-detects-incidents",
     "how-root-cause-analysis-works",
     "how-ai-decides-to-open-a-pr",

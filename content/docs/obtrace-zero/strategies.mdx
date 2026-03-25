@@ -125,13 +125,20 @@ The hint overrides both the detected language and the strategy selection — Go 
 
 ```mermaid
 flowchart TD
-    A[What's in your cluster?] --> B{All interpreted languages?}
-    B -->|Yes| C[strategy: sdk]
-    B -->|No| D{Mixed languages?}
-    D -->|Yes| E{Need maximum coverage?}
-    E -->|Yes| F[strategy: hybrid]
-    E -->|No| G[strategy: auto]
-    D -->|No, all compiled| H[strategy: ebpf]
+    A["What's in\nyour cluster?"]:::input --> B{"All interpreted\nlanguages?"}:::decision
+    B -->|"Yes"| C["strategy: sdk\nmax telemetry depth"]:::sdk
+    B -->|"No"| D{"Mixed\nlanguages?"}:::decision
+    D -->|"Yes"| E{"Need maximum\ncoverage?"}:::decision
+    E -->|"Yes"| F["strategy: hybrid\nSDK + eBPF both"]:::hybrid
+    E -->|"No"| G["strategy: auto\noperator decides per workload"]:::auto
+    D -->|"All compiled"| H["strategy: ebpf\nkernel-level tracing"]:::ebpf
+
+    classDef input fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px
+    classDef decision fill:#d97706,stroke:#b45309,color:#fff,stroke-width:2px
+    classDef sdk fill:#059669,stroke:#047857,color:#fff,stroke-width:2px
+    classDef ebpf fill:#dc2626,stroke:#b91c1c,color:#fff,stroke-width:2px
+    classDef hybrid fill:#9333ea,stroke:#7e22ce,color:#fff,stroke-width:2px
+    classDef auto fill:#0891b2,stroke:#0e7490,color:#fff,stroke-width:2px
 ```
 
 ## Excluding workloads

@@ -15,24 +15,33 @@ Obtrace Zero intercepts Pod creation in Kubernetes, detects what language each c
 
 ```mermaid
 flowchart TD
-    A[kubectl apply / Deployment rollout] --> B[Kubernetes API Server]
-    B --> C{MutatingWebhook\n/mutate-pods}
-    C --> D[obtrace-zero-operator]
-    D --> E[Language Detection]
-    E --> F{Strategy Selection}
-    F -->|Interpreted language| G[SDK Injection]
-    F -->|Compiled language| H[eBPF Sidecar Injection]
-    F -->|Hybrid mode| I[SDK + eBPF]
-    G --> J[Pod scheduled with init container + env vars]
-    H --> K[Pod scheduled with eBPF sidecar]
-    I --> L[Pod scheduled with both]
-    J --> M[Agent loads at process startup]
-    K --> N[eBPF attaches to kernel probes]
+    A["kubectl apply\nDeployment rollout"]:::input --> B["Kubernetes\nAPI Server"]:::k8s
+    B --> C{"MutatingWebhook\n/mutate-pods"}:::decision
+    C --> D["obtrace-zero\noperator"]:::process
+    D --> E["Language\nDetection"]:::process
+    E --> F{"Strategy\nSelection"}:::decision
+    F -->|"Interpreted\n(Node, Python, Java...)"| G["SDK Injection"]:::sdk
+    F -->|"Compiled\n(Go, Rust, unknown)"| H["eBPF Sidecar"]:::ebpf
+    F -->|"Hybrid mode"| I["SDK + eBPF"]:::hybrid
+    G --> J["Pod + init container\n+ env vars"]:::sdk
+    H --> K["Pod + eBPF\nsidecar"]:::ebpf
+    I --> L["Pod + both"]:::hybrid
+    J --> M["Agent loads\nat startup"]:::sdk
+    K --> N["eBPF attaches\nkernel probes"]:::ebpf
     L --> M
     L --> N
-    M --> O[OTLP JSON → ingest-edge]
+    M --> O["OTLP JSON\n→ ingest-edge"]:::output
     N --> O
-    O --> P[Kafka → Workers → ClickHouse]
+    O --> P["Kafka → Workers\n→ ClickHouse"]:::output
+
+    classDef input fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px
+    classDef k8s fill:#326ce5,stroke:#2457b5,color:#fff,stroke-width:2px
+    classDef process fill:#7c3aed,stroke:#6d28d9,color:#fff,stroke-width:2px
+    classDef decision fill:#d97706,stroke:#b45309,color:#fff,stroke-width:2px
+    classDef sdk fill:#059669,stroke:#047857,color:#fff,stroke-width:2px
+    classDef ebpf fill:#dc2626,stroke:#b91c1c,color:#fff,stroke-width:2px
+    classDef hybrid fill:#9333ea,stroke:#7e22ce,color:#fff,stroke-width:2px
+    classDef output fill:#0891b2,stroke:#0e7490,color:#fff,stroke-width:2px
 ```
 
 ## Phase 1: Installation

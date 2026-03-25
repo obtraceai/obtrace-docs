@@ -27,13 +27,18 @@ The eBPF sidecar runs as a container in the same Pod with `shareProcessNamespace
 
 ```mermaid
 flowchart LR
-    subgraph Pod
-        A[App Container] -->|tcp_sendmsg| K[Linux Kernel]
-        K -->|tcp_recvmsg| A
-        B[eBPF Sidecar] -->|attach probes| K
-        B -->|read events| K
+    subgraph Pod["Kubernetes Pod"]
+        A["App Container\nyour service"]:::app -->|"tcp_sendmsg\ntcp_recvmsg"| K["Linux Kernel\nnetwork stack"]:::kernel
+        K -->|"raw events"| A
+        B["eBPF Sidecar\nobtrace-zero-ebpf"]:::ebpf -->|"kprobe\nuprobe"| K
+        K -->|"ring buffer\nevents"| B
     end
-    B -->|OTLP JSON| C[ingest-edge]
+    B -->|"OTLP JSON"| C["ingest-edge\n:4317"]:::output
+
+    classDef app fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px
+    classDef kernel fill:#d97706,stroke:#b45309,color:#fff,stroke-width:2px
+    classDef ebpf fill:#dc2626,stroke:#b91c1c,color:#fff,stroke-width:2px
+    classDef output fill:#059669,stroke:#047857,color:#fff,stroke-width:2px
 ```
 
 The sidecar attaches to kernel functions using kprobes and uprobes, reads network events from eBPF ring buffers, parses protocol headers, and exports telemetry.

@@ -1,0 +1,181 @@
+---
+title: Failure Flow
+description: How Obtrace handles failures at every stage — retry policies, dead letter queues, circuit breakers, and degraded-mode behavior.
+category: concept
+intent: explanation
+llm_priority: high
+sourceOfTruth: true
+---
+
+# Failure Flow
+
+## End-to-End Failure Handling
+
+```mermaid
+flowchart TD
+    subgraph Ingestion["Ingestion Failures"]
+        IE["ingest-edge"]
+        IE_AUTH["Auth failure\n→ 401, drop"]
+        IE_RATE["Rate limited\n→ 429 + Retry-After"]
+        IE_QUOTA["Quota exceeded\n→ 429, log usage"]
+        IE_GATE["Billing gate timeout\n→ fail-open, allow"]
+        IE_KAFKA["Kafka write fail\n→ retry 3x, then 503"]
+    end
+
+    subgraph Streaming["Streaming Failures"]
+        K["Redpanda / Kafka"]
+        K_PART["Partition unavailable\n→ leader election"]
+        K_LAG["Consumer lag\n→ autoscale consumers"]
+        K_RETRY["Processing failure\n→ retry topic"]
+        K_DLQ["3rd failure\n→ Dead Letter Queue"]
+    end
+
+    subgraph Workers["Worker Failures"]
+        W["Workers"]
+        W_PARSE["Parse error\n→ DLQ + metadata"]
+        W_CH["ClickHouse down\n→ buffer in memory\nretry with backoff"]
+        W_PG["Postgres down\n→ retry 3x\nthen DLQ"]
+        W_S3["S3/MinIO down\n→ retry 3x\nthen DLQ"]
+        W_OOM["OOM / crash\n→ Kafka rebalance\nre-consume from offset"]
+    end
+
+    subgraph Serving["Serving Failures"]
+        S["Serving APIs"]
+        S_CH["ClickHouse query timeout\n→ 504 + partial results"]
+        S_PG["Postgres connection pool\nexhausted → 503"]
+        S_REDIS["Redis down\n→ bypass cache\nhit source directly"]
+        S_AI["Ollama timeout\n→ 504 + queue retry"]
+    end
+
+    IE --> IE_AUTH
+    IE --> IE_RATE
+    IE --> IE_QUOTA
+    IE --> IE_GATE
+    IE --> IE_KAFKA
+
+    IE_KAFKA -->|success| K
+    K --> K_PART
+    K --> K_LAG
+    K --> K_RETRY
+    K_RETRY -->|1m delay| W
+    K_RETRY -->|10m delay| W
+    K_RETRY -->|3rd fail| K_DLQ
+
+    W --> W_PARSE
+    W --> W_CH
+    W --> W_PG
+    W --> W_S3
+    W --> W_OOM
+
+    S --> S_CH
+    S --> S_PG
+    S --> S_REDIS
+    S --> S_AI
+```
+
+## Retry Policy
+
+```mermaid
+flowchart LR
+    MSG["Message"] --> P1["Process\nattempt 1"]
+    P1 -->|fail| R1["Retry topic\n1 min delay"]
+    R1 --> P2["Process\nattempt 2"]
+    P2 -->|fail| R2["Retry topic\n10 min delay"]
+    R2 --> P3["Process\nattempt 3"]
+    P3 -->|fail| DLQ["Dead Letter Queue\nmetadata preserved"]
+    P1 -->|success| OK["Storage"]
+    P2 -->|success| OK
+    P3 -->|success| OK
+```
+
+Each failed message carries metadata through the retry chain:
+
+| Field | Value |
+|-------|-------|
+| `retry_count` | 1, 2, 3 |
+| `first_failure_at` | ISO timestamp |
+| `last_error` | Error message |
+| `original_topic` | Source topic |
+| `original_partition` | Source partition |
+| `original_offset` | Source offset |
+
+## Degraded Mode Behavior
+
+```mermaid
+flowchart TD
+    subgraph Normal["Normal Operation"]
+        N1["ingest-edge"] -->|write| N2["Kafka"]
+        N2 --> N3["Workers"]
+        N3 --> N4["ClickHouse + Postgres"]
+        N4 --> N5["query-gateway"]
+    end
+
+    subgraph Degraded["Degraded Modes"]
+        D_REDIS["Redis down\n→ billing gate fail-open\n→ cache bypass\n→ no rate limit state"]
+        D_CH["ClickHouse down\n→ workers buffer\n→ queries return 503\n→ AI analysis unavailable"]
+        D_PG["Postgres down\n→ auth cached short-term\n→ no new projects/config\n→ incidents buffer in Kafka"]
+        D_KAFKA["Kafka down\n→ ingest returns 503\n→ SDKs buffer client-side\n→ no new processing"]
+        D_AI["Ollama down\n→ chat returns 504\n→ RCA queued\n→ autofix paused"]
+    end
+```
+
+## Webhook Failure (Obtrace Zero)
+
+The Kubernetes mutating webhook uses `failurePolicy: Ignore`. If the operator is down or the webhook times out (10s), Pods are created normally without instrumentation. No telemetry is lost — it was never injected.
+
+## SDK Client-Side Resilience
+
+All SDKs implement client-side buffering:
+
+| Behavior | Value |
+|----------|-------|
+| Buffer size | 500 items max |
+| Flush interval | 2 seconds |
+| Retry on 5xx | 3 attempts, exponential backoff |
+| Retry on 429 | Honor `Retry-After` header |
+| On buffer full | Drop oldest items |
+| On process exit | Final flush attempt |
+
+## Incident Engine Failure Isolation
+
+```mermaid
+flowchart LR
+    subgraph Input["Signal Sources"]
+        ERR["Error bursts"]
+        LAT["Latency shifts"]
+        DEP["Deploy events"]
+    end
+
+    subgraph Engine["Incident Engine"]
+        CORR["Correlator"]
+        SCORE["Scorer"]
+        GROUP["Grouper"]
+    end
+
+    subgraph Output["Actions"]
+        INC["Create incident"]
+        NOTIFY["Send notification"]
+        RCA["Trigger RCA"]
+        PR["Open PR"]
+    end
+
+    subgraph Failures["Failure Isolation"]
+        F_CORR["Correlator crash\n→ restart from offset\n→ no duplicate incidents"]
+        F_NOTIFY["Notification fail\n→ retry 3x\n→ incident still created"]
+        F_RCA["RCA timeout\n→ incident exists\n→ RCA queued"]
+        F_PR["PR creation fail\n→ incident exists\n→ manual remediation"]
+    end
+
+    Input --> CORR --> SCORE --> GROUP
+    GROUP --> INC
+    INC --> NOTIFY
+    INC --> RCA
+    RCA --> PR
+
+    CORR -.-> F_CORR
+    NOTIFY -.-> F_NOTIFY
+    RCA -.-> F_RCA
+    PR -.-> F_PR
+```
+
+Each stage is independently failable. A notification failure does not block incident creation. An RCA timeout does not prevent the incident from being visible. A PR creation failure does not affect the incident record.

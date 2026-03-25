@@ -23,10 +23,15 @@ Obtrace detects incidents by combining anomaly signals with service context, rel
 
 ```mermaid
 flowchart LR
-  A[Runtime signals] --> B[Signal correlation]
-  B --> C[Incident grouping]
-  C --> D[Impact scoring]
-  D --> E[Incident record]
+  A["Runtime signals\nerrors, latency, throughput"]:::input --> B["Signal correlation\nby service + time + release"]:::process
+  B --> C["Incident grouping\ncluster related signals"]:::process
+  C --> D["Impact scoring\nblast radius + severity"]:::decision
+  D --> E["Incident record\nstable ID + evidence"]:::output
+
+  classDef input fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px
+  classDef process fill:#7c3aed,stroke:#6d28d9,color:#fff,stroke-width:2px
+  classDef decision fill:#d97706,stroke:#b45309,color:#fff,stroke-width:2px
+  classDef output fill:#059669,stroke:#047857,color:#fff,stroke-width:2px
 ```
 
 Obtrace correlates signals before alerting so that engineers investigate one incident with evidence instead of many disconnected alarms.

@@ -80,6 +80,214 @@ html.dark {
   backdrop-filter: blur(1px);
 }
 
+.mmd-wrapper {
+  position: relative;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  background: hsl(var(--card));
+}
+
+.mmd-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.mmd-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary));
+  flex-wrap: wrap;
+}
+
+.mmd-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.mmd-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.mmd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mmd-btn:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.mmd-btn-sm {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mmd-zoom-label {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--muted-foreground));
+  min-width: 2.5rem;
+  text-align: center;
+  user-select: none;
+}
+
+.mmd-separator {
+  width: 1px;
+  height: 1rem;
+  background: hsl(var(--border));
+  margin: 0 0.25rem;
+}
+
+.mmd-export-wrapper {
+  position: relative;
+}
+
+.mmd-export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  z-index: 10;
+  min-width: 7rem;
+  overflow: hidden;
+}
+
+.mmd-export-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mmd-export-menu button:hover {
+  background: hsl(var(--accent));
+}
+
+.mmd-element-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: hsl(var(--accent));
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.8rem;
+  color: hsl(var(--accent-foreground));
+  font-weight: 500;
+}
+
+.mmd-viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: 20rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mmd-fullscreen .mmd-viewport {
+  height: calc(100vh - 5rem);
+  min-height: unset;
+}
+
+.mmd-canvas {
+  transition: transform 0.05s linear;
+  will-change: transform;
+  padding: 1.5rem;
+}
+
+.mmd-canvas svg {
+  display: block;
+}
+
+.mmd-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--card) / 0.8);
+}
+
+.mmd-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid hsl(var(--border));
+  border-top-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: mmd-spin 0.6s linear infinite;
+}
+
+@keyframes mmd-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mmd-hints {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.65rem;
+  color: hsl(var(--muted-foreground));
+  border-top: 1px solid hsl(var(--border));
+  text-align: center;
+  user-select: none;
+}
+
+.mmd-error {
+  border: 1px solid hsl(0 65% 50%);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  background: hsl(0 65% 50% / 0.08);
+}
+
+.mmd-error pre {
+  font-size: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+.mmd-error p {
+  font-size: 0.8rem;
+  color: hsl(0 65% 50%);
+  margin: 0;
+}
+
 .docs-ai-sheet {
   position: fixed;
   top: 0;

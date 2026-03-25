@@ -23,10 +23,19 @@ Obtrace does not open pull requests based on anomaly detection alone. The system
 
 ```mermaid
 flowchart TD
-  A[Incident detected] --> B[Root cause scored]
-  B --> C[Policy and permission check]
-  C --> D[Draft remediation plan]
-  D --> E[Open PR or require approval]
+  A["Incident detected\nhigh-confidence signal"]:::input --> B["Root cause scored\nLLM + telemetry evidence"]:::process
+  B --> C{"Policy check\nconfidence ≥ threshold?"}:::decision
+  C -->|Yes| D["Draft remediation plan\nnarrow, safe change"]:::process
+  C -->|No| STOP["Skip PR\nlog reason"]:::reject
+  D --> E{"Repo permissions\nbranch + app access?"}:::decision
+  E -->|Yes| PR["Open PR\nwith evidence + test plan"]:::output
+  E -->|No| MANUAL["Flag for manual review"]:::reject
+
+  classDef input fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px
+  classDef process fill:#7c3aed,stroke:#6d28d9,color:#fff,stroke-width:2px
+  classDef decision fill:#d97706,stroke:#b45309,color:#fff,stroke-width:2px
+  classDef output fill:#059669,stroke:#047857,color:#fff,stroke-width:2px
+  classDef reject fill:#dc2626,stroke:#b91c1c,color:#fff,stroke-width:2px
 ```
 
 ## When Obtrace should not open a PR
