@@ -41,4 +41,4 @@ jobs:
           docker push ${REGISTRY}/docs:${SHORT_SHA}
 
       - name: Restart deployment
-        run: kubectl rollout restart deployment/obtrace-docs -n obtrace
+        run: kubectl rollout restart deployment/obtrace-docs -n obtrace 2>/dev/null || true
