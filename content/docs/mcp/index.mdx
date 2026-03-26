@@ -38,24 +38,10 @@ Write tools are disabled by default and require the `--enable-write` flag.
 
 ## Architecture
 
-```
-Claude / IDE / Agent
-       │
-       │ MCP Protocol (stdio, SSE, or HTTP)
-       │
-  ┌────▼────┐
-  │ obtrace │
-  │   mcp   │
-  └────┬────┘
-       │
-       │ HTTPS + Bearer token
-       │
-  ┌────▼──────────────┐
-  │  Obtrace API      │
-  │  (query-gateway,  │
-  │   control-plane,  │
-  │   ai-service)     │
-  └───────────────────┘
+```mermaid
+flowchart TB
+    A["Claude / IDE / Agent"] -->|"MCP Protocol (stdio, SSE, or HTTP)"| B["obtrace mcp"]
+    B -->|"HTTPS + Bearer token"| C["Obtrace API\n(query-gateway, control-plane, ai-service)"]
 ```
 
 ## Next steps

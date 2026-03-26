@@ -24,19 +24,19 @@ Use este guia para APIs Go onde baixa latência e uso previsível de recursos s�
 - Correlation IDs propagados em handlers.
 - Erros com contexto de operação.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Carga sintética emite telemetria estável.
 - Handlers lentos aparecem claramente em spans.
 - Shutdown faz flush da fila final.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Filas limitadas para evitar pressão de memória.
 2. Monitoramento de erro de ingestão/retry.
 3. Revalidação após mudança de router/middleware.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Dados ausentes sob carga: ajuste buffer/retry/backpressure.
 - Spans ausentes: instrumente todas as fronteiras de I/O.

@@ -73,16 +73,18 @@ When a regression is detected, Obtrace identifies which specific change is respo
 
 ## Regression timeline
 
-```
-Deploy v2.4.1 at 14:22 UTC
-  → Comparison window opens (5 min warm-up)
-  → 14:27: Baseline established for v2.4.0
-  → 14:32: Error rate comparison: 0.1% → 0.8% (8x increase)
-  → 14:32: New error signature: NullPointerException in processOrder()
-  → 14:33: Incident created with deployment correlation
-  → 14:33: Root cause analysis: commit abc123 removed null check
-  → 14:34: Notification sent to deployer and on-call
-  → 14:35: Fix PR opened (restore null check)
+```mermaid
+timeline
+    title Regression detection for deploy v2.4.1
+    14:22 UTC : Deploy v2.4.1
+               : Comparison window opens (5 min warm-up)
+    14:27 : Baseline established for v2.4.0
+    14:32 : Error rate comparison — 0.1% → 0.8% (8x increase)
+           : New error signature — NullPointerException in processOrder()
+    14:33 : Incident created with deployment correlation
+           : Root cause analysis — commit abc123 removed null check
+    14:34 : Notification sent to deployer and on-call
+    14:35 : Fix PR opened (restore null check)
 ```
 
 Total time from deploy to identified regression: 10 minutes. Without automated detection, this regression might have been reported by users hours later.

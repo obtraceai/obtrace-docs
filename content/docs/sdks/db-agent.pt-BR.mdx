@@ -1,5 +1,5 @@
 ---
-title: Database Agent
+title: Agente de Banco de Dados
 description: Colete métricas de banco de dados sem alterar código. Suporta PostgreSQL, MySQL, MongoDB, Redis, Cassandra, Elasticsearch, ClickHouse, CockroachDB e SQLite.
 ---
 
@@ -63,7 +63,7 @@ Defina estas variáveis de ambiente:
 | CockroachDB | `cockroachdb` | `http://host:8080` | _status/vars |
 | SQLite | `sqlite` | `/path/to/db.sqlite` | PRAGMA queries |
 
-## Quick Start com Docker Compose
+## Início Rápido com Docker Compose
 
 Monitore um PostgreSQL e um Redis:
 
@@ -193,7 +193,7 @@ docker compose up -d
 | `db.sqlite.page_size` | Tamanho da página |
 | `db.sqlite.cache_size_pages` | Tamanho do cache |
 
-## Hardening para produção
+## Fortalecimento para produção
 
 1. Use **credenciais read-only** para todos os bancos monitorados.
 2. Configure o intervalo de coleta entre **15-60 segundos** para workloads de produção.
@@ -201,7 +201,7 @@ docker compose up -d
 4. O agent limita a **2 conexões por banco** para minimizar overhead.
 5. Armazene API keys em secret managers, nunca em arquivos de config em texto plano.
 
-## Troubleshooting
+## Solução de Problemas
 
 - **401 do ingest**: Verifique se `OBTRACE_API_KEY` corresponde ao seu projeto.
 - **Sem métricas**: Confira formato da DSN, acesso de rede e permissões do usuário do banco.
@@ -209,7 +209,7 @@ docker compose up -d
 - **Collector pulado**: Verifique os logs do agent para o erro específico (DSN inválida, falha de auth, rede).
 - **pg_stat_statements ausente**: Instale a extensão com `CREATE EXTENSION pg_stat_statements`.
 
-## Checklist de validação
+## Lista de verificação
 
 - Métricas de banco aparecem no dashboard do Obtrace dentro de um intervalo de coleta
 - Sem erros `401/403` nos logs do agent

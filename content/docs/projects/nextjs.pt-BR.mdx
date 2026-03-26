@@ -26,21 +26,21 @@ Use este guia quando seu produto roda em Next.js e você precisa de visibilidade
 - `version`: commit SHA ou build ID
 - IDs de correlação entre servidor e cliente
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Eventos de browser e servidor visíveis.
 - Erros de servidor com contexto de requisição.
 - Incidentes frontend mapeáveis para traces backend.
 - Eventos de deploy visíveis na timeline.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Chaves de servidor sempre privadas.
 2. Sampling/replay configurados para controlar custo.
 3. Flush no shutdown gracioso do runtime servidor.
 4. Validação pós-upgrade de framework.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Cliente sem dados: valide bootstrap client-side.
 - Servidor sem dados: valide init no runtime servidor.

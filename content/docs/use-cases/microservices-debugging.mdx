@@ -17,10 +17,12 @@ Debugging distributed systems is fundamentally harder because the request path s
 
 Consider a typical request flow:
 
-```
-Client → API Gateway → Order Service → Payment Service → Bank API
-                                     → Inventory Service → Database
-                                     → Notification Service → Email Provider
+```mermaid
+flowchart LR
+    Client --> Gateway["API Gateway"] --> Order["Order Service"]
+    Order --> Payment["Payment Service"] --> Bank["Bank API"]
+    Order --> Inventory["Inventory Service"] --> DB["Database"]
+    Order --> Notification["Notification Service"] --> Email["Email Provider"]
 ```
 
 When the client receives a 500 error, the failure could originate from any service in the chain. The symptoms propagate backwards:

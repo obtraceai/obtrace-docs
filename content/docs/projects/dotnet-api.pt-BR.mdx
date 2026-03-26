@@ -24,19 +24,19 @@ Use este guia para APIs ASP.NET onde confiabilidade depende de visibilidade de c
 - Nomes de endpoint/operação consistentes.
 - Metadata de deploy via CI/CD.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Telemetria de requisição com status/latência.
 - Exceções vinculadas a traces.
 - Shutdown do host faz flush da fila pendente.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Flush no token de parada do host.
 2. Retry limitado e monitorado.
 3. Revalidação após upgrade de runtime/pacotes.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Telemetria ausente após mudanças de startup: valide caminho de init.
 - Spans outbound ausentes: envolva HttpClient/DB.

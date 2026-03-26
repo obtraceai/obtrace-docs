@@ -24,19 +24,19 @@ Use este guia para serviços FastAPI com processamento assíncrono e dependênci
 - Contexto de request e sessão quando política permitir.
 - Tipo de erro e stack para triagem.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Requisição sintética gera log + span + métrica.
 - Respostas de erro incluem contexto de trace.
 - Shutdown finaliza envio da fila.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Remova campos sensíveis antes de emitir.
 2. Ajuste queue/flush para workload assíncrono.
 3. Revalide hooks de ciclo de vida após upgrades.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Startup ok sem dados: revise ordem de middleware.
 - Queda sob carga: ajuste backpressure de fila.

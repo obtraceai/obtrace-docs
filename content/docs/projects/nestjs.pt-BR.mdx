@@ -24,20 +24,20 @@ Use este guia para backends NestJS onde ciclo de requisição, DI e fronteiras d
 - Tags de ambiente e versão em todos os eventos.
 - Propagação de correlation ID em operações assíncronas.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Erros 4xx/5xx com contexto de trace.
 - Endpoints lentos com spans úteis.
 - Startup/shutdown com flush correto.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Limite queue/retry.
 2. Alerta para falha de ingestão.
 3. Revalidação após refactor de módulos.
 4. Runbook de rotação de chave documentado.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Sem eventos após deploy: valide caminho de bootstrap.
 - Spans ausentes em async handlers: confirme propagação de contexto.

@@ -24,20 +24,20 @@ Use este guia para serviços Spring Boot onde controllers, serviços e repositó
 - Metadata de release para correlação com deploy.
 - Erros com stack e rota.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Boot emite sinal de startup.
 - Respostas 5xx ligadas a trace.
 - Queries lentas aparecem na timeline de spans.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Flush em hooks de shutdown.
 2. Retry limitado para evitar cascata.
 3. Alertas para erros de ingestão/auth.
 4. Revalidação após upgrades de dependência/JDK.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Sem dados após refactor: valide caminho de init do bean.
 - Sem spans DB: instrumente fronteiras de driver/repo.

@@ -17,9 +17,9 @@ Obtrace is an AI-powered observability platform that detects production errors, 
 
 The fix outcome graph models the relationship between errors, fixes, and results:
 
-```
-Error detected → Root cause identified → Fix suggested → PR opened
-  → PR merged → Deployed → Error rate measured → Outcome recorded
+```mermaid
+flowchart LR
+    A["Error detected"] --> B["Root cause identified"] --> C["Fix suggested"] --> D["PR opened"] --> E["PR merged"] --> F["Deployed"] --> G["Error rate measured"] --> H["Outcome recorded"]
 ```
 
 Each node in the graph is tracked with timestamps and metadata, creating a complete audit trail of the remediation process.

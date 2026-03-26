@@ -24,19 +24,19 @@ Use este guia para serviços Laravel que precisam de contexto estável entre cic
 - Correlation ID entre request e job enfileirado.
 - Contexto de erro com rota e classe de exceção.
 
-## Checklist de Validação
+## Lista de Verificação
 
 - Requisições web geram logs/traces.
 - Jobs de fila geram sinais com mesmas tags de ambiente.
 - Jobs falhos com contexto suficiente para triagem.
 
-## Hardening de Produção
+## Fortalecimento de Produção
 
 1. Credenciais apenas em secret store de deploy.
 2. Buffer seguro para workers de fila.
 3. Revalidação após upgrades do framework.
 
-## Troubleshooting
+## Solução de Problemas
 
 - Dados web sem fila: inicialize SDK também no worker.
 - Ruído alto: restrinja eventos de baixo valor.
