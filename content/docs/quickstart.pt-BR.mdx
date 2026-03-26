@@ -20,7 +20,22 @@ Ao final, você deve ter:
 - Um ambiente de runtime conectado.
 - Contexto suficiente para análise de causa raiz e decisão de remediação.
 
-## Passo 1: Instale o SDK
+## Passo 1: Instrumente seu serviço
+
+### Opção A: Obtrace Zero (sem código)
+
+O caminho mais rápido. O Obtrace Zero instrumenta seus serviços automaticamente sem alteração de código — usando eBPF, agentes por linguagem ou injeção de sidecar dependendo do seu runtime.
+
+- [Início Rápido do Obtrace Zero](/pt-BR/docs/obtrace-zero/quickstart)
+- [Como funciona](/pt-BR/docs/obtrace-zero/how-it-works)
+- [Agentes por Linguagem](/pt-BR/docs/obtrace-zero/language-agents) — detalhamento por linguagem do que é capturado automaticamente
+- [Estratégias de Instrumentação](/pt-BR/docs/obtrace-zero/strategies)
+
+Suporta Node.js, Python, Java, .NET, PHP, Ruby e Go nativamente.
+
+### Opção B: SDK (instrumentação manual)
+
+Para controle total sobre o que é capturado, use um SDK diretamente:
 
 - [Python](/pt-BR/docs/sdks/python)
 - [Go](/pt-BR/docs/sdks/go)
@@ -33,9 +48,10 @@ Ao final, você deve ter:
 - [Rust](/pt-BR/docs/sdks/rust)
 - [Swift](/pt-BR/docs/sdks/swift)
 - [Browser](/pt-BR/docs/sdks/browser)
-- [Database Agent](/pt-BR/docs/sdks/db-agent)
 
-Para instrumentação sem código, veja [Obtrace Zero](/pt-BR/docs/obtrace-zero) e [Agentes por Linguagem](/pt-BR/docs/obtrace-zero/language-agents).
+### Agentes
+
+- [Database Agent](/pt-BR/docs/sdks/db-agent) — coleta métricas de banco de dados de PostgreSQL, MySQL, MongoDB, Redis e mais sem alteração de código
 
 ## Passo 2: Defina atributos canônicos
 

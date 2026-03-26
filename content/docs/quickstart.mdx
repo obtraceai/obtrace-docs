@@ -20,9 +20,22 @@ By the end of this guide, you should have:
 - One runtime environment connected.
 - Enough context for root cause analysis and remediation decisions.
 
-## Step 1: Install the SDK
+## Step 1: Instrument your service
 
-Pick the SDK that matches the service you care about most:
+### Option A: Obtrace Zero (zero-code)
+
+The fastest path. Obtrace Zero auto-instruments your services without code changes — using eBPF, language agents, or sidecar injection depending on your runtime.
+
+- [Obtrace Zero Quickstart](/docs/obtrace-zero/quickstart)
+- [How it works](/docs/obtrace-zero/how-it-works)
+- [Language Agents](/docs/obtrace-zero/language-agents) — per-language breakdown of what gets captured automatically
+- [Instrumentation Strategies](/docs/obtrace-zero/strategies)
+
+Supports Node.js, Python, Java, .NET, PHP, Ruby, and Go out of the box.
+
+### Option B: SDK (manual instrumentation)
+
+For full control over what gets captured, use an SDK directly:
 
 - [Python](/docs/sdks/python)
 - [Go](/docs/sdks/go)
@@ -35,9 +48,10 @@ Pick the SDK that matches the service you care about most:
 - [Rust](/docs/sdks/rust)
 - [Swift](/docs/sdks/swift)
 - [Browser](/docs/sdks/browser)
-- [Database Agent](/docs/sdks/db-agent)
 
-For zero-code instrumentation, see [Obtrace Zero](/docs/obtrace-zero) and [Language Agents](/docs/obtrace-zero/language-agents).
+### Agents
+
+- [Database Agent](/docs/sdks/db-agent) — collect database metrics from PostgreSQL, MySQL, MongoDB, Redis, and more without code changes
 
 ## Step 2: Set canonical attributes
 
