@@ -1,88 +1,284 @@
 ---
 title: PHP SDK
-description: Instrumentation for PHP services
+description: Manual instrumentation for PHP services using obtrace/sdk-php
 ---
 
-## Install
+## Installation
 
 ```bash
 composer require obtrace/sdk-php
 ```
 
-## Configuration
+Requires PHP 8.1+. The package ships no auto-instrumentation extensions or framework hooks. All telemetry is sent through explicit calls.
 
-```php
+## Minimum Setup
+
+```php title="bootstrap/obtrace.php"
 <?php
-require_once __DIR__ . "/../src/ObtraceClient.php";
-require_once __DIR__ . "/../src/Types.php";
 
 use Obtrace\Sdk\ObtraceClient;
 use Obtrace\Sdk\ObtraceConfig;
 
 $cfg = new ObtraceConfig(
     apiKey: getenv("OBTRACE_API_KEY") ?: "",
-    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "https://inject.obtrace.ai",
-    serviceName: "checkout-api",
-    tenantId: getenv("OBTRACE_TENANT_ID") ?: null,
-    projectId: getenv("OBTRACE_PROJECT_ID") ?: null,
-    appId: "checkout-api",
-    env: getenv("OBTRACE_ENV") ?: "prod",
-    serviceVersion: getenv("OBTRACE_SERVICE_VERSION") ?: "2026.03.10",
-    validateSemanticMetrics: true,
-    debug: getenv("OBTRACE_DEBUG") === "1",
+    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "",
+    serviceName: "order-api",
 );
 
 $client = new ObtraceClient($cfg);
 ```
 
-The PHP SDK sends to:
+Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
 
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
+## What's Auto-Captured
 
-## Canonical runtime identity
+The SDK registers a `register_shutdown_function` handler that flushes buffered telemetry when the PHP process exits. This covers both normal script completion and fatal errors.
 
-Use `serviceName`, `env`, and `serviceVersion` in `ObtraceConfig`. Add region on the event or span where topology matters.
+Beyond the shutdown flush, nothing is auto-captured. There are no request interceptors, no database query listeners, and no error handlers installed automatically. You control exactly what gets sent.
 
-```php
-$runtimeAttrs = [
-    "cloud.region" => getenv("AWS_REGION") ?: "us-east-1",
-    "deployment.ring" => "stable",
-];
-```
+## Logging
 
-## Quick start
+Use `$client->log()` for structured events. Logs are best for state transitions, errors, and audit trails.
 
 ```php
-<?php
-require_once __DIR__ . "/../src/SemanticMetrics.php";
+$client->log("info", "order.created", [
+    "order.id" => $orderId,
+    "order.total" => 149.99,
+    "customer.tier" => "premium",
+]);
 
-use Obtrace\Sdk\SemanticMetrics;
-
-$client->log("info", "service.started");
-$client->metric(SemanticMetrics::RUNTIME_CPU_UTILIZATION, 0.41);
-$client->span("checkout.charge", attrs: [
-    "feature.name" => "checkout",
+$client->log("error", "payment.declined", [
+    "order.id" => $orderId,
     "payment.provider" => "stripe",
-    "cloud.region" => $runtimeAttrs["cloud.region"],
+    "decline.code" => "insufficient_funds",
 ]);
-$client->flush();
+
+$client->log("warn", "inventory.low", [
+    "sku" => "WIDGET-42",
+    "remaining" => 3,
+    "reorder.threshold" => 10,
+]);
 ```
 
-## Request example
+Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+## Metrics
+
+Use `$client->metric()` for numerical measurements you want to track over time.
 
 ```php
-$client->log("info", "http.request", [
-    "route" => "/healthz",
-    "method" => "GET",
-    "cloud.region" => getenv("AWS_REGION") ?: "us-east-1",
+$client->metric("http.server.request.duration", 42.5, "ms", [
+    "http.method" => "POST",
+    "http.route" => "/api/orders",
+]);
+
+$client->metric("queue.depth", 847, "1", [
+    "queue.name" => "order-processing",
+]);
+
+$client->metric("cache.hit_ratio", 0.92, "1", [
+    "cache.name" => "product-catalog",
+]);
+
+$client->metric("db.pool.active_connections", 14, "1");
+```
+
+The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
+
+## Tracing / Spans
+
+Use `$client->span()` for operations with duration. Spans appear in the trace waterfall and are best for database queries, HTTP calls, and queue processing.
+
+```php
+$client->span("db.query SELECT orders", attrs: [
+    "db.system" => "mysql",
+    "db.statement" => "SELECT * FROM orders WHERE customer_id = ?",
+    "db.operation" => "SELECT",
+    "db.sql.table" => "orders",
+]);
+
+$client->span("http.client POST /payments", attrs: [
+    "http.method" => "POST",
+    "http.url" => "https://api.stripe.com/v1/charges",
+    "http.status_code" => 201,
+    "payment.amount" => 149.99,
+]);
+
+$client->span("queue.publish order.created", attrs: [
+    "messaging.system" => "rabbitmq",
+    "messaging.destination" => "order.created",
 ]);
 ```
 
-## Validation checklist
+## Framework Integration
 
-- the same `serviceName`, `env`, and `serviceVersion` survive deploys
-- one real request or job path emits a log and a trace
-- no `401/403` appears during OTLP submission
-- region is present when the service is multi-region
+### Laravel
+
+Create a service provider and middleware to instrument requests:
+
+```php title="app/Providers/ObtraceServiceProvider.php"
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use Obtrace\Sdk\ObtraceClient;
+use Obtrace\Sdk\ObtraceConfig;
+
+class ObtraceServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->singleton(ObtraceClient::class, function () {
+            return new ObtraceClient(new ObtraceConfig(
+                apiKey: config("services.obtrace.api_key"),
+                ingestBaseUrl: config("services.obtrace.ingest_url"),
+                serviceName: "order-api",
+                env: app()->environment(),
+                serviceVersion: config("app.version", "1.0.0"),
+            ));
+        });
+    }
+}
+```
+
+```php title="app/Http/Middleware/ObtraceMiddleware.php"
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Obtrace\Sdk\ObtraceClient;
+
+class ObtraceMiddleware
+{
+    public function __construct(private ObtraceClient $client) {}
+
+    public function handle(Request $request, Closure $next)
+    {
+        $start = microtime(true);
+        $response = $next($request);
+        $durationMs = (microtime(true) - $start) * 1000;
+
+        $route = $request->route()?->uri() ?? $request->getPathInfo();
+        $method = $request->getMethod();
+
+        $this->client->span("http.server {$method} /{$route}", attrs: [
+            "http.method" => $method,
+            "http.route" => "/{$route}",
+            "http.status_code" => $response->getStatusCode(),
+        ]);
+
+        $this->client->metric("http.server.request.duration", $durationMs, "ms", [
+            "http.method" => $method,
+            "http.route" => "/{$route}",
+            "http.status_code" => $response->getStatusCode(),
+        ]);
+
+        return $response;
+    }
+}
+```
+
+Register in `bootstrap/app.php` or `app/Http/Kernel.php`:
+
+```php
+->withMiddleware(function ($middleware) {
+    $middleware->append(\App\Http\Middleware\ObtraceMiddleware::class);
+})
+```
+
+### Symfony
+
+Register as a service and create an event subscriber:
+
+```php title="src/EventSubscriber/ObtraceSubscriber.php"
+<?php
+
+namespace App\EventSubscriber;
+
+use Obtrace\Sdk\ObtraceClient;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
+
+class ObtraceSubscriber implements EventSubscriberInterface
+{
+    public function __construct(private ObtraceClient $client) {}
+
+    public static function getSubscribedEvents(): array
+    {
+        return [KernelEvents::TERMINATE => "onTerminate"];
+    }
+
+    public function onTerminate(TerminateEvent $event): void
+    {
+        $request = $event->getRequest();
+        $response = $event->getResponse();
+        $method = $request->getMethod();
+        $route = $request->attributes->get("_route", $request->getPathInfo());
+
+        $this->client->span("http.server {$method} {$route}", attrs: [
+            "http.method" => $method,
+            "http.route" => $route,
+            "http.status_code" => $response->getStatusCode(),
+        ]);
+
+        $this->client->flush();
+    }
+}
+```
+
+### CLI / Queue Workers
+
+For long-running processes, flush periodically:
+
+```php title="app/Console/Commands/ProcessOrders.php"
+$client = app(ObtraceClient::class);
+
+while ($job = $queue->pop()) {
+    try {
+        processOrder($job);
+        $client->metric("orders.processed", 1, "1");
+    } catch (\Throwable $e) {
+        $client->log("error", "order.processing.failed", [
+            "order.id" => $job->orderId,
+            "error.type" => get_class($e),
+            "error.message" => $e->getMessage(),
+        ]);
+    }
+
+    if ($iterationCount % 100 === 0) {
+        $client->flush();
+    }
+}
+```
+
+## Configuration Reference
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `apiKey` | `string` | Yes | | Obtrace API key |
+| `ingestBaseUrl` | `string` | Yes | | Ingest endpoint URL |
+| `serviceName` | `string` | Yes | | Stable name for this service |
+| `tenantId` | `?string` | No | from key | Tenant identifier |
+| `projectId` | `?string` | No | from key | Project identifier |
+| `appId` | `?string` | No | | Application identifier within the project |
+| `env` | `string` | No | `"production"` | Deployment environment |
+| `serviceVersion` | `?string` | No | | Version string for this deployment |
+| `validateSemanticMetrics` | `bool` | No | `false` | Warn on non-standard metric names |
+| `debug` | `bool` | No | `false` | Enable verbose logging to stderr |
+| `maxQueueSize` | `int` | No | `2048` | Maximum buffered items before dropping |
+| `flushIntervalMs` | `int` | No | `5000` | Auto-flush interval in milliseconds |
+
+## Validation Checklist
+
+After deploying, verify:
+
+- `serviceName`, `env`, and `serviceVersion` are stable across deployments and match what you see in the Obtrace UI
+- At least one real request path emits both a log and a span
+- No `401` or `403` errors appear in stderr when `debug` is `true`
+- The shutdown function is firing (check that telemetry arrives even without explicit `flush()` calls in short-lived scripts)
+- Long-running workers call `flush()` periodically rather than relying solely on the shutdown hook
+- Metrics use OTLP-standard units (`ms`, `By`, `1`) not custom strings

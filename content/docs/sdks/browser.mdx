@@ -1,34 +1,245 @@
 ---
-title: JavaScript Browser SDK
-description: Frontend instrumentation for replay, metrics, and propagation
+title: Browser SDK
+description: Frontend telemetry with session replay, Web Vitals, and error capture
 ---
 
-## Install
+## Installation
 
 ```bash
 npm install @obtrace/sdk-browser
 ```
 
-## Configuration
+## Minimum Setup
 
-```ts
-import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-browser/browser";
+Three fields. That is all you need.
 
-const sdk = initBrowserSDK({
+```ts title="src/obtrace.ts"
+import { initBrowserSDK } from "@obtrace/sdk-browser/browser";
+
+export const ob = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
-  tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
-  projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
-  appId: "checkout-web",
-  env: import.meta.env.MODE,
+  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_URL,
   serviceName: "checkout-web",
-  serviceVersion: import.meta.env.VITE_OBTRACE_SERVICE_VERSION,
-  validateSemanticMetrics: true,
-  debug: true
 });
 ```
 
-The browser SDK sends to:
+Import `ob` wherever you need it. Initialize once at app startup, before any user interaction.
+
+`initBrowserSDK` returns an object with these methods:
+
+| Method | Purpose |
+|--------|---------|
+| `log(level, message, context?)` | Send a structured log |
+| `captureException(error, context?)` | Capture an error with context |
+| `metric(name, value, unit?, context?)` | Record a numeric metric |
+| `instrumentFetch()` | Returns a fetch wrapper that auto-creates spans |
+| `captureReplayEvent(type, payload)` | Attach a custom event to the session replay |
+| `flushReplay()` | Force-flush the replay buffer |
+| `shutdown()` | Flush everything and stop the SDK |
+| `sessionId` | The current session ID (string, not a method) |
+
+## What Gets Captured Automatically
+
+After calling `initBrowserSDK`, the SDK installs several hooks with zero additional code from you:
+
+### Web Vitals
+
+Measured via `PerformanceObserver` and sent as metrics:
+
+| Vital | Metric name | Unit |
+|-------|------------|------|
+| First Contentful Paint | `web_vital_fcp_ms` | ms |
+| Largest Contentful Paint | `web_vital_lcp_ms` | ms |
+| Cumulative Layout Shift | `web_vital_cls` | 1 |
+| Interaction to Next Paint | `web_vital_inp_ms` | ms |
+| Time to First Byte | `web_vital_ttfb_ms` | ms |
+
+### Error Capture
+
+- **`window.onerror`** events are logged at `error` level with filename, line, and column
+- **Unhandled promise rejections** are logged at `error` level with the rejection reason
+
+### Console Capture
+
+All `console.debug`, `console.info`, `console.warn`, and `console.error` calls are intercepted and forwarded as logs at the matching level. The original console output still works normally.
+
+### Session Replay
+
+Enabled by default. Uses [rrweb](https://github.com/rrweb-io/rrweb) to record DOM mutations, mouse movements, scrolls, and input events. Recordings are chunked and sent to `/ingest/replay/chunk`.
+
+Privacy defaults:
+- All inputs are masked
+- Password, email, phone, token, and credit card fields are redacted
+- Elements with the CSS class `ob-block` are excluded from recording
+- Text in elements with the CSS class `ob-mask` is masked
+
+### Navigation Tracking
+
+Route changes via `pushState`, `replaceState`, `popstate`, and `hashchange` are captured as replay events with the current URL and page title.
+
+### Page Lifecycle
+
+The SDK automatically flushes telemetry and replay data when:
+- The page becomes hidden (`visibilitychange`)
+- The page is about to unload (`beforeunload`, uses `sendBeacon` for reliability)
+
+## Adding Custom Telemetry
+
+### Logs
+
+`log(level, message, context?)` sends a structured log. Levels: `debug`, `info`, `warn`, `error`, `fatal`. The current `sessionId` is automatically attached.
+
+```ts title="src/components/Checkout.tsx"
+import { ob } from "../obtrace";
+
+function handleSubmit(cart: Cart) {
+  ob.log("info", "checkout.started", {
+    attrs: { item_count: cart.items.length, total: cart.total },
+  });
+}
+```
+
+### Errors
+
+`captureException(error, context?)` extracts the error name and message and logs it at `error` level. Session and trace context are attached automatically.
+
+```ts
+try {
+  await submitOrder(cart);
+} catch (err) {
+  ob.captureException(err, {
+    attrs: { step: "payment", cart_id: cart.id },
+  });
+}
+```
+
+### Metrics
+
+`metric(name, value, unit?, context?)` records a numeric value. Use it for performance and business measurements.
+
+```ts
+const start = performance.now();
+await loadProductCatalog();
+ob.metric("catalog.load_ms", performance.now() - start, "ms");
+
+ob.metric("search.results_count", results.length);
+```
+
+### Custom Replay Events
+
+`captureReplayEvent(type, payload)` attaches a custom event to the session replay timeline. Use it to mark significant user actions.
+
+```ts
+ob.captureReplayEvent("user_action", {
+  action: "added_to_cart",
+  product_id: product.id,
+  price: product.price,
+});
+```
+
+### Context Object
+
+Every manual call accepts an optional context object:
+
+```ts
+interface SDKContext {
+  traceId?: string;
+  spanId?: string;
+  traceState?: string;
+  baggage?: string;
+  sessionId?: string;
+  routeTemplate?: string;
+  endpoint?: string;
+  method?: string;
+  statusCode?: number;
+  attrs?: Record<string, string | number | boolean>;
+}
+```
+
+The `sessionId` is auto-injected by the browser SDK. The `attrs` field is for arbitrary key-value pairs.
+
+## Tracing HTTP Calls
+
+`instrumentFetch()` returns a fetch wrapper that auto-creates spans for every outbound HTTP request. It records method, URL, status code, and duration. It also propagates trace context and session ID to your backend, and captures network requests into the session replay.
+
+```ts title="src/api.ts"
+import { ob } from "./obtrace";
+
+const fetcher = ob.instrumentFetch();
+
+export async function getOrders(): Promise<Order[]> {
+  const res = await fetcher("/api/orders");
+  return res.json();
+}
+
+export async function createOrder(cart: Cart): Promise<Order> {
+  const res = await fetcher("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cart),
+  });
+  return res.json();
+}
+```
+
+Each call produces:
+- A span named `browser.fetch POST` (or whatever the method is) with `http.method`, `http.url`, `http.status_code`, `http.duration_ms`, and `replay_id`
+- A log entry with the request outcome
+- A `network` replay event (visible in the session replay timeline)
+- A recipe step for request replay (used by Obtrace's replay analysis)
+
+Failed requests also produce an error log and a `network_error` replay event.
+
+## Configuration Reference
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `apiKey` | `string` | Yes | - | Your Obtrace API key |
+| `ingestBaseUrl` | `string` | Yes | - | URL of your Obtrace ingest endpoint |
+| `serviceName` | `string` | Yes | - | Identifies this frontend app in the Obtrace UI |
+| `tenantId` | `string` | No | - | Your tenant ID (auto-resolved from API key if not set) |
+| `projectId` | `string` | No | - | Your project ID (auto-resolved from API key if not set) |
+| `appId` | `string` | No | - | Application identifier within a project |
+| `env` | `string` | No | - | Deployment environment (production, staging, etc.) |
+| `serviceVersion` | `string` | No | - | Version string for this deployment |
+| `debug` | `boolean` | No | `false` | Log SDK errors and warnings to console |
+| `flushIntervalMs` | `number` | No | `2000` | How often the SDK flushes queued telemetry |
+| `maxQueueSize` | `number` | No | `1000` | Max items in the send queue (oldest dropped when full) |
+| `requestTimeoutMs` | `number` | No | `5000` | Timeout per OTLP request |
+| `validateSemanticMetrics` | `boolean` | No | `false` | Warn on non-canonical metric names (requires `debug: true`) |
+| `replay.enabled` | `boolean` | No | `true` | Enable session replay recording |
+| `replay.flushIntervalMs` | `number` | No | `5000` | How often replay chunks are sent |
+| `replay.maxChunkBytes` | `number` | No | `480000` | Max size per replay chunk before auto-flush |
+| `replay.captureNetworkRecipes` | `boolean` | No | `true` | Capture HTTP requests as replayable recipe steps |
+| `replay.sessionStorageKey` | `string` | No | `"obtrace_session_id"` | localStorage key for session ID persistence |
+| `replay.blockClass` | `string` | No | `"ob-block"` | CSS class to exclude elements from replay |
+| `replay.maskTextClass` | `string` | No | `"ob-mask"` | CSS class to mask text content in replay |
+| `replay.maskAllInputs` | `boolean` | No | `true` | Mask all input field values in replay |
+| `replay.sampling.mousemove` | `boolean \| number` | No | `true` | Capture mouse movement (or sampling interval in ms) |
+| `replay.sampling.scroll` | `number` | No | `150` | Scroll sampling interval in ms |
+| `replay.sampling.input` | `"all" \| "last"` | No | `"last"` | Capture all input changes or only the last value |
+| `vitals.enabled` | `boolean` | No | `true` | Collect Web Vitals metrics |
+| `vitals.reportAllChanges` | `boolean` | No | `false` | Report every vital measurement (not just the final value) |
+| `propagation.enabled` | `boolean` | No | `true` | Inject `traceparent` header on outbound fetch requests |
+| `propagation.headerName` | `string` | No | `"traceparent"` | Header name for trace propagation |
+| `propagation.sessionHeaderName` | `string` | No | `"x-obtrace-session-id"` | Header name for session ID propagation |
+
+## Validation Checklist
+
+After deploying, verify these:
+
+- [ ] Open the Obtrace UI and confirm logs appear under the correct `serviceName`
+- [ ] Check that Web Vitals metrics (`web_vital_lcp_ms`, etc.) appear after a page load
+- [ ] Trigger a JavaScript error in a test environment -- an `error` log should appear with file and line info
+- [ ] Use the instrumented fetch to make an API call -- a span and network replay event should appear
+- [ ] Navigate between pages -- replay events with the new URL should appear
+- [ ] Open the session replay viewer and confirm the recording plays back correctly
+- [ ] Verify your ingest endpoint allows CORS from your frontend origin
+- [ ] Check that sensitive inputs (passwords, emails) are masked in the replay
+
+## CORS
+
+Your Obtrace ingest endpoint must accept requests from your frontend origin. The SDK sends to these endpoints:
 
 - `POST /otlp/v1/logs`
 - `POST /otlp/v1/traces`
@@ -36,62 +247,24 @@ The browser SDK sends to:
 - `POST /ingest/replay/chunk`
 - `POST /ingest/replay/recipes`
 
-## Canonical runtime identity
+If you see failed requests in the browser console, check that your ingest-edge service has the correct CORS configuration for your domain.
 
-Set `serviceName`, `env`, and `serviceVersion` in config. Add region or route details on browser events and spans.
+## Privacy Controls
 
-```ts
-const runtimeAttrs = {
-  "cloud.region": import.meta.env.VITE_APP_REGION ?? "us-east-1",
-  "deployment.ring": import.meta.env.VITE_DEPLOYMENT_RING ?? "stable",
-};
+To exclude a DOM element from session replay, add the `ob-block` class:
+
+```html
+<div class="ob-block">
+  This content will not appear in replays.
+</div>
 ```
 
-## Quick start
+To mask text content while preserving layout:
 
-```ts
-const obFetch = sdk.instrumentFetch();
-await obFetch("/api/ping");
-sdk.log("info", "page.loaded");
-sdk.metric(SemanticMetrics.webVitalLcp, 2400, "ms", {
-  attrs: {
-    "cloud.region": runtimeAttrs["cloud.region"],
-  },
-});
-await sdk.shutdown();
+```html
+<p class="ob-mask">
+  This text will be replaced with asterisks in replays.
+</p>
 ```
 
-## Error and replay example
-
-```ts
-window.addEventListener("error", (event) => {
-  sdk.captureException(event.error, {
-    attrs: {
-      "ui.route": window.location.pathname,
-      "cloud.region": import.meta.env.VITE_APP_REGION ?? "us-east-1",
-    },
-  });
-});
-```
-
-## Validation checklist
-
-- browser logs and fetch traces carry the same `serviceName`, `env`, and `serviceVersion`
-- replay chunks reach the replay endpoints
-- session-aware incidents can be tied to route and region
-- CORS and public ingest access are configured correctly
-
-See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
-
-## Production hardening
-
-1. Use environment-scoped keys.
-2. Mask sensitive fields before custom attributes.
-3. Control replay sampling via env vars.
-4. Validate ingestion in OTLP and replay endpoints.
-
-## Troubleshooting
-
-- No data: verify `VITE_OBTRACE_INGEST_BASE_URL` and CORS.
-- No replay: confirm initialization in browser runtime.
-- Enable debug logs in non-production environments.
+Sensitive input fields (password, email, phone, token, credit card) are automatically redacted regardless of CSS classes.

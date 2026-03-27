@@ -1,80 +1,261 @@
 ---
 title: Ruby SDK
-description: Instrumentation for Ruby services
+description: Manual instrumentation for Ruby services using obtrace-sdk-ruby
 ---
 
-## Install
+## Installation
 
 ```bash
 gem install obtrace-sdk-ruby
-# or
-bundle add obtrace-sdk-ruby
 ```
 
-## Configuration
+Or add to your Gemfile:
 
-```ruby
-require_relative "../lib/obtrace_sdk"
+```ruby title="Gemfile"
+gem "obtrace-sdk-ruby"
+```
+
+Requires Ruby 3.0+. The gem ships no auto-instrumentation monkey-patches or middleware. All telemetry is sent through explicit calls.
+
+## Minimum Setup
+
+```ruby title="config/initializers/obtrace.rb"
+require "obtrace_sdk"
 
 cfg = ObtraceSDK::Config.new(
   api_key: ENV.fetch("OBTRACE_API_KEY"),
   ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
-  tenant_id: ENV["OBTRACE_TENANT_ID"],
-  project_id: ENV["OBTRACE_PROJECT_ID"],
-  app_id: "checkout-api",
-  env: ENV.fetch("OBTRACE_ENV", "prod"),
-  service_name: "checkout-api",
-  service_version: ENV.fetch("OBTRACE_SERVICE_VERSION", "2026.03.10"),
-  validate_semantic_metrics: true,
-  debug: ENV["OBTRACE_DEBUG"] == "1"
+  service_name: "order-api"
 )
 
-client = ObtraceSDK::Client.new(cfg)
+OBTRACE = ObtraceSDK::Client.new(cfg)
 ```
 
-The Ruby SDK sends to:
+Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
 
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
+## What's Auto-Captured
 
-## Canonical runtime identity
+The SDK registers an `at_exit` hook that flushes buffered telemetry when the Ruby process exits. This covers normal termination and most signal-based shutdowns.
 
-Set `service_name`, `env`, and `service_version` in `ObtraceSDK::Config`. Add region on the event or span where topology matters.
+Beyond the exit flush, nothing is auto-captured. There are no Rack middleware injections, no ActiveSupport notifications subscriptions, and no monkey-patches. You control exactly what gets sent.
 
-```ruby
-runtime_attrs = {
-  "cloud.region" => ENV.fetch("AWS_REGION", "us-east-1"),
-  "deployment.ring" => "stable"
-}
-```
+## Logging
 
-## Quick start
+Use `client.log` for structured events. Logs are best for state transitions, errors, and audit trails.
 
 ```ruby
-client.log("info", "service.started")
-client.metric(ObtraceSDK::SemanticMetrics::RUNTIME_CPU_UTILIZATION, 0.41)
-client.span("checkout.charge", attrs: {
-  "feature.name" => "checkout",
+OBTRACE.log("info", "order.created",
+  "order.id" => order_id,
+  "order.total" => 149.99,
+  "customer.tier" => "premium"
+)
+
+OBTRACE.log("error", "payment.declined",
+  "order.id" => order_id,
   "payment.provider" => "stripe",
-  "cloud.region" => runtime_attrs["cloud.region"]
-})
-client.flush
+  "decline.code" => "insufficient_funds"
+)
+
+OBTRACE.log("warn", "inventory.low",
+  "sku" => "WIDGET-42",
+  "remaining" => 3,
+  "reorder.threshold" => 10
+)
 ```
 
-## Rack-style request example
+Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+## Metrics
+
+Use `client.metric` for numerical measurements you want to track over time.
 
 ```ruby
-client.log("info", "http.request", {
-  route: "/healthz",
-  method: "GET",
-  "cloud.region": ENV.fetch("AWS_REGION", "us-east-1")
+OBTRACE.metric("http.server.request.duration", 42.5, "ms",
+  "http.method" => "POST",
+  "http.route" => "/api/orders"
+)
+
+OBTRACE.metric("queue.depth", 847, "1",
+  "queue.name" => "order-processing"
+)
+
+OBTRACE.metric("cache.hit_ratio", 0.92, "1",
+  "cache.name" => "product-catalog"
+)
+
+OBTRACE.metric("db.pool.active_connections", 14, "1")
+```
+
+The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
+
+## Tracing / Spans
+
+Use `client.span` for operations with duration. Spans appear in the trace waterfall and are best for database queries, HTTP calls, and queue processing.
+
+```ruby
+OBTRACE.span("db.query SELECT orders", attrs: {
+  "db.system" => "postgresql",
+  "db.statement" => "SELECT * FROM orders WHERE customer_id = $1",
+  "db.operation" => "SELECT",
+  "db.sql.table" => "orders"
+})
+
+OBTRACE.span("http.client POST /payments", attrs: {
+  "http.method" => "POST",
+  "http.url" => "https://api.stripe.com/v1/charges",
+  "http.status_code" => 201,
+  "payment.amount" => 149.99
+})
+
+OBTRACE.span("queue.publish order.created", attrs: {
+  "messaging.system" => "rabbitmq",
+  "messaging.destination" => "order.created"
 })
 ```
 
-## Validation checklist
+## Framework Integration
 
-- `service_name`, `env`, and `service_version` remain stable after deploy
-- one real request path emits a log and trace
-- no `401/403` appears during OTLP submission
-- region is attached when topology matters for grouping or routing
+### Rails
+
+Create an initializer and a middleware to instrument requests:
+
+```ruby title="config/initializers/obtrace.rb"
+require "obtrace_sdk"
+
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
+  api_key: ENV.fetch("OBTRACE_API_KEY"),
+  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
+  service_name: "order-api",
+  env: Rails.env,
+  service_version: ENV.fetch("OBTRACE_SERVICE_VERSION", "1.0.0")
+))
+```
+
+```ruby title="app/middleware/obtrace_middleware.rb"
+class ObtraceMiddleware
+  def initialize(app)
+    @app = app
+  end
+
+  def call(env)
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    status, headers, body = @app.call(env)
+    duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
+
+    method = env["REQUEST_METHOD"]
+    route = env["action_dispatch.request.path_parameters"]&.values_at(:controller, :action)&.compact&.join("#") || env["PATH_INFO"]
+
+    OBTRACE.span("http.server #{method} #{route}", attrs: {
+      "http.method" => method,
+      "http.route" => route,
+      "http.status_code" => status
+    })
+
+    OBTRACE.metric("http.server.request.duration", duration_ms, "ms",
+      "http.method" => method,
+      "http.route" => route,
+      "http.status_code" => status
+    )
+
+    [status, headers, body]
+  end
+end
+```
+
+Register in `config/application.rb`:
+
+```ruby
+config.middleware.use ObtraceMiddleware
+```
+
+### Rack
+
+For Sinatra or plain Rack apps, use the same middleware pattern:
+
+```ruby title="config.ru"
+require "obtrace_sdk"
+require_relative "app"
+
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
+  api_key: ENV.fetch("OBTRACE_API_KEY"),
+  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
+  service_name: "order-api",
+  env: ENV.fetch("RACK_ENV", "production")
+))
+
+use ObtraceMiddleware
+run App
+```
+
+### Sidekiq / Background Jobs
+
+For background workers, instrument each job and flush periodically:
+
+```ruby title="app/jobs/process_order_job.rb"
+class ProcessOrderJob
+  include Sidekiq::Job
+
+  def perform(order_id)
+    order = Order.find(order_id)
+
+    OBTRACE.span("job.process ProcessOrderJob", attrs: {
+      "job.system" => "sidekiq",
+      "order.id" => order_id
+    })
+
+    charge_customer(order)
+    OBTRACE.metric("orders.processed", 1, "1")
+  rescue => e
+    OBTRACE.log("error", "order.processing.failed",
+      "order.id" => order_id,
+      "error.type" => e.class.name,
+      "error.message" => e.message
+    )
+    raise
+  end
+end
+```
+
+Add a Sidekiq middleware to flush after each job:
+
+```ruby title="config/initializers/sidekiq.rb"
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add Class.new {
+      def call(_worker, _job, _queue)
+        yield
+      ensure
+        OBTRACE.flush
+      end
+    }
+  end
+end
+```
+
+## Configuration Reference
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `api_key` | `String` | Yes | | Obtrace API key |
+| `ingest_base_url` | `String` | Yes | | Ingest endpoint URL |
+| `service_name` | `String` | Yes | | Stable name for this service |
+| `tenant_id` | `String?` | No | from key | Tenant identifier |
+| `project_id` | `String?` | No | from key | Project identifier |
+| `app_id` | `String?` | No | | Application identifier within the project |
+| `env` | `String` | No | `"production"` | Deployment environment |
+| `service_version` | `String?` | No | | Version string for this deployment |
+| `validate_semantic_metrics` | `Boolean` | No | `false` | Warn on non-standard metric names |
+| `debug` | `Boolean` | No | `false` | Enable verbose logging to stderr |
+| `max_queue_size` | `Integer` | No | `2048` | Maximum buffered items before dropping |
+| `flush_interval_ms` | `Integer` | No | `5000` | Auto-flush interval in milliseconds |
+
+## Validation Checklist
+
+After deploying, verify:
+
+- `service_name`, `env`, and `service_version` are stable across restarts and match what you see in the Obtrace UI
+- At least one real request path emits both a log and a span
+- No `401` or `403` errors appear in stderr when `debug` is `true`
+- The `at_exit` hook is firing (check that telemetry arrives from short-lived scripts without explicit `flush` calls)
+- Sidekiq or other long-running workers flush after each job rather than relying solely on the exit hook
+- Metrics use OTLP-standard units (`ms`, `By`, `1`) not custom strings

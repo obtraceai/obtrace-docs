@@ -1,99 +1,250 @@
 ---
 title: Java SDK
-description: Instrumentation for JVM services
+description: Manual instrumentation for JVM services — logs, metrics, and traces sent to Obtrace via OTLP.
 ---
 
-## Install
+## Installation
 
-```bash
-./mvnw dependency:get -Dartifact=io.obtrace:obtrace-sdk-java:1.0.0
+Add the dependency to your `pom.xml`:
+
+```xml title="pom.xml"
+<dependency>
+  <groupId>io.obtrace</groupId>
+  <artifactId>obtrace-sdk-java</artifactId>
+  <version>1.0.0</version>
+</dependency>
 ```
 
-## Configuration
+Or with Gradle:
 
-```java
+```groovy title="build.gradle"
+implementation 'io.obtrace:obtrace-sdk-java:1.0.0'
+```
+
+## Minimum Setup
+
+Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
+
+```java title="Main.java"
 import io.obtrace.sdk.core.ObtraceClient;
 import io.obtrace.sdk.model.ObtraceConfig;
 
-ObtraceConfig cfg = new ObtraceConfig();
-cfg.apiKey = System.getenv("OBTRACE_API_KEY");
-cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
-cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
-cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
-cfg.appId = "checkout-api";
-cfg.serviceName = "checkout-api";
-cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
-cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
-cfg.validateSemanticMetrics = true;
-cfg.debug = "1".equals(System.getenv("OBTRACE_DEBUG"));
+public class Main {
+    public static void main(String[] args) {
+        ObtraceConfig cfg = new ObtraceConfig();
+        cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+        cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+        cfg.serviceName = "checkout-api";
 
-ObtraceClient client = new ObtraceClient(cfg);
-```
-
-The Java SDK sends to:
-
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
-
-## Canonical runtime identity
-
-Set `serviceName`, `env`, and `serviceVersion` once in `ObtraceConfig`. Add region on spans or logs where topology matters.
-
-```java
-Map<String, Object> runtimeAttrs = Map.of(
-    "cloud.region", System.getenv().getOrDefault("AWS_REGION", "us-east-1"),
-    "deployment.ring", "stable"
-);
-```
-
-This aligns with the ingest/core contract:
-
-- `serviceName` -> OTLP `service.name`
-- `env` -> OTLP `deployment.environment`
-- `serviceVersion` -> OTLP `service.version`
-- `tenantId`, `projectId`, `appId` -> scoped ingest identity
-
-## Quick start
-
-```java
-import io.obtrace.sdk.core.SemanticMetrics;
-import java.util.Map;
-
-client.log("info", "service.started", null);
-client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41, "1", null);
-client.span("checkout.charge", null, null, null, "", Map.of(
-    "feature.name", "checkout",
-    "payment.provider", "stripe",
-    "cloud.region", runtimeAttrs.get("cloud.region")
-));
-client.flush();
-```
-
-## Spring Boot startup example
-
-```java
-@Configuration
-public class ObtraceBootstrap {
-  @Bean
-  public ObtraceClient obtraceClient() {
-    ObtraceConfig cfg = new ObtraceConfig();
-    cfg.apiKey = System.getenv("OBTRACE_API_KEY");
-    cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
-    cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
-    cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
-    cfg.appId = "checkout-api";
-    cfg.serviceName = "checkout-api";
-    cfg.serviceVersion = System.getenv().getOrDefault("OBTRACE_SERVICE_VERSION", "2026.03.10");
-    cfg.env = System.getenv().getOrDefault("OBTRACE_ENV", "prod");
-    return new ObtraceClient(cfg);
-  }
+        try (ObtraceClient client = new ObtraceClient(cfg)) {
+            client.log("info", "service.started", null);
+            client.flush();
+        }
+    }
 }
 ```
 
-## Validation checklist
+Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `serviceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
 
-- request paths and failure paths emit traces with the same `service`, `env`, and `version`
-- executor, timeout, and OOM incidents can be tied to one release value
-- no `401/403` occurs during OTLP submission
-- region is present when the JVM service is multi-region
+`ObtraceClient` implements `AutoCloseable`, so use try-with-resources to ensure the internal executor shuts down cleanly. The default config also registers a JVM shutdown hook that calls `flush()` before exit. Disable it with `cfg.registerShutdownHook = false` if you manage lifecycle yourself.
+
+## What You Get Out of the Box
+
+Almost nothing. The Java SDK does not auto-instrument HTTP servlets, JDBC queries, thread pools, or JMX metrics. The only automatic behavior is the shutdown hook (enabled by default) that flushes pending telemetry when the JVM exits.
+
+If you create a client and never call `log`, `metric`, or `span`, no telemetry reaches Obtrace beyond the shutdown hook firing on an empty queue. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden bytecode manipulation or agent overhead.
+
+## Logging
+
+Use `client.log(level, message, ctx)` to record events you need to search for later. Good candidates:
+
+- Caught exceptions and error conditions
+- Business events (order placed, payment failed, user signed up)
+- Audit trail entries (permission changed, API key rotated)
+- State transitions (circuit breaker opened, cache eviction)
+
+```java
+import io.obtrace.sdk.model.ObtraceContext;
+
+ObtraceContext ctx = new ObtraceContext();
+ctx.attrs.put("order_id", orderId);
+ctx.attrs.put("provider", "stripe");
+ctx.attrs.put("decline_code", resp.getDeclineCode());
+client.log("error", "payment.declined", ctx);
+
+client.log("info", "user.signup", null);
+```
+
+The `level` parameter accepts: `debug`, `info`, `warn`, `error`, `fatal`. Messages are truncated at 32KB.
+
+The `ctx` parameter is optional (pass `null` to skip). When provided, it attaches structured attributes to the log entry. Use `attrs` for custom key-value pairs, and the built-in fields (`traceId`, `spanId`, `method`, `endpoint`, `statusCode`) to correlate logs with traces.
+
+## Metrics
+
+Use `client.metric(name, value, unit, ctx)` to record measurements you want to graph or alert on. Good candidates:
+
+- Latency measurements (how long did this take?)
+- Counters (how many orders per minute?)
+- Gauges (current queue depth, active connections, heap usage)
+- Business KPIs (revenue per checkout, items per cart)
+
+```java
+ObtraceContext ctx = new ObtraceContext();
+ctx.method = "POST";
+ctx.endpoint = "/api/checkout";
+client.metric("http.server.duration", 142.5, "ms", ctx);
+
+client.metric("checkout.revenue", 49.99, "USD", null);
+
+client.metric("queue.depth", workQueue.size(), "1", null);
+```
+
+The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values (counts, ratios), or a currency code.
+
+## Tracing / Spans
+
+Use `client.span(...)` to track a unit of work and its duration. Returns a `String[]` of `{traceId, spanId}` so you can propagate context to downstream services. Good candidates:
+
+- HTTP handler execution (request in, response out)
+- Database queries
+- External API calls
+- Background job processing
+- Any operation where you need to see where time was spent
+
+```java
+import java.util.Map;
+
+String[] ids = client.span("db.query", null, null, null, "", Map.of(
+    "db.system", "postgresql",
+    "db.statement", "SELECT * FROM orders WHERE id = ?"
+));
+
+client.span("http.client POST /payments", ids[0], null, null, "", Map.of(
+    "http.method", "POST",
+    "http.url", "https://api.stripe.com/v1/charges"
+));
+```
+
+Pass `null` for `traceId` and `spanId` to auto-generate them. Pass an existing `traceId` (from `ids[0]`) to group spans into the same trace. The `statusCode` uses OTLP conventions: `0` = unset, `1` = OK, `2` = error.
+
+The 7-argument overload also accepts `parentSpanId` to build span hierarchies within a single service.
+
+### Propagating Trace Context
+
+When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+
+```java
+String[] ids = client.span("http.client GET /inventory", null, null, null, "", Map.of(
+    "http.method", "GET",
+    "http.url", "https://inventory.internal/stock"
+));
+
+Map<String, String> headers = client.injectPropagation(null, ids[0], ids[1], null);
+HttpRequest req = HttpRequest.newBuilder()
+    .uri(URI.create("https://inventory.internal/stock"))
+    .header("traceparent", headers.get("traceparent"))
+    .GET()
+    .build();
+```
+
+## Framework Integration
+
+### Spring Boot
+
+Register the client as a Spring bean and use `SpringObtraceFilter` to instrument request lifecycle:
+
+```java title="ObtraceBootstrap.java"
+import io.obtrace.sdk.core.ObtraceClient;
+import io.obtrace.sdk.model.ObtraceConfig;
+import io.obtrace.sdk.framework.SpringObtraceFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ObtraceBootstrap {
+    @Bean
+    public ObtraceClient obtraceClient() {
+        ObtraceConfig cfg = new ObtraceConfig();
+        cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+        cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+        cfg.serviceName = "checkout-api";
+        cfg.env = System.getenv("OBTRACE_ENV");
+        cfg.serviceVersion = System.getenv("OBTRACE_SERVICE_VERSION");
+        return new ObtraceClient(cfg);
+    }
+
+    @Bean
+    public SpringObtraceFilter obtraceFilter(ObtraceClient client) {
+        return new SpringObtraceFilter(client);
+    }
+}
+```
+
+Then call `afterRequest` from a servlet filter or `HandlerInterceptor`:
+
+```java title="ObtraceInterceptor.java"
+import io.obtrace.sdk.framework.SpringObtraceFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.time.Instant;
+
+@Component
+public class ObtraceInterceptor implements HandlerInterceptor {
+    private final SpringObtraceFilter filter;
+    private static final ThreadLocal<Instant> START = new ThreadLocal<>();
+
+    public ObtraceInterceptor(SpringObtraceFilter filter) {
+        this.filter = filter;
+    }
+
+    @Override
+    public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) {
+        START.set(Instant.now());
+        return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest req, HttpServletResponse res, Object handler, Exception ex) {
+        filter.afterRequest(req.getMethod(), req.getRequestURI(), res.getStatus(), START.get());
+        START.remove();
+    }
+}
+```
+
+Your controllers can still call `client.log()`, `client.metric()`, and `client.span()` directly for business-specific telemetry. The interceptor handles the per-request baseline.
+
+## Configuration Reference
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `apiKey` | `String` | | **Required.** Your Obtrace API key. |
+| `ingestBaseUrl` | `String` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
+| `serviceName` | `String` | | **Required.** Stable name for this service. |
+| `serviceVersion` | `String` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
+| `tenantId` | `String` | `null` | Scoped ingest identity. |
+| `projectId` | `String` | `null` | Scoped ingest identity. |
+| `appId` | `String` | `null` | Scoped ingest identity. |
+| `env` | `String` | `null` | Environment name (`prod`, `staging`, `dev`). |
+| `requestTimeoutMs` | `int` | `5000` | HTTP timeout per OTLP request in milliseconds. |
+| `maxQueueSize` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
+| `flushTimeoutMs` | `int` | `30000` | Max time allowed for a single flush cycle. |
+| `validateSemanticMetrics` | `boolean` | `false` | When `true` + `debug`, warns on non-canonical metric names. |
+| `debug` | `boolean` | `false` | Enables SDK diagnostic output to stderr. |
+| `registerShutdownHook` | `boolean` | `true` | Registers a JVM shutdown hook that flushes on exit. |
+
+## Validation Checklist
+
+After integrating the SDK, verify these before shipping to production:
+
+- [ ] `serviceName`, `env`, and `serviceVersion` are set and survive restarts and deploys
+- [ ] At least one request path emits both a log and a span
+- [ ] `ObtraceClient` is closed on shutdown (try-with-resources, Spring `@PreDestroy`, or shutdown hook)
+- [ ] No `401` or `403` errors appear during OTLP submission (check with `debug = true`)
+- [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
+- [ ] Outgoing HTTP calls use `injectPropagation` if the downstream service also reports to Obtrace
+- [ ] Spring interceptor is registered in `WebMvcConfigurer.addInterceptors` if using Spring
+
+See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

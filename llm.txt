@@ -142,6 +142,22 @@ Comparisons:
 - https://docs.obtrace.ai/docs/comparisons/vs-dynatrace
 - https://docs.obtrace.ai/docs/comparisons/vs-sentry
 
+SDK install commands (all repos under github.com/obtraceai/):
+- JS: npm install @obtrace/sdk-js (npmjs.com, v1.0.2, ESM+CJS)
+- Browser: npm install @obtrace/sdk-browser (npmjs.com, v1.0.1)
+- Go: go get github.com/obtraceai/obtrace-sdk-go (Go proxy, v1.0.0)
+- Python: pip install obtrace-sdk-python (PyPI, v1.0.0)
+- Java: Maven Central io.obtrace:obtrace-sdk-java:1.0.0
+- .NET: dotnet add package Obtrace.Sdk (NuGet.org)
+- PHP: composer require obtrace/sdk-php (Packagist)
+- Ruby: gem install obtrace-sdk-ruby (RubyGems)
+- K8s: Helm chart via ghcr.io/obtraceai/obtrace-sdk-k8s
+
+Tools:
+- MCP: go install github.com/obtraceai/obtrace-mcp/cmd/mcp-obtrace@latest or Docker ghcr.io/obtraceai/obtrace-mcp
+- DB Agent: Docker ghcr.io/obtraceai/db-agent
+- Zero CLI: Docker ghcr.io/obtraceai/obtrace-zero-cli
+
 Source-of-truth setup rules:
 - Backend SDKs send OTLP payloads to `/otlp/v1/logs`, `/otlp/v1/traces`, and `/otlp/v1/metrics`.
 - Browser SDK also sends replay traffic to `/ingest/replay/chunk` and `/ingest/replay/recipes`.

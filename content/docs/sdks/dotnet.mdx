@@ -1,90 +1,261 @@
 ---
 title: .NET SDK
-description: Instrumentation for .NET services
+description: Manual instrumentation for .NET services using Obtrace.Sdk
 ---
 
-## Install
+## Installation
 
 ```bash
-dotnet add package Obtrace.SDK
+dotnet add package Obtrace.Sdk
 ```
 
-## Configuration
+Targets .NET 6+ and .NET Standard 2.1. The package ships no auto-instrumentation agents or diagnostic listeners. All telemetry is sent through explicit calls.
 
-```csharp
+## Minimum Setup
+
+Create a file at the root of your project or in your startup path:
+
+```csharp title="Program.cs"
 using Obtrace.Sdk;
 
-var cfg = new ObtraceConfig {
-  ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
-  IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL"),
-  TenantId = Environment.GetEnvironmentVariable("OBTRACE_TENANT_ID"),
-  ProjectId = Environment.GetEnvironmentVariable("OBTRACE_PROJECT_ID"),
-  AppId = "checkout-api",
-  Env = Environment.GetEnvironmentVariable("OBTRACE_ENV") ?? "prod",
-  ServiceName = "checkout-api",
-  ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "2026.03.10",
-  ValidateSemanticMetrics = true,
-  Debug = Environment.GetEnvironmentVariable("OBTRACE_DEBUG") == "1"
+var cfg = new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
+    IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
+    ServiceName = "order-api"
+};
+
+await using var client = new ObtraceClient(cfg);
+```
+
+Three fields are required: `ApiKey`, `IngestBaseUrl`, and `ServiceName`. Everything else has defaults. The `await using` pattern calls `ShutdownAsync` at the end of scope, flushing any buffered telemetry.
+
+## What's Auto-Captured
+
+Nothing. The .NET SDK has no auto-instrumentation. There are no diagnostic listeners, no HTTP handler wrappers, and no background collectors.
+
+You control exactly what gets sent. Every log, metric, and span requires an explicit call.
+
+The `IAsyncDisposable` implementation flushes remaining data on dispose, but you must call `await using` or `ShutdownAsync` yourself.
+
+## Logging
+
+Use `client.Log()` for structured events that represent something that happened. Logs are best for state transitions, errors, and audit trails.
+
+```csharp
+client.Log("info", "order.created", new Dictionary<string, object?>
+{
+    ["order.id"] = orderId,
+    ["order.total"] = 149.99,
+    ["customer.tier"] = "premium"
+});
+
+client.Log("error", "payment.declined", new Dictionary<string, object?>
+{
+    ["order.id"] = orderId,
+    ["payment.provider"] = "stripe",
+    ["decline.code"] = "insufficient_funds"
+});
+
+client.Log("warn", "inventory.low", new Dictionary<string, object?>
+{
+    ["sku"] = "WIDGET-42",
+    ["remaining"] = 3,
+    ["reorder.threshold"] = 10
+});
+```
+
+Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+## Metrics
+
+Use `client.Metric()` for numerical measurements you want to track over time. Metrics are best for gauges, counters, and percentiles.
+
+```csharp
+client.Metric("http.server.request.duration", 42.5, "ms", new Dictionary<string, object?>
+{
+    ["http.method"] = "POST",
+    ["http.route"] = "/api/orders"
+});
+
+client.Metric("queue.depth", 847, "1", new Dictionary<string, object?>
+{
+    ["queue.name"] = "order-processing"
+});
+
+client.Metric("cache.hit_ratio", 0.92, "1", new Dictionary<string, object?>
+{
+    ["cache.name"] = "product-catalog"
+});
+
+client.Metric("db.pool.active_connections", 14, "1");
+```
+
+The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
+
+## Tracing / Spans
+
+Use `client.Span()` for operations with duration that you want to visualize in a trace waterfall. Spans are best for database queries, HTTP calls, queue processing, and any work that takes measurable time.
+
+```csharp
+client.Span("db.query SELECT orders", attrs: new Dictionary<string, object?>
+{
+    ["db.system"] = "postgresql",
+    ["db.statement"] = "SELECT * FROM orders WHERE customer_id = $1",
+    ["db.operation"] = "SELECT",
+    ["db.sql.table"] = "orders"
+});
+
+client.Span("http.client POST /payments", attrs: new Dictionary<string, object?>
+{
+    ["http.method"] = "POST",
+    ["http.url"] = "https://api.stripe.com/v1/charges",
+    ["http.status_code"] = 201,
+    ["payment.amount"] = 149.99
+});
+
+client.Span("queue.publish order.created", attrs: new Dictionary<string, object?>
+{
+    ["messaging.system"] = "rabbitmq",
+    ["messaging.destination"] = "order.created",
+    ["messaging.message.payload_size_bytes"] = 1024
+});
+```
+
+## Framework Integration
+
+### ASP.NET Core
+
+Register the client in DI and use middleware to instrument requests:
+
+```csharp title="Program.cs"
+using Obtrace.Sdk;
+
+var builder = WebApplication.CreateBuilder(args);
+
+var cfg = new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
+    IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
+    ServiceName = "order-api",
+    Env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "production",
+    ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "1.0.0"
 };
 
 var client = new ObtraceClient(cfg);
-```
+builder.Services.AddSingleton(client);
 
-The .NET SDK targets:
+var app = builder.Build();
 
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
-
-## Canonical runtime identity
-
-Put `ServiceName`, `Env`, and `ServiceVersion` in `ObtraceConfig`. Add region on the actual spans or logs where it helps diagnosis.
-
-```csharp
-var runtimeAttrs = new Dictionary<string, object?>
+app.Use(async (context, next) =>
 {
-    ["cloud.region"] = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1",
-    ["deployment.ring"] = "stable"
-};
-```
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    await next();
+    sw.Stop();
 
-## Quick start
+    var route = context.GetEndpoint()?.DisplayName ?? context.Request.Path.Value ?? "unknown";
+    var method = context.Request.Method;
 
-```csharp
-using Obtrace.Sdk;
-
-client.Log("info", "service.started");
-client.Metric(SemanticMetrics.RuntimeCPUUtilization, 0.41, "1");
-client.Span("checkout.charge", attrs: new Dictionary<string, object?>
-{
-    ["feature.name"] = "checkout",
-    ["payment.provider"] = "stripe",
-    ["cloud.region"] = runtimeAttrs["cloud.region"],
-});
-await client.FlushAsync();
-```
-
-## ASP.NET Core example
-
-```csharp
-app.MapGet("/healthz", async () =>
-{
-    client.Log("info", "healthz.request");
-    client.Span("http.server GET /healthz", attrs: new Dictionary<string, object?>
+    client.Span($"http.server {method} {route}", attrs: new Dictionary<string, object?>
     {
-        ["http.method"] = "GET",
-        ["http.route"] = "/healthz",
-        ["cloud.region"] = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1",
+        ["http.method"] = method,
+        ["http.route"] = route,
+        ["http.status_code"] = context.Response.StatusCode
     });
 
-    await client.FlushAsync();
-    return Results.Ok(new { ok = true });
+    client.Metric("http.server.request.duration", sw.Elapsed.TotalMilliseconds, "ms", new Dictionary<string, object?>
+    {
+        ["http.method"] = method,
+        ["http.route"] = route,
+        ["http.status_code"] = context.Response.StatusCode
+    });
 });
+
+app.MapGet("/api/orders/{id}", (string id) =>
+{
+    client.Log("info", "order.fetched", new Dictionary<string, object?>
+    {
+        ["order.id"] = id
+    });
+    return Results.Ok(new { id, status = "shipped" });
+});
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    client.FlushAsync().GetAwaiter().GetResult();
+});
+
+app.Run();
 ```
 
-## Validation checklist
+### Worker Service / Background Jobs
 
-- stable `ServiceName`, `Env`, and `ServiceVersion` across restarts
-- one real HTTP path emits a trace and one log line
-- no `401/403` during OTLP submission
-- region appears when the service is deployed in more than one region
+```csharp title="Worker.cs"
+public class OrderProcessor : BackgroundService
+{
+    private readonly ObtraceClient _client;
+
+    public OrderProcessor(ObtraceClient client) => _client = client;
+
+    protected override async Task ExecuteAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            var batch = await DequeueBatch();
+
+            _client.Span("queue.process order-batch", attrs: new Dictionary<string, object?>
+            {
+                ["batch.size"] = batch.Count,
+                ["messaging.system"] = "rabbitmq"
+            });
+
+            foreach (var order in batch)
+            {
+                try
+                {
+                    await ProcessOrder(order);
+                    _client.Metric("orders.processed", 1, "1");
+                }
+                catch (Exception ex)
+                {
+                    _client.Log("error", "order.processing.failed", new Dictionary<string, object?>
+                    {
+                        ["order.id"] = order.Id,
+                        ["error.type"] = ex.GetType().Name,
+                        ["error.message"] = ex.Message
+                    });
+                }
+            }
+
+            await _client.FlushAsync();
+        }
+    }
+}
+```
+
+## Configuration Reference
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `ApiKey` | `string` | Yes | | Obtrace API key |
+| `IngestBaseUrl` | `string` | Yes | | Ingest endpoint URL |
+| `ServiceName` | `string` | Yes | | Stable name for this service |
+| `TenantId` | `string?` | No | from key | Tenant identifier |
+| `ProjectId` | `string?` | No | from key | Project identifier |
+| `AppId` | `string?` | No | | Application identifier within the project |
+| `Env` | `string` | No | `"production"` | Deployment environment |
+| `ServiceVersion` | `string?` | No | | Version string for this deployment |
+| `ValidateSemanticMetrics` | `bool` | No | `false` | Warn on non-standard metric names |
+| `Debug` | `bool` | No | `false` | Enable verbose logging to stdout |
+| `MaxQueueSize` | `int` | No | `2048` | Maximum buffered items before dropping |
+| `FlushIntervalMs` | `int` | No | `5000` | Auto-flush interval in milliseconds |
+
+## Validation Checklist
+
+After deploying, verify:
+
+- `ServiceName`, `Env`, and `ServiceVersion` are stable across restarts and match what you see in the Obtrace UI
+- At least one real request path emits both a log and a span
+- No `401` or `403` errors appear in stdout when `Debug = true`
+- `FlushAsync` or `ShutdownAsync` is called before process exit (use `await using` or register with `ApplicationStopping`)
+- Metrics use OTLP-standard units (`ms`, `By`, `1`) not custom strings

@@ -1,119 +1,207 @@
 ---
 title: Go SDK
-description: Instrumentation guide for Go services
+description: Manual instrumentation for Go services — logs, metrics, and traces sent to Obtrace via OTLP.
 ---
 
-## Install
+## Installation
 
 ```bash
 go get github.com/obtraceai/obtrace-sdk-go
 ```
 
-## Configuration
+## Minimum Setup
 
-```go
-import (
-  "os"
+Three fields are required: `APIKey`, `IngestBaseURL`, and `ServiceName`. Everything else has defaults.
 
-  ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
-)
-
-client := ob.NewClient(ob.Config{
-  APIKey: os.Getenv("OBTRACE_API_KEY"),
-  IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
-  TenantID: os.Getenv("OBTRACE_TENANT_ID"),
-  ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
-  AppID: "checkout-api",
-  Env: os.Getenv("OBTRACE_ENV"),
-  ServiceName: "checkout-api",
-  ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
-  ValidateSemanticMetrics: true,
-  Debug: os.Getenv("OBTRACE_DEBUG") == "1",
-})
-```
-
-The Go SDK sends to:
-
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
-
-## Canonical runtime identity
-
-Set stable identity in `ob.Config` and attach region on events when the service is multi-region.
-
-```go
-runtimeAttrs := map[string]any{
-  "cloud.region": os.Getenv("AWS_REGION"),
-  "k8s.cluster.name": os.Getenv("CLUSTER_NAME"),
-}
-```
-
-This aligns with the ingest/core contract:
-
-- `ServiceName` -> OTLP `service.name`
-- `Env` -> OTLP `deployment.environment`
-- `ServiceVersion` -> OTLP `service.version`
-- `TenantID`, `ProjectID`, `AppID` -> scoped ingest identity
-
-## Quick start
-
-```go
-client.Log("INFO", "service.started", nil)
-client.Metric(ob.SemanticMetrics.RuntimeCPUUtilization, 0.42, "1", nil)
-client.Span("db.query", "", "", 0, "", map[string]any{
-  "db.system": "postgresql",
-  "feature.name": "checkout",
-  "cloud.region": runtimeAttrs["cloud.region"],
-})
-_ = client.Flush(context.Background())
-```
-
-## HTTP handler example
-
-```go
+```go title="main.go"
 package main
 
 import (
-  "context"
-  "net/http"
-  "os"
+	"context"
+	"os"
 
-  ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
+	ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
 )
 
 func main() {
-  client := ob.NewClient(ob.Config{
-    APIKey: os.Getenv("OBTRACE_API_KEY"),
-    IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
-    TenantID: os.Getenv("OBTRACE_TENANT_ID"),
-    ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
-    AppID: "checkout-api",
-    Env: os.Getenv("OBTRACE_ENV"),
-    ServiceName: "checkout-api",
-    ServiceVersion: os.Getenv("OBTRACE_SERVICE_VERSION"),
-  })
-  defer client.Flush(context.Background())
+	client := ob.NewClient(ob.Config{
+		APIKey:        os.Getenv("OBTRACE_API_KEY"),
+		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+		ServiceName:   "checkout-api",
+	})
+	defer client.Shutdown(context.Background())
 
-  http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-    client.Log("INFO", "healthz.request", nil)
-    client.Span("http.server GET /healthz", "", "", 0, "", map[string]any{
-      "http.method": "GET",
-      "http.route": "/healthz",
-      "cloud.region": os.Getenv("AWS_REGION"),
-    })
-    _, _ = w.Write([]byte("ok"))
-  })
-
-  _ = http.ListenAndServe(":8080", nil)
+	client.Log("INFO", "service.started", nil)
+	client.Flush(context.Background())
 }
 ```
 
-## Validation checklist
+Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `ServiceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
 
-- the same `service`, `env`, and `version` survive restarts and deploys
-- one real path emits both logs and spans
-- no `401/403` appears during OTLP submission
-- region is present when the service is deployed in more than one region
+## What You Get Out of the Box
+
+Nothing. The Go SDK has zero auto-instrumentation. It does not capture HTTP requests, goroutine stats, runtime metrics, or anything else automatically.
+
+If you create a client and never call `Log`, `Metric`, or `Span`, no telemetry reaches Obtrace. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden overhead.
+
+## Logging
+
+Use `client.Log(level, message, ctx)` to record events you need to search for later. Good candidates:
+
+- Errors and panics recovered in middleware
+- Business events (order placed, payment failed, user signed up)
+- Audit trail entries (permission changed, config updated)
+- State transitions (circuit breaker opened, cache flushed)
+
+```go
+client.Log("ERROR", "payment.declined", &ob.Context{
+	Attrs: map[string]any{
+		"order_id":    orderID,
+		"provider":    "stripe",
+		"decline_code": resp.DeclineCode,
+	},
+})
+
+client.Log("INFO", "user.signup", &ob.Context{
+	Attrs: map[string]any{
+		"plan": "startup",
+	},
+})
+```
+
+The `level` parameter accepts standard syslog levels: `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`. Messages are truncated at 32KB.
+
+The `ctx` parameter is optional. When provided, it attaches structured attributes to the log entry. Use `Attrs` for custom key-value pairs, and the built-in fields (`TraceID`, `SpanID`, `Method`, `Endpoint`, `StatusCode`) to correlate logs with traces.
+
+## Metrics
+
+Use `client.Metric(name, value, unit, ctx)` to record measurements you want to graph or alert on. Good candidates:
+
+- Latency measurements (how long did this take?)
+- Counters (how many orders per minute?)
+- Gauges (current queue depth, active connections)
+- Business KPIs (revenue per checkout, items per cart)
+
+```go
+client.Metric("http.server.duration", 142.5, "ms", &ob.Context{
+	Method:   "POST",
+	Endpoint: "/api/checkout",
+})
+
+client.Metric("checkout.revenue", 49.99, "USD", nil)
+
+client.Metric("queue.depth", float64(len(workQueue)), "1", nil)
+```
+
+The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values (counts, ratios), or a currency code.
+
+## Tracing / Spans
+
+Use `client.Span(...)` to track a unit of work and its duration. Returns `(traceID, spanID)` so you can propagate context to downstream services. Good candidates:
+
+- HTTP handler execution (request in, response out)
+- Database queries
+- External API calls
+- Background job processing
+- Any operation where you need to see where time was spent
+
+```go
+traceID, spanID := client.Span("db.query", "", "", 0, "", map[string]any{
+	"db.system":    "postgresql",
+	"db.statement": "SELECT * FROM orders WHERE id = $1",
+})
+
+client.Span("http.client POST /payments", traceID, "", 0, "", map[string]any{
+	"http.method": "POST",
+	"http.url":    "https://api.stripe.com/v1/charges",
+})
+```
+
+Pass an empty string for `traceID` and `spanID` to auto-generate them. Pass an existing `traceID` to group spans into the same trace. The `statusCode` uses OTLP conventions: `0` = unset, `1` = OK, `2` = error.
+
+### Propagating Trace Context
+
+When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+
+```go
+traceID, spanID := client.Span("http.client GET /inventory", "", "", 0, "", nil)
+
+req, _ := http.NewRequest("GET", "https://inventory-api.internal/stock", nil)
+client.InjectPropagation(req.Header, traceID, spanID, "")
+resp, err := http.DefaultClient.Do(req)
+```
+
+## Framework Integration
+
+### net/http Middleware
+
+The SDK includes middleware for `net/http` that automatically creates a span and log entry for each request:
+
+```go title="main.go"
+package main
+
+import (
+	"context"
+	"net/http"
+	"os"
+
+	ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
+	mw "github.com/obtraceai/obtrace-sdk-go/middleware/nethttp"
+)
+
+func main() {
+	client := ob.NewClient(ob.Config{
+		APIKey:        os.Getenv("OBTRACE_API_KEY"),
+		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+		ServiceName:   "checkout-api",
+	})
+	defer client.Shutdown(context.Background())
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/checkout", handleCheckout)
+
+	http.ListenAndServe(":8080", mw.Middleware(client, mux))
+}
+
+func handleCheckout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"ok":true}`))
+}
+```
+
+The middleware emits one span (`http.server METHOD`) and one log (`http request done`) per request, with method, route, status code, and duration attached.
+
+Gin and Echo middleware are also available under `middleware/gin` and `middleware/echo`.
+
+## Configuration Reference
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `APIKey` | `string` | `""` | **Required.** Your Obtrace API key. |
+| `IngestBaseURL` | `string` | `""` | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
+| `ServiceName` | `string` | `""` | **Required.** Stable name for this service. |
+| `ServiceVersion` | `string` | `""` | Deployment version (git SHA, semver, date). |
+| `TenantID` | `string` | `""` | Scoped ingest identity. |
+| `ProjectID` | `string` | `""` | Scoped ingest identity. |
+| `AppID` | `string` | `""` | Scoped ingest identity. |
+| `Env` | `string` | `""` | Environment name (`prod`, `staging`, `dev`). |
+| `RequestTimeoutMS` | `int` | `5000` | HTTP timeout per OTLP request in milliseconds. |
+| `MaxQueueSize` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
+| `ValidateSemanticMetrics` | `bool` | `false` | When `true` + `Debug`, warns on non-canonical metric names. |
+| `Debug` | `bool` | `false` | Enables SDK diagnostic output to stdout. |
+| `DefaultHeaders` | `map[string]string` | `nil` | Extra headers sent with every OTLP request. |
+| `TraceHeaderName` | `string` | `""` | Custom trace propagation header name. |
+| `SessionHeaderName` | `string` | `""` | Custom session propagation header name. |
+
+## Validation Checklist
+
+After integrating the SDK, verify these before shipping to production:
+
+- [ ] `ServiceName`, `Env`, and `ServiceVersion` are set and survive restarts and deploys
+- [ ] At least one request path emits both a log and a span
+- [ ] `client.Flush()` or `client.Shutdown()` is called before process exit (use `defer`)
+- [ ] No `401` or `403` errors appear in logs during OTLP submission (check with `Debug: true`)
+- [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
+- [ ] Outgoing HTTP calls use `InjectPropagation` if the downstream service also reports to Obtrace
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

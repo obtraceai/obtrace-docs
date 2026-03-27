@@ -1,17 +1,19 @@
 ---
 title: Python SDK
-description: Backend instrumentation for Python services
+description: Manual instrumentation for Python services — logs, metrics, and traces sent to Obtrace via OTLP.
 ---
 
-## Install
+## Installation
 
 ```bash
 pip install obtrace-sdk-python
 ```
 
-## Configuration
+## Minimum Setup
 
-```python
+Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
+
+```python title="app.py"
 import os
 
 from obtrace_sdk import ObtraceClient, ObtraceConfig
@@ -20,123 +22,215 @@ client = ObtraceClient(
     ObtraceConfig(
         api_key=os.getenv("OBTRACE_API_KEY"),
         ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
-        project_id=os.getenv("OBTRACE_PROJECT_ID"),
-        app_id="checkout-api",
         service_name="checkout-api",
-        service_version=os.getenv("OBTRACE_SERVICE_VERSION", "2026.03.10"),
-        env=os.getenv("OBTRACE_ENV", "prod"),
-        validate_semantic_metrics=True,
-        debug=os.getenv("OBTRACE_DEBUG") == "1",
     )
 )
-```
-
-Obtrace Python sends OTLP payloads to the core ingest endpoints:
-
-- `POST /otlp/v1/logs`
-- `POST /otlp/v1/traces`
-- `POST /otlp/v1/metrics`
-
-## Canonical runtime identity
-
-Set stable identity in `ObtraceConfig`:
-
-- `service_name`
-- `env`
-- `service_version`
-- `tenant_id`
-- `project_id`
-- `app_id`
-
-Add region only where it matters operationally:
-
-```python
-runtime_attrs = {
-    "cloud.region": os.getenv("AWS_REGION", "us-east-1"),
-    "deployment.ring": "stable",
-}
-```
-
-This matches the ingest/core contract:
-
-- `service_name` -> OTLP `service.name`
-- `env` -> OTLP `deployment.environment`
-- `service_version` -> OTLP `service.version`
-- `tenant_id`, `project_id`, `app_id` -> scoped ingest identity
-
-## Quick start
-
-```python
-from obtrace_sdk import SemanticMetrics
 
 client.log("info", "service.started")
-client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.42)
-client.span(
-    "checkout.authorize",
-    attrs={
-        "feature.name": "checkout",
-        "db.system": "postgresql",
-        "cloud.region": runtime_attrs["cloud.region"],
-    },
-)
 client.flush()
 ```
 
-## FastAPI example
+Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `service_name` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
+
+The client registers an `atexit` handler that calls `flush()` on interpreter shutdown. It also supports context manager usage:
 
 ```python
+with ObtraceClient(ObtraceConfig(...)) as client:
+    client.log("info", "service.started")
+```
+
+## What You Get Out of the Box
+
+Nothing. The Python SDK has zero auto-instrumentation. It does not capture HTTP requests, exceptions, Django middleware, or anything else automatically.
+
+If you create a client and never call `log`, `metric`, or `span`, no telemetry reaches Obtrace. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden overhead or monkey-patching.
+
+## Logging
+
+Use `client.log(level, message, context?)` to record events you need to search for later. Good candidates:
+
+- Caught exceptions and error conditions
+- Business events (order placed, payment failed, user signed up)
+- Audit trail entries (permission changed, API key rotated)
+- State transitions (circuit breaker opened, cache invalidated)
+
+```python
+from obtrace_sdk.types import SDKContext
+
+client.log("error", "payment.declined", SDKContext(
+    attrs={
+        "order_id": order_id,
+        "provider": "stripe",
+        "decline_code": resp.decline_code,
+    },
+))
+
+client.log("info", "user.signup", SDKContext(
+    attrs={"plan": "startup"},
+))
+```
+
+The `level` parameter accepts: `debug`, `info`, `warn`, `error`, `fatal`. Messages are truncated at 32KB.
+
+The `context` parameter is optional. When provided, it attaches structured attributes to the log entry. Use `attrs` for custom key-value pairs, and the built-in fields (`trace_id`, `span_id`, `method`, `endpoint`, `status_code`) to correlate logs with traces.
+
+## Metrics
+
+Use `client.metric(name, value, unit?, context?)` to record measurements you want to graph or alert on. Good candidates:
+
+- Latency measurements (how long did this take?)
+- Counters (how many orders per minute?)
+- Gauges (current queue depth, active connections)
+- Business KPIs (revenue per checkout, items per cart)
+
+```python
+client.metric("http.server.duration", 142.5, "ms", SDKContext(
+    method="POST",
+    endpoint="/api/checkout",
+))
+
+client.metric("checkout.revenue", 49.99, "USD")
+
+client.metric("queue.depth", len(work_queue))
+```
+
+The `unit` parameter defaults to `"1"`. Follow OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values (counts, ratios), or a currency code.
+
+## Tracing / Spans
+
+Use `client.span(...)` to track a unit of work and its duration. Returns a dict with `trace_id` and `span_id` so you can propagate context to downstream services. Good candidates:
+
+- HTTP handler execution (request in, response out)
+- Database queries
+- External API calls
+- Background task processing
+- Any operation where you need to see where time was spent
+
+```python
+trace = client.span("db.query", attrs={
+    "db.system": "postgresql",
+    "db.statement": "SELECT * FROM orders WHERE id = %s",
+})
+
+client.span("http.client POST /payments", trace_id=trace["trace_id"], attrs={
+    "http.method": "POST",
+    "http.url": "https://api.stripe.com/v1/charges",
+})
+```
+
+Omit `trace_id` and `span_id` to auto-generate them. Pass an existing `trace_id` to group spans into the same trace. The `status_code` uses OTLP conventions: `0` = unset, `1` = OK, `2` = error.
+
+### Propagating Trace Context
+
+When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+
+```python
+import requests
+
+trace = client.span("http.client GET /inventory", attrs={
+    "http.method": "GET",
+    "http.url": "https://inventory.internal/stock",
+})
+
+headers = client.inject_propagation(
+    trace_id=trace["trace_id"],
+    span_id=trace["span_id"],
+)
+resp = requests.get("https://inventory.internal/stock", headers=headers)
+```
+
+## Framework Integration
+
+### FastAPI Middleware
+
+The SDK includes middleware for FastAPI that automatically creates a span and log entry for each request:
+
+```python title="main.py"
 import os
 
 from fastapi import FastAPI
-from obtrace_sdk import ObtraceClient, ObtraceConfig, SemanticMetrics
+from obtrace_sdk import ObtraceClient, ObtraceConfig
 from obtrace_sdk.http import fastapi_middleware
 
 client = ObtraceClient(
     ObtraceConfig(
         api_key=os.getenv("OBTRACE_API_KEY"),
         ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-        tenant_id=os.getenv("OBTRACE_TENANT_ID"),
-        project_id=os.getenv("OBTRACE_PROJECT_ID"),
-        app_id="checkout-api",
         service_name="checkout-api",
-        service_version=os.getenv("OBTRACE_SERVICE_VERSION", "2026.03.10"),
-        env=os.getenv("OBTRACE_ENV", "prod"),
     )
 )
 
 app = FastAPI()
 app.middleware("http")(fastapi_middleware(client))
 
-@app.get("/healthz")
-async def healthz():
-    client.log("info", "healthz.request")
-    client.metric(SemanticMetrics.RUNTIME_CPU_UTILIZATION, 0.41)
-    client.span("http.server GET /healthz", attrs={
-        "http.method": "GET",
-        "http.route": "/healthz",
-        "cloud.region": os.getenv("AWS_REGION", "us-east-1"),
-    })
+@app.post("/checkout")
+async def checkout():
+    client.log("info", "checkout.started")
     return {"ok": True}
 ```
 
-## Validation checklist
+The middleware emits one span (`http.server METHOD`) and one log per request, with method, route, status code, and duration attached. Your route handlers can add additional logs, metrics, and spans on top of what the middleware captures.
 
-- the same `service`, `env`, and `version` survive restarts and deploys
-- one real request path emits at least one log and one trace
-- `401/403` does not appear during telemetry submission
-- `cloud.region` is present when the service is multi-region
+### Flask
+
+```python title="app.py"
+from flask import Flask, request, g
+from obtrace_sdk.http import flask_before_after
+
+before, after = flask_before_after(client)
+
+app = Flask(__name__)
+
+@app.before_request
+def before_request():
+    g.obtrace = before()
+
+@app.after_request
+def after_request(response):
+    after(g.obtrace, request.method, request.path, response.status_code)
+    return response
+```
+
+### Outgoing HTTP (requests / httpx)
+
+Wrap your HTTP client function to auto-instrument outgoing calls with spans and propagation:
+
+```python
+import requests
+from obtrace_sdk.http import instrument_requests
+
+instrumented = instrument_requests(client, requests.request)
+resp = instrumented("GET", "https://api.example.com/data")
+```
+
+## Configuration Reference
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `api_key` | `str` | | **Required.** Your Obtrace API key. |
+| `ingest_base_url` | `str` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
+| `service_name` | `str` | | **Required.** Stable name for this service. |
+| `service_version` | `str` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
+| `tenant_id` | `str` | `None` | Scoped ingest identity. |
+| `project_id` | `str` | `None` | Scoped ingest identity. |
+| `app_id` | `str` | `None` | Scoped ingest identity. |
+| `env` | `str` | `None` | Environment name (`prod`, `staging`, `dev`). |
+| `request_timeout_sec` | `float` | `5.0` | HTTP timeout per OTLP request in seconds. |
+| `max_queue_size` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
+| `validate_semantic_metrics` | `bool` | `False` | When `True` + `debug`, warns on non-canonical metric names. |
+| `debug` | `bool` | `False` | Enables SDK diagnostic output to stderr. |
+| `default_headers` | `dict` | `{}` | Extra headers sent with every OTLP request. |
+
+## Validation Checklist
+
+After integrating the SDK, verify these before shipping to production:
+
+- [ ] `service_name`, `env`, and `service_version` are set and survive restarts and deploys
+- [ ] At least one request path emits both a log and a span
+- [ ] `client.flush()` is called before process exit, or you use the context manager
+- [ ] No `401` or `403` errors appear during OTLP submission (check with `debug=True`)
+- [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
+- [ ] Outgoing HTTP calls use `inject_propagation` if the downstream service also reports to Obtrace
+- [ ] FastAPI/Flask middleware is registered if using those frameworks
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
-
-## Production hardening
-
-1. Keep keys in secret manager.
-2. Configure bounded queue and retry.
-3. Validate volume and error rate after deploy.
-
-## Troubleshooting
-
-- `401/403`: invalid key or wrong tenant/project.
-- No data: startup path not initializing SDK.
-- Event drops: queue saturation or worker crash.
