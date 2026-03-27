@@ -1,6 +1,6 @@
 ---
 title: Python SDK
-description: Manual instrumentation for Python services — logs, metrics, and traces sent to Obtrace via OTLP.
+description: Plug-and-play observability for Python — logging captured automatically, metrics and traces for what matters
 ---
 
 ## Installation
@@ -9,13 +9,12 @@ description: Manual instrumentation for Python services — logs, metrics, and t
 pip install obtrace-sdk-python
 ```
 
-## Minimum Setup
+## Setup
 
-Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
+Create a client. Three fields. Logs are captured automatically.
 
-```python title="app.py"
+```python title="obtrace_client.py"
 import os
-
 from obtrace_sdk import ObtraceClient, ObtraceConfig
 
 client = ObtraceClient(
@@ -25,25 +24,31 @@ client = ObtraceClient(
         service_name="checkout-api",
     )
 )
-
-client.log("info", "service.started")
-client.flush()
 ```
 
-Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `service_name` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
+Import this module early in your app. That's it.
 
-The client registers an `atexit` handler that calls `flush()` on interpreter shutdown. It also supports context manager usage:
+## What's Captured Automatically
 
-```python
-with ObtraceClient(ObtraceConfig(...)) as client:
-    client.log("info", "service.started")
+| What | How | Needs code? |
+|------|-----|-------------|
+| **All stdlib logging** | `logging.Handler` auto-installed on init — `logging.info()`, `logging.error()` etc. | No |
+| **Process shutdown flush** | `atexit` handler registered | No |
+
+Every `logging.info("...")`, `logging.warning("...")`, `logging.error("...")` in your application (and libraries) is captured and sent to Obtrace as structured logs.
+
+### FastAPI / Flask Middleware
+
+For HTTP request spans, add the middleware:
+
+```python title="main.py"
+from obtrace_sdk.fastapi_middleware import fastapi_middleware
+
+app = FastAPI()
+fastapi_middleware(app, client)
 ```
 
-## What You Get Out of the Box
-
-Nothing. The Python SDK has zero auto-instrumentation. It does not capture HTTP requests, exceptions, Django middleware, or anything else automatically.
-
-If you create a client and never call `log`, `metric`, or `span`, no telemetry reaches Obtrace. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden overhead or monkey-patching.
+This auto-captures every request as a span with method, path, status, and duration.
 
 ## Logging
 

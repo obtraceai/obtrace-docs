@@ -1,6 +1,6 @@
 ---
 title: Node.js / Bun SDK
-description: Backend telemetry for Node.js and Bun applications
+description: Plug-and-play observability for Node.js and Bun — logs, traces, and errors captured automatically
 ---
 
 ## Installation
@@ -9,13 +9,48 @@ description: Backend telemetry for Node.js and Bun applications
 npm install @obtrace/sdk-js
 ```
 
-## Minimum Setup
+## Setup
 
-Three fields. That is all you need.
+One call. Three fields. Everything else is automatic.
 
 ```ts title="src/obtrace.ts"
 import { initNodeSDK } from "@obtrace/sdk-js/node";
 
+initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
+  serviceName: "payments-api",
+});
+```
+
+Import this file early in your application entry point (e.g. top of `src/index.ts` or `src/app.ts`). That's it. No middleware, no wrappers, no extra code.
+
+## What's Captured Automatically
+
+After `initNodeSDK()`, the SDK instruments your application at runtime. You don't need to write any code for any of this:
+
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **All console output** | `console.log`, `console.warn`, `console.error` etc. are intercepted and sent as structured logs | `info: "Server started on port 3000"` |
+| **Every inbound HTTP request** | Node's `http.createServer` is patched — works with Express, Fastify, Hono, NestJS, Koa, or any framework | Span: `http.request GET /api/orders` with status, duration, trace ID |
+| **Every outbound fetch call** | `globalThis.fetch` is replaced with an instrumented version | Span: `server.fetch POST https://stripe.com/v1/charges` |
+| **Uncaught exceptions** | `process.on("uncaughtException")` | Log: `fatal: TypeError: Cannot read property...` |
+| **Unhandled promise rejections** | `process.on("unhandledRejection")` | Log: `error: unhandledRejection: ...` |
+| **Trace propagation** | W3C `traceparent` header injected on outbound, read on inbound | Correlated traces across services |
+
+### What about Express middleware?
+
+You **don't need it**. The SDK patches `http.Server` at the Node level, so every HTTP framework that uses Node's `http` module (all of them) gets instrumented automatically.
+
+The framework-specific middleware (`expressObtraceMiddleware`, `fastifyObtraceHook`, etc.) still exist if you want route-level granularity, but they are **optional** — the default auto-instrumentation already captures method, path, status, and duration for every request.
+
+## Optional: Custom Telemetry
+
+The automatic instrumentation covers infrastructure telemetry. For **business-specific** events, use the SDK methods directly.
+
+`initNodeSDK` returns an object you can use:
+
+```ts title="src/obtrace.ts"
 export const ob = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
   ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
@@ -23,228 +58,63 @@ export const ob = initNodeSDK({
 });
 ```
 
-Import `ob` wherever you need it. The SDK auto-detects whether it is running in Node.js or Bun and tags telemetry accordingly.
+### Business Metrics
 
-`initNodeSDK` returns an object with these methods:
+Track KPIs that the auto-instrumentation can't know about:
 
-| Method | Purpose |
-|--------|---------|
-| `log(level, message, context?)` | Send a structured log |
-| `captureError(error, context?)` | Capture an error with stack context |
-| `metric(name, value, unit?, context?)` | Record a numeric metric |
-| `instrumentFetch` | A fetch wrapper that auto-creates spans |
-| `shutdown()` | Flush pending data and stop the SDK |
-
-## What Gets Captured Automatically
-
-After calling `initNodeSDK`, the SDK installs two process-level hooks. You do not need to write any code for these:
-
-- **Uncaught exceptions** are logged at `fatal` level with the error name and message
-- **Unhandled promise rejections** are logged at `error` level
-
-Every `instrumentFetch` call (covered below) also auto-creates a span with method, status code, and duration. No manual span creation needed for outbound HTTP.
-
-## Adding Custom Telemetry
-
-### Logs
-
-`log(level, message, context?)` sends a structured log. Levels: `debug`, `info`, `warn`, `error`, `fatal`.
-
-```ts title="src/routes/payments.ts"
+```ts title="src/routes/checkout.ts"
 import { ob } from "../obtrace";
 
-async function processPayment(orderId: string, amount: number) {
-  ob.log("info", "payment.started", {
-    attrs: { order_id: orderId, amount },
-  });
-
-  try {
-    const result = await chargeCard(orderId, amount);
-    ob.log("info", "payment.success", {
-      attrs: { order_id: orderId, provider_ref: result.ref },
-    });
-  } catch (err) {
-    ob.log("error", "payment.failed", {
-      attrs: { order_id: orderId, amount },
-    });
-    throw err;
-  }
-}
+const start = Date.now();
+await processCheckout(cart);
+ob.metric("checkout.duration_ms", Date.now() - start, "ms");
+ob.metric("revenue.amount", order.total, "usd");
 ```
 
-### Errors
+### Structured Business Logs
 
-`captureError(error, context?)` extracts the error name and message and logs it at `error` level. Use it in catch blocks when you want structured error capture without building the message yourself.
+`console.log` is captured automatically, but for events you want to query and alert on with specific attributes:
+
+```ts
+ob.log("info", "payment.success", {
+  attrs: { order_id: orderId, amount, provider: "stripe" },
+});
+```
+
+### Error Capture
+
+Unhandled errors are captured automatically. For handled errors you still want to track:
 
 ```ts
 try {
   await db.query("INSERT INTO orders ...");
 } catch (err) {
-  ob.captureError(err, {
-    attrs: { operation: "insert_order", table: "orders" },
-  });
+  ob.captureError(err, { attrs: { table: "orders" } });
 }
 ```
-
-### Metrics
-
-`metric(name, value, unit?, context?)` records a numeric value. Use it for business KPIs and performance measurements.
-
-```ts
-const start = Date.now();
-await processCheckout(cart);
-ob.metric("checkout.duration_ms", Date.now() - start, "ms");
-
-ob.metric("cart.item_count", cart.items.length);
-
-ob.metric("revenue.amount", order.total, "usd", {
-  attrs: { plan: customer.plan, country: customer.country },
-});
-```
-
-### Context Object
-
-Every manual call accepts an optional context object:
-
-```ts
-interface SDKContext {
-  traceId?: string;
-  spanId?: string;
-  traceState?: string;
-  baggage?: string;
-  sessionId?: string;
-  routeTemplate?: string;
-  endpoint?: string;
-  method?: string;
-  statusCode?: number;
-  attrs?: Record<string, string | number | boolean>;
-}
-```
-
-The `attrs` field is for arbitrary key-value pairs that get attached to the telemetry. The trace fields let you correlate logs and metrics with specific traces.
-
-## Tracing HTTP Calls
-
-`instrumentFetch` is a drop-in replacement for `fetch` that automatically creates spans for every outbound HTTP request. It records method, status code, duration, and propagates trace context via the `traceparent` header.
-
-```ts title="src/services/inventory.ts"
-import { ob } from "../obtrace";
-
-const fetcher = ob.instrumentFetch;
-
-async function checkStock(sku: string): Promise<boolean> {
-  const res = await fetcher(`https://inventory.internal/api/stock/${sku}`);
-  const data = await res.json();
-  return data.available > 0;
-}
-```
-
-Every call through `instrumentFetch` produces a span named `server.fetch GET` (or whatever the method is) with these attributes: `http.method`, `http.url`, `http.status_code`, `http.duration_ms`. Failed requests also emit an error log.
-
-## Framework Integrations
-
-The SDK ships middleware for popular frameworks. Each one auto-creates a span and log entry per request with method, route, status code, and duration. They also propagate inbound `traceparent` headers.
-
-### Express
-
-```ts title="src/app.ts"
-import express from "express";
-import { initNodeSDK } from "@obtrace/sdk-js/node";
-import { expressObtraceMiddleware } from "@obtrace/sdk-js";
-
-const ob = initNodeSDK({
-  apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
-  serviceName: "api",
-});
-
-const app = express();
-app.use(expressObtraceMiddleware(ob.client));
-
-app.get("/orders/:id", async (req, res) => {
-  const order = await db.getOrder(req.params.id);
-  res.json(order);
-});
-```
-
-### Fastify
-
-```ts title="src/app.ts"
-import Fastify from "fastify";
-import { initNodeSDK } from "@obtrace/sdk-js/node";
-import { fastifyObtraceHook } from "@obtrace/sdk-js";
-
-const ob = initNodeSDK({
-  apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
-  serviceName: "api",
-});
-
-const app = Fastify();
-app.addHook("onResponse", fastifyObtraceHook(ob.client));
-```
-
-### Hono
-
-```ts title="src/app.ts"
-import { Hono } from "hono";
-import { initNodeSDK } from "@obtrace/sdk-js/node";
-import { honoObtraceMiddleware } from "@obtrace/sdk-js";
-
-const ob = initNodeSDK({
-  apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
-  serviceName: "api",
-});
-
-const app = new Hono();
-app.use("*", honoObtraceMiddleware(ob.client));
-```
-
-### Also Available
-
-- `elysiaObtracePlugin` for Elysia (Bun)
-- `nestObtraceMiddleware` for NestJS
-- `withNextRouteHandler` for Next.js API routes
-
-All exported from `@obtrace/sdk-js`.
 
 ## Configuration Reference
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `apiKey` | `string` | Yes | - | Your Obtrace API key |
-| `ingestBaseUrl` | `string` | Yes | - | URL of your Obtrace ingest endpoint |
-| `serviceName` | `string` | Yes | - | Identifies this service in the Obtrace UI |
-| `tenantId` | `string` | No | - | Your tenant ID (auto-resolved from API key if not set) |
-| `projectId` | `string` | No | - | Your project ID (auto-resolved from API key if not set) |
-| `appId` | `string` | No | - | Application identifier within a project |
-| `env` | `string` | No | - | Deployment environment (production, staging, etc.) |
-| `serviceVersion` | `string` | No | - | Version string for this deployment |
-| `debug` | `boolean` | No | `false` | Log SDK errors and warnings to console |
-| `flushIntervalMs` | `number` | No | `2000` | How often the SDK flushes queued telemetry |
-| `maxQueueSize` | `number` | No | `1000` | Max items in the send queue (oldest dropped when full) |
-| `requestTimeoutMs` | `number` | No | `5000` | Timeout per OTLP request |
-| `defaultHeaders` | `Record<string, string>` | No | `{}` | Extra headers sent with every OTLP request |
-| `validateSemanticMetrics` | `boolean` | No | `false` | Warn on non-canonical metric names (requires `debug: true`) |
-| `propagation.enabled` | `boolean` | No | `true` | Inject `traceparent` header on outbound requests |
-| `propagation.headerName` | `string` | No | `"traceparent"` | Header name for trace propagation |
-| `propagation.sessionHeaderName` | `string` | No | `"x-obtrace-session-id"` | Header name for session propagation |
-
-## Validation Checklist
-
-After deploying, verify these:
-
-- [ ] Open the Obtrace UI and confirm logs appear under the correct `serviceName`
-- [ ] Trigger an unhandled exception in a test environment -- a `fatal` log should appear automatically
-- [ ] Make an outbound HTTP call with `instrumentFetch` -- a span with `http.status_code` should appear
-- [ ] If using a framework middleware, make a request to any route -- a span and log entry should appear
-- [ ] Check for `401` or `403` errors in your application logs (indicates an invalid API key)
-- [ ] Call `shutdown()` during graceful shutdown to avoid losing buffered telemetry
+| `ingestBaseUrl` | `string` | Yes | - | Obtrace ingest endpoint URL |
+| `serviceName` | `string` | Yes | - | Identifies this service in Obtrace |
+| `tenantId` | `string` | No | - | Tenant ID (auto-resolved from API key) |
+| `projectId` | `string` | No | - | Project ID (auto-resolved from API key) |
+| `appId` | `string` | No | - | App ID within a project |
+| `env` | `string` | No | - | Environment (production, staging, etc.) |
+| `serviceVersion` | `string` | No | - | Deployment version |
+| `debug` | `boolean` | No | `false` | Log SDK internals to console |
+| `flushIntervalMs` | `number` | No | `2000` | Queue flush interval |
+| `maxQueueSize` | `number` | No | `1000` | Max queued items before dropping oldest |
+| `requestTimeoutMs` | `number` | No | `5000` | OTLP request timeout |
+| `defaultHeaders` | `Record<string, string>` | No | `{}` | Extra headers on OTLP requests |
+| `validateSemanticMetrics` | `boolean` | No | `false` | Warn on non-canonical metric names |
 
 ## Shutdown
 
-Always call `shutdown()` when your process exits. This flushes any buffered telemetry before the process terminates.
+Call `shutdown()` during graceful shutdown to flush buffered telemetry:
 
 ```ts
 process.on("SIGTERM", async () => {
@@ -252,3 +122,13 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 ```
+
+## Validation
+
+After deploying:
+
+- [ ] Open Obtrace UI — logs should appear under your `serviceName`
+- [ ] Make any HTTP request to your server — a span with method, path, status, and duration should appear
+- [ ] Call any external API with `fetch()` — an outbound span should appear
+- [ ] Add a `console.error("test")` — should appear as an error log
+- [ ] Trigger an unhandled exception in test — a `fatal` log should appear
