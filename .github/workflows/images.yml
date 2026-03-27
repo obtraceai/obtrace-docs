@@ -14,12 +14,19 @@ on:
       - "Dockerfile"
       - "next.config.mjs"
       - "tsconfig.json"
-      - ".github/workflows/**"
+      - ".github/workflows/images.yml"
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: false
+        default: "patch"
+        type: choice
+        options: [patch, minor, major]
 
 concurrency:
   group: build-docs
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   REGISTRY: obtrace-registry.obtrace-infra.svc.cluster.local:5000
@@ -30,15 +37,61 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version
+        id: version
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          BUMP="${{ github.event.inputs.bump || 'patch' }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${NEW}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          echo "${NEW}" > VERSION
+          echo "version=${NEW}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Version: ${CURRENT} → ${NEW} (${TAG})"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "obtrace-bot"
+          git config user.email "bot@obtrace.ai"
+          git add VERSION
+          git diff --cached --quiet && exit 0
+          git commit -m "release: bump version to v${{ steps.version.outputs.version }}"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin main --tags
 
       - name: Build and push
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+          SHORT_SHA: ${{ steps.version.outputs.sha }}
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           docker build \
-            -t ${REGISTRY}/docs:latest \
-            -t ${REGISTRY}/docs:${SHORT_SHA} .
-          docker push ${REGISTRY}/docs:latest
-          docker push ${REGISTRY}/docs:${SHORT_SHA}
+            -t ${REGISTRY}/docs:${VERSION} \
+            -t ${REGISTRY}/docs:sha-${SHORT_SHA} .
+          docker push ${REGISTRY}/docs:${VERSION}
+          docker push ${REGISTRY}/docs:sha-${SHORT_SHA}
 
-      - name: Restart deployment
-        run: kubectl rollout restart deployment/obtrace-docs -n obtrace 2>/dev/null || true
+      - name: Update infra manifests
+        env:
+          GH_TOKEN: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+        run: |
+          gh api repos/obtraceai/obtrace-infra/dispatches \
+            -f event_type=image-update \
+            -f "client_payload[source]=docs" \
+            -f "client_payload[version]=${{ steps.version.outputs.tag }}" \
+            -f "client_payload[sha]=${{ steps.version.outputs.sha }}" \
+            -f "client_payload[services]=docs"
