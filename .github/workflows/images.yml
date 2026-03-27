@@ -24,6 +24,9 @@ on:
         type: choice
         options: [patch, minor, major]
 
+permissions:
+  contents: write
+
 concurrency:
   group: build-docs
   cancel-in-progress: false
