@@ -6,7 +6,7 @@ description: Instrumentation guide for Go services
 ## Install
 
 ```bash
-go get github.com/obtrace/sdk-go
+go get github.com/obtraceai/obtrace-sdk-go
 ```
 
 ## Configuration
@@ -15,7 +15,7 @@ go get github.com/obtrace/sdk-go
 import (
   "os"
 
-  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+  ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
 )
 
 client := ob.NewClient(ob.Config{
@@ -79,7 +79,7 @@ import (
   "net/http"
   "os"
 
-  ob "github.com/obtrace/sdk-go/pkg/obtrace"
+  ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
 )
 
 func main() {
