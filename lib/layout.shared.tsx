@@ -6,7 +6,7 @@ export function baseOptions(): BaseLayoutProps {
     i18n: true,
     nav: {
       title: (
-        <span className="inline-flex items-center pl-2 pt-1 pb-1">
+        <span className="inline-flex items-center pl-3 pt-2 pb-1">
           <ObtraceLogo />
         </span>
       ),
