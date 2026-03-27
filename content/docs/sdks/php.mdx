@@ -1,6 +1,6 @@
 ---
 title: PHP SDK
-description: Manual instrumentation for PHP services using obtrace/sdk-php
+description: Plug-and-play observability for PHP services — errors and exceptions captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -9,7 +9,7 @@ description: Manual instrumentation for PHP services using obtrace/sdk-php
 composer require obtrace/sdk-php
 ```
 
-Requires PHP 8.1+. The package ships no auto-instrumentation extensions or framework hooks. All telemetry is sent through explicit calls.
+Requires PHP 8.1+.
 
 ## Minimum Setup
 
@@ -30,13 +30,23 @@ $client = new ObtraceClient($cfg);
 
 Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
 
-## What's Auto-Captured
+## What's Captured Automatically
 
-The SDK registers a `register_shutdown_function` handler that flushes buffered telemetry when the PHP process exits. This covers both normal script completion and fatal errors.
+After creating an `ObtraceClient`, the SDK registers error handlers, exception handlers, and a shutdown function. You don't need to write any extra code for this:
 
-Beyond the shutdown flush, nothing is auto-captured. There are no request interceptors, no database query listeners, and no error handlers installed automatically. You control exactly what gets sent.
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **PHP errors** | `set_error_handler` intercepts errors with level mapping: `E_NOTICE` -> `info`, `E_WARNING` -> `warn`, `E_ERROR` -> `error` | `warn: "Undefined variable $user in checkout.php:42"` |
+| **Uncaught exceptions** | `set_exception_handler` catches unhandled exceptions and logs them at `fatal` level | `fatal: "PDOException: Connection refused"` |
+| **Shutdown flush** | `register_shutdown_function` flushes buffered telemetry when the PHP process exits, covering both normal completion and fatal errors | Ensures no data is lost |
 
-## Logging
+There are no request interceptors or database query listeners. Use the Laravel or Symfony middleware (see [Framework Integration](#framework-integration)) for HTTP spans, and the explicit APIs below for business telemetry.
+
+## Optional: Custom Telemetry
+
+The automatic error and exception capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+
+### Logging
 
 Use `$client->log()` for structured events. Logs are best for state transitions, errors, and audit trails.
 
@@ -62,7 +72,7 @@ $client->log("warn", "inventory.low", [
 
 Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
 
-## Metrics
+### Metrics
 
 Use `$client->metric()` for numerical measurements you want to track over time.
 
@@ -85,7 +95,7 @@ $client->metric("db.pool.active_connections", 14, "1");
 
 The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
 
-## Tracing / Spans
+### Tracing / Spans
 
 Use `$client->span()` for operations with duration. Spans appear in the trace waterfall and are best for database queries, HTTP calls, and queue processing.
 

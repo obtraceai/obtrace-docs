@@ -1,6 +1,6 @@
 ---
 title: .NET SDK
-description: Manual instrumentation for .NET services using Obtrace.Sdk
+description: Plug-and-play observability for .NET services — Console output captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -9,7 +9,7 @@ description: Manual instrumentation for .NET services using Obtrace.Sdk
 dotnet add package Obtrace.Sdk
 ```
 
-Targets .NET 6+ and .NET Standard 2.1. The package ships no auto-instrumentation agents or diagnostic listeners. All telemetry is sent through explicit calls.
+Targets .NET 6+ and .NET Standard 2.1.
 
 ## Minimum Setup
 
@@ -30,15 +30,25 @@ await using var client = new ObtraceClient(cfg);
 
 Three fields are required: `ApiKey`, `IngestBaseUrl`, and `ServiceName`. Everything else has defaults. The `await using` pattern calls `ShutdownAsync` at the end of scope, flushing any buffered telemetry.
 
-## What's Auto-Captured
+## What's Captured Automatically
 
-Nothing. The .NET SDK has no auto-instrumentation. There are no diagnostic listeners, no HTTP handler wrappers, and no background collectors.
+After creating an `ObtraceClient`, the SDK intercepts `Console` output. You don't need to write any extra code for this:
 
-You control exactly what gets sent. Every log, metric, and span requires an explicit call.
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **Console.WriteLine()** | `Console.Out` writes are intercepted and sent as `info` logs | `info: "Processing order batch 42"` |
+| **Console.Error.WriteLine()** | `Console.Error` writes are intercepted and sent as `error` logs | `error: "Failed to connect to database"` |
+| **Shutdown flush** | `IAsyncDisposable` flushes remaining data on dispose | Ensures no data is lost on clean shutdown |
 
-The `IAsyncDisposable` implementation flushes remaining data on dispose, but you must call `await using` or `ShutdownAsync` yourself.
+To disable console auto-capture, set `AutoCaptureConsole = false` in your config.
 
-## Logging
+There are no diagnostic listeners, no HTTP handler wrappers, and no background collectors beyond console interception. Use the ASP.NET Core middleware (see [Framework Integration](#framework-integration)) or the explicit APIs below for HTTP spans and business telemetry.
+
+## Optional: Custom Telemetry
+
+The automatic console capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+
+### Logging
 
 Use `client.Log()` for structured events that represent something that happened. Logs are best for state transitions, errors, and audit trails.
 
@@ -67,7 +77,7 @@ client.Log("warn", "inventory.low", new Dictionary<string, object?>
 
 Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
 
-## Metrics
+### Metrics
 
 Use `client.Metric()` for numerical measurements you want to track over time. Metrics are best for gauges, counters, and percentiles.
 
@@ -93,7 +103,7 @@ client.Metric("db.pool.active_connections", 14, "1");
 
 The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
 
-## Tracing / Spans
+### Tracing / Spans
 
 Use `client.Span()` for operations with duration that you want to visualize in a trace waterfall. Spans are best for database queries, HTTP calls, queue processing, and any work that takes measurable time.
 

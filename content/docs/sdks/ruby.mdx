@@ -1,6 +1,6 @@
 ---
 title: Ruby SDK
-description: Manual instrumentation for Ruby services using obtrace-sdk-ruby
+description: Plug-and-play observability for Ruby services — exceptions captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -15,7 +15,7 @@ Or add to your Gemfile:
 gem "obtrace-sdk-ruby"
 ```
 
-Requires Ruby 3.0+. The gem ships no auto-instrumentation monkey-patches or middleware. All telemetry is sent through explicit calls.
+Requires Ruby 3.0+.
 
 ## Minimum Setup
 
@@ -33,13 +33,23 @@ OBTRACE = ObtraceSDK::Client.new(cfg)
 
 Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
 
-## What's Auto-Captured
+## What's Captured Automatically
 
-The SDK registers an `at_exit` hook that flushes buffered telemetry when the Ruby process exits. This covers normal termination and most signal-based shutdowns.
+After creating an `ObtraceSDK::Client`, the SDK hooks into Ruby's exception system and registers an exit handler. You don't need to write any extra code for this:
 
-Beyond the exit flush, nothing is auto-captured. There are no Rack middleware injections, no ActiveSupport notifications subscriptions, and no monkey-patches. You control exactly what gets sent.
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **All raised exceptions** | `TracePoint(:raise)` intercepts every `raise` and sends it as an `error` log | `error: "ActiveRecord::RecordNotFound: Couldn't find Order with id=42"` |
+| **Unhandled fatal exceptions** | Fatal exceptions that reach the top of the stack are captured at process exit | `fatal: "NoMemoryError: failed to allocate memory"` |
+| **Shutdown flush** | `at_exit` flushes buffered telemetry on process exit, covering normal termination and most signal-based shutdowns | Ensures no data is lost |
 
-## Logging
+There are no Rack middleware injections, no ActiveSupport notification subscriptions, and no monkey-patches beyond exception tracing. Use the Rails/Rack middleware (see [Framework Integration](#framework-integration)) for HTTP spans, and the explicit APIs below for business telemetry.
+
+## Optional: Custom Telemetry
+
+The automatic exception capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+
+### Logging
 
 Use `client.log` for structured events. Logs are best for state transitions, errors, and audit trails.
 
@@ -65,7 +75,7 @@ OBTRACE.log("warn", "inventory.low",
 
 Levels: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
 
-## Metrics
+### Metrics
 
 Use `client.metric` for numerical measurements you want to track over time.
 
@@ -88,7 +98,7 @@ OBTRACE.metric("db.pool.active_connections", 14, "1")
 
 The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values.
 
-## Tracing / Spans
+### Tracing / Spans
 
 Use `client.span` for operations with duration. Spans appear in the trace waterfall and are best for database queries, HTTP calls, and queue processing.
 

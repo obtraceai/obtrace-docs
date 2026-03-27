@@ -1,6 +1,6 @@
 ---
 title: Go SDK
-description: Manual instrumentation for Go services — logs, metrics, and traces sent to Obtrace via OTLP.
+description: Plug-and-play observability for Go services — stdlib logs captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -38,13 +38,28 @@ func main() {
 
 Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `ServiceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
 
-## What You Get Out of the Box
+## What's Captured Automatically
 
-Nothing. The Go SDK has zero auto-instrumentation. It does not capture HTTP requests, goroutine stats, runtime metrics, or anything else automatically.
+After `ob.NewClient()`, the SDK intercepts Go's standard library `log` package. You don't need to write any extra code for this:
 
-If you create a client and never call `Log`, `Metric`, or `Span`, no telemetry reaches Obtrace. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden overhead.
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **All stdlib log output** | `log.Println()`, `log.Printf()`, `log.Fatalf()` etc. are intercepted and sent as structured logs | `info: "Listening on :8080"` |
 
-## Logging
+Go does not support monkey-patching, so HTTP requests, goroutines, and runtime metrics are **not** auto-instrumented. Use the `net/http` middleware (see [Framework Integration](#framework-integration)) for HTTP spans, and the explicit APIs below for everything else.
+
+### What's NOT auto-captured
+
+- HTTP requests (use middleware instead)
+- Goroutine stats or runtime metrics
+- Database queries
+- Outbound HTTP calls
+
+## Optional: Custom Telemetry
+
+The automatic log capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+
+### Logging
 
 Use `client.Log(level, message, ctx)` to record events you need to search for later. Good candidates:
 
@@ -73,7 +88,7 @@ The `level` parameter accepts standard syslog levels: `DEBUG`, `INFO`, `WARN`, `
 
 The `ctx` parameter is optional. When provided, it attaches structured attributes to the log entry. Use `Attrs` for custom key-value pairs, and the built-in fields (`TraceID`, `SpanID`, `Method`, `Endpoint`, `StatusCode`) to correlate logs with traces.
 
-## Metrics
+### Metrics
 
 Use `client.Metric(name, value, unit, ctx)` to record measurements you want to graph or alert on. Good candidates:
 
@@ -95,7 +110,7 @@ client.Metric("queue.depth", float64(len(workQueue)), "1", nil)
 
 The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values (counts, ratios), or a currency code.
 
-## Tracing / Spans
+### Tracing / Spans
 
 Use `client.Span(...)` to track a unit of work and its duration. Returns `(traceID, spanID)` so you can propagate context to downstream services. Good candidates:
 

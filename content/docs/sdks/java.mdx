@@ -1,6 +1,6 @@
 ---
 title: Java SDK
-description: Manual instrumentation for JVM services — logs, metrics, and traces sent to Obtrace via OTLP.
+description: Plug-and-play observability for JVM services — java.util.logging captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -48,13 +48,22 @@ Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `servic
 
 `ObtraceClient` implements `AutoCloseable`, so use try-with-resources to ensure the internal executor shuts down cleanly. The default config also registers a JVM shutdown hook that calls `flush()` before exit. Disable it with `cfg.registerShutdownHook = false` if you manage lifecycle yourself.
 
-## What You Get Out of the Box
+## What's Captured Automatically
 
-Almost nothing. The Java SDK does not auto-instrument HTTP servlets, JDBC queries, thread pools, or JMX metrics. The only automatic behavior is the shutdown hook (enabled by default) that flushes pending telemetry when the JVM exits.
+After creating an `ObtraceClient`, the SDK intercepts `java.util.logging` and registers a shutdown hook. You don't need to write any extra code for this:
 
-If you create a client and never call `log`, `metric`, or `span`, no telemetry reaches Obtrace beyond the shutdown hook firing on an empty queue. Every signal requires an explicit call. This is by design: you control exactly what gets sent, with no hidden bytecode manipulation or agent overhead.
+| What | How | Example in Obtrace UI |
+|------|-----|----------------------|
+| **All java.util.logging output** | JUL log records are intercepted and mapped to Obtrace levels: `FINE` -> `debug`, `INFO` -> `info`, `WARNING` -> `warn`, `SEVERE` -> `error` | `warn: "Connection pool exhausted"` |
+| **Shutdown flush** | A JVM shutdown hook flushes pending telemetry before exit (disable with `cfg.registerShutdownHook = false`) | Ensures no data is lost on clean shutdown |
 
-## Logging
+There is no bytecode manipulation, no Java agent, and no hidden overhead. HTTP servlets, JDBC queries, thread pools, and JMX metrics are **not** auto-instrumented. Use the Spring Boot integration (see [Framework Integration](#framework-integration)) or the explicit APIs below for those.
+
+## Optional: Custom Telemetry
+
+The automatic log capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+
+### Logging
 
 Use `client.log(level, message, ctx)` to record events you need to search for later. Good candidates:
 
@@ -79,7 +88,7 @@ The `level` parameter accepts: `debug`, `info`, `warn`, `error`, `fatal`. Messag
 
 The `ctx` parameter is optional (pass `null` to skip). When provided, it attaches structured attributes to the log entry. Use `attrs` for custom key-value pairs, and the built-in fields (`traceId`, `spanId`, `method`, `endpoint`, `statusCode`) to correlate logs with traces.
 
-## Metrics
+### Metrics
 
 Use `client.metric(name, value, unit, ctx)` to record measurements you want to graph or alert on. Good candidates:
 
@@ -101,7 +110,7 @@ client.metric("queue.depth", workQueue.size(), "1", null);
 
 The `unit` parameter follows OTLP conventions: `"ms"` for milliseconds, `"By"` for bytes, `"1"` for dimensionless values (counts, ratios), or a currency code.
 
-## Tracing / Spans
+### Tracing / Spans
 
 Use `client.span(...)` to track a unit of work and its duration. Returns a `String[]` of `{traceId, spanId}` so you can propagate context to downstream services. Good candidates:
 
