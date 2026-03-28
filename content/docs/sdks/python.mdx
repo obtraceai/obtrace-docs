@@ -5,15 +5,15 @@ description: Full observability for Python — databases, HTTP, frameworks, mess
 
 ## Built on OpenTelemetry
 
-The Python SDK is a thin wrapper that configures OpenTelemetry with the Obtrace ingest endpoint. Installing it with the `[auto]` extra gives you every OTel auto-instrumentation for Python with zero extra code.
+The Python SDK is a thin wrapper that configures OpenTelemetry with the Obtrace ingest endpoint. It includes every OTel auto-instrumentation for Python with zero extra code.
 
 ## Installation
 
 ```bash
-pip install obtrace-sdk-python[auto]
+pip install obtrace-sdk-python
 ```
 
-The `[auto]` extra installs all available OpenTelemetry instrumentations. Use `pip install obtrace-sdk-python` for the base package without auto-instrumentations.
+All OpenTelemetry auto-instrumentations are included by default.
 
 ## Setup
 
@@ -32,7 +32,7 @@ Import this module early in your app. That's it.
 
 ## What's Captured Automatically
 
-With `obtrace-sdk-python[auto]`, the SDK enables all available OpenTelemetry instrumentations for your installed packages:
+With `obtrace-sdk-python`, the SDK enables all available OpenTelemetry instrumentations for your installed packages:
 
 | What | How | Needs code? |
 |------|-----|-------------|
@@ -63,7 +63,7 @@ client = ObtraceClient(ObtraceConfig(
 
 ### FastAPI / Flask Middleware
 
-With `obtrace-sdk-python[auto]`, inbound HTTP instrumentation is automatic via OpenTelemetry. No middleware registration is needed for Django, Flask, or FastAPI.
+With `obtrace-sdk-python`, inbound HTTP instrumentation is automatic via OpenTelemetry. No middleware registration is needed for Django, Flask, or FastAPI.
 
 The explicit middleware still works if you prefer manual control:
 
@@ -257,7 +257,7 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] No `401` or `403` errors appear during OTLP submission (check with `debug=True`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
 - [ ] Outbound HTTP calls show auto-generated spans (or use `inject_propagation` manually if auto HTTP is disabled)
-- [ ] Database queries (psycopg2, sqlalchemy, etc.) show auto-generated spans when using `obtrace-sdk-python[auto]`
+- [ ] Database queries (psycopg2, sqlalchemy, etc.) show auto-generated spans when using `obtrace-sdk-python`
 - [ ] FastAPI/Flask/Django requests are auto-instrumented via OTel (explicit middleware is optional)
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

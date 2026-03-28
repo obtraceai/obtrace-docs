@@ -148,7 +148,7 @@ OpenTelemetry Foundation:
 Auto-instrumentation coverage by language (via OpenTelemetry):
 - Node.js/Bun: pg, mysql2, mongodb, ioredis, redis, express, fastify, nestjs, koa, hapi, pino, winston, bunyan, grpc, amqplib, kafkajs, dns, net, http/https, fetch, graphql, and 40+ more
 - Browser: fetch, XMLHttpRequest, document-load, user-interaction (via @opentelemetry/sdk-trace-web). Session replay remains obtrace-specific.
-- Python: requests, httpx, urllib3, django, flask, fastapi, psycopg2, asyncpg, redis, sqlalchemy, celery, grpc, aiohttp, boto3, pymongo, and more (install with `pip install obtrace-sdk-python[auto]`)
+- Python: requests, httpx, urllib3, django, flask, fastapi, psycopg2, asyncpg, redis, sqlalchemy, celery, grpc, aiohttp, boto3, pymongo, and more (included by default with `pip install obtrace-sdk-python`)
 - Go: net/http via otelhttp, database/sql via otelsql, gRPC via otelgrpc; contrib packages for gin, echo, chi, mux, fiber
 - Java: Spring Boot (full auto-instrumentation via starter), java.net.http, JDBC, Hibernate, gRPC, Kafka, RabbitMQ, Lettuce/Jedis (Redis), Logback, Log4j2
 - .NET: HttpClient via OpenTelemetry.Instrumentation.Http, ASP.NET Core via OpenTelemetry.Instrumentation.AspNetCore, SqlClient, EntityFramework, GrpcNetClient, StackExchangeRedis
