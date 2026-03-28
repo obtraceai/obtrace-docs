@@ -1,6 +1,6 @@
 ---
 title: Ruby SDK
-description: Plug-and-play observability for Ruby services — exceptions, outbound HTTP, and Logger output captured automatically, with explicit APIs for metrics and traces.
+description: Full observability for Ruby services — HTTP, databases, queues, and logging captured automatically via OpenTelemetry
 ---
 
 ## Installation
@@ -31,15 +31,25 @@ OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
 
 Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
 
+## Built on OpenTelemetry
+
+The Ruby SDK uses `opentelemetry-sdk` with auto-detection of installed instrumentations. When you initialize the client, it scans for installed OTel instrumentation gems and enables them automatically. The Rails Railtie auto-configures the full OTel pipeline including resource attributes and the OTLP exporter pointed at your Obtrace ingest endpoint.
+
 ## What's Captured Automatically
 
-After creating an `ObtraceSDK::Client`, the SDK hooks into Ruby's exception system, patches `Net::HTTP`, captures Logger output, and registers an exit handler. You don't need to write any extra code for this:
+After creating an `ObtraceSDK::Client`, the SDK configures OpenTelemetry and enables all detected instrumentations. You don't need to write any extra code for this:
 
 | What | How | Needs code? |
 |------|-----|-------------|
 | **All raised exceptions** | `TracePoint(:raise)` intercepts every `raise` and sends it as an `error` log | No |
 | **Unhandled fatal exceptions** | Fatal exceptions that reach the top of the stack are captured at process exit | No |
-| **Outbound HTTP (Net::HTTP)** | `Net::HTTP` is patched to emit spans with method, URL, status, and duration, plus `traceparent` header injection | No |
+| **Outbound HTTP** | `Net::HTTP` and `Faraday` instrumented via OTel with spans and `traceparent` injection | No |
+| **Inbound HTTP** | `rack`, `rails`, `sinatra` requests instrumented via OTel | No |
+| **Databases** | `pg`, `mysql2` queries instrumented with spans when OTel gems are installed | No |
+| **Redis** | `redis` gem operations instrumented via OTel | No |
+| **Sidekiq** | Job execution instrumented with spans via OTel | No |
+| **gRPC** | Client and server calls instrumented via OTel | No |
+| **RabbitMQ** | `bunny` gem operations instrumented via OTel | No |
 | **Logger output** | `Logger` instances are intercepted and forwarded as structured logs with level mapping | No |
 | **Shutdown flush** | `at_exit` flushes buffered telemetry on process exit | No |
 
@@ -161,7 +171,7 @@ OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 OBTRACE_SERVICE_NAME=order-api
 ```
 
-The Railtie auto-initializes `ObtraceSDK::Client`, registers Rack middleware for request instrumentation, and wires up shutdown flushing. No initializer file needed.
+The Railtie auto-initializes `ObtraceSDK::Client`, configures OpenTelemetry with the OTLP exporter, enables all detected OTel instrumentations (ActiveRecord, ActionPack, Rack, Net::HTTP, Faraday, Redis, Sidekiq, pg, mysql2, etc.), registers Rack middleware for request instrumentation, and wires up shutdown flushing. No initializer file needed.
 
 To access the client instance:
 

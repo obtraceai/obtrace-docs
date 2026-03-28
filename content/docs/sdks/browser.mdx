@@ -1,6 +1,6 @@
 ---
 title: Browser SDK
-description: Frontend telemetry with session replay, Web Vitals, and error capture
+description: Frontend telemetry with session replay, Web Vitals, and error capture — powered by OpenTelemetry sdk-trace-web
 ---
 
 ## Installation
@@ -8,6 +8,12 @@ description: Frontend telemetry with session replay, Web Vitals, and error captu
 ```bash
 npm install @obtrace/sdk-browser
 ```
+
+## Built on OpenTelemetry
+
+The Browser SDK uses `@opentelemetry/sdk-trace-web` under the hood to instrument `fetch`, `XMLHttpRequest`, document loads, and user interactions. This gives you distributed tracing from the browser to your backend services with W3C trace context propagation.
+
+Session replay, Web Vitals collection, and console capture remain obtrace-specific features layered on top of the OTel foundation.
 
 ## Zero-Config Setup (Recommended)
 
@@ -96,7 +102,19 @@ Import `ob` wherever you need it. Initialize once at app startup, before any use
 
 ## What Gets Captured Automatically
 
-After calling `initBrowserSDK`, the SDK installs several hooks with zero additional code from you:
+After calling `initBrowserSDK`, the SDK enables OpenTelemetry browser instrumentations and installs obtrace-specific hooks with zero additional code from you:
+
+| What | How | Needs code? |
+|------|-----|-------------|
+| **Fetch requests** | OTel `fetch` instrumentation with spans, status, and trace propagation | No |
+| **XMLHttpRequest** | OTel `XMLHttpRequest` instrumentation for legacy AJAX calls | No |
+| **Document load** | OTel `document-load` instrumentation captures page load performance | No |
+| **User interactions** | OTel `user-interaction` instrumentation tracks clicks and other events | No |
+| **Web Vitals** | FCP, LCP, CLS, INP, TTFB measured via PerformanceObserver | No |
+| **Console output** | `console.*` calls intercepted and forwarded as logs | No |
+| **Errors** | `window.onerror` and unhandled promise rejections captured | No |
+| **Session replay** | DOM mutations, mouse movements, scrolls, and inputs recorded (obtrace-specific) | No |
+| **Navigation** | Route changes via pushState/replaceState/popstate captured | No |
 
 ### Web Vitals
 

@@ -1,7 +1,11 @@
 ---
 title: Go SDK
-description: Plug-and-play observability for Go services — stdlib logs and outbound HTTP captured automatically, with explicit APIs for metrics and traces.
+description: Full observability for Go services — HTTP, databases, gRPC, and logging captured automatically via OpenTelemetry
 ---
+
+## Built on OpenTelemetry
+
+The Go SDK is a thin wrapper that configures OpenTelemetry with the Obtrace ingest endpoint. It uses OTel contrib packages (`otelhttp`, `otelsql`, `otelgrpc`) to instrument your application. You get automatic spans for HTTP, database, and gRPC operations out of the box.
 
 ## Installation
 
@@ -35,14 +39,19 @@ Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `Servic
 
 ## What's Captured Automatically
 
-After `ob.NewClient()`, the SDK intercepts Go's standard library `log` package and patches `http.DefaultTransport` to instrument outbound HTTP calls. You don't need to write any extra code for this:
+After `ob.NewClient()`, the SDK configures OpenTelemetry and instruments Go's standard library and common packages. You don't need to write any extra code for this:
 
 | What | How | Needs code? |
 |------|-----|-------------|
 | **All stdlib log output** | `log.Println()`, `log.Printf()`, `log.Fatalf()` etc. are intercepted and sent as structured logs | No |
-| **Outbound HTTP calls** | `http.DefaultTransport` is wrapped to emit spans with method, URL, status, and duration, and inject `traceparent` headers | No |
+| **Outbound HTTP calls** | `http.DefaultTransport` is wrapped via `otelhttp` to emit spans with method, URL, status, and duration, and inject `traceparent` headers | No |
+| **Inbound HTTP** | Use `otelhttp.NewHandler()` or framework-specific contrib middleware (gin, echo, chi, mux, fiber) | Wrap handler |
+| **database/sql** | Use `otelsql` to wrap your database driver for automatic query spans | Wrap driver |
+| **gRPC** | Use `otelgrpc` interceptors for automatic client and server spans | Add interceptor |
 
 Every `http.Get()`, `http.Post()`, or request made through `http.DefaultClient` is automatically traced. Trace context is propagated to downstream services via the `traceparent` header.
+
+OTel contrib packages for Go require explicit wiring (unlike dynamic languages), but the SDK pre-configures the OTel exporter and resource so you only need to add the middleware or wrapper.
 
 ### Opting Out of Auto HTTP Instrumentation
 
@@ -54,12 +63,6 @@ client := ob.NewClient(ob.Config{
 	DisableAutoHTTP: true,
 })
 ```
-
-### What's NOT auto-captured
-
-- Goroutine stats or runtime metrics
-- Database queries
-- Custom HTTP clients that use a non-default `Transport`
 
 ## Optional: Custom Telemetry
 
@@ -156,7 +159,7 @@ resp, err := customClient.Do(req)
 
 ### net/http Middleware
 
-The SDK includes middleware for `net/http` that automatically creates a span and log entry for each inbound request:
+The SDK includes middleware for `net/http` that uses `otelhttp` under the hood to create a span and log entry for each inbound request:
 
 ```go title="main.go"
 package main
@@ -192,7 +195,7 @@ func handleCheckout(w http.ResponseWriter, r *http.Request) {
 
 The middleware emits one span (`http.server METHOD`) and one log (`http request done`) per request, with method, route, status code, and duration attached.
 
-Gin and Echo middleware are also available under `middleware/gin` and `middleware/echo`.
+Gin, Echo, Chi, Gorilla Mux, and Fiber middleware are also available under `middleware/gin`, `middleware/echo`, `middleware/chi`, `middleware/mux`, and `middleware/fiber`. These use the corresponding OTel contrib packages internally.
 
 ## Configuration Reference
 
@@ -224,7 +227,9 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] `client.Flush()` or `client.Shutdown()` is called before process exit (use `defer`)
 - [ ] No `401` or `403` errors appear in logs during OTLP submission (check with `Debug: true`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
-- [ ] Outbound HTTP calls via `http.DefaultTransport` show auto-generated spans
+- [ ] Outbound HTTP calls via `http.DefaultTransport` show auto-generated spans (powered by `otelhttp`)
 - [ ] Custom HTTP clients with non-default transports use `InjectPropagation` manually
+- [ ] Database queries via `database/sql` show spans when using `otelsql` driver wrapper
+- [ ] gRPC calls show spans when using `otelgrpc` interceptors
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

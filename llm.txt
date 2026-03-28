@@ -139,6 +139,22 @@ Comparisons:
 - https://docs.obtrace.ai/docs/comparisons/vs-dynatrace
 - https://docs.obtrace.ai/docs/comparisons/vs-sentry
 
+OpenTelemetry Foundation:
+- All obtrace SDKs are built on OpenTelemetry (OTel). Installing any SDK automatically configures OTel with the Obtrace ingest endpoint.
+- Users get ALL OTel auto-instrumentations for their language with zero extra code.
+- The SDK is a thin wrapper: it configures OTel exporters, resource attributes, and propagation, then enables every available instrumentation.
+- Install the SDK, set 3 env vars (OBTRACE_API_KEY, OBTRACE_INGEST_BASE_URL, OBTRACE_SERVICE_NAME), and you get full observability: databases, HTTP, gRPC, messaging, logging, and more.
+
+Auto-instrumentation coverage by language (via OpenTelemetry):
+- Node.js/Bun: pg, mysql2, mongodb, ioredis, redis, express, fastify, nestjs, koa, hapi, pino, winston, bunyan, grpc, amqplib, kafkajs, dns, net, http/https, fetch, graphql, and 40+ more
+- Browser: fetch, XMLHttpRequest, document-load, user-interaction (via @opentelemetry/sdk-trace-web). Session replay remains obtrace-specific.
+- Python: requests, httpx, urllib3, django, flask, fastapi, psycopg2, asyncpg, redis, sqlalchemy, celery, grpc, aiohttp, boto3, pymongo, and more (install with `pip install obtrace-sdk-python[auto]`)
+- Go: net/http via otelhttp, database/sql via otelsql, gRPC via otelgrpc; contrib packages for gin, echo, chi, mux, fiber
+- Java: Spring Boot (full auto-instrumentation via starter), java.net.http, JDBC, Hibernate, gRPC, Kafka, RabbitMQ, Lettuce/Jedis (Redis), Logback, Log4j2
+- .NET: HttpClient via OpenTelemetry.Instrumentation.Http, ASP.NET Core via OpenTelemetry.Instrumentation.AspNetCore, SqlClient, EntityFramework, GrpcNetClient, StackExchangeRedis
+- PHP: curl, Guzzle via open-telemetry/sdk, PDO, Laravel auto-detection, Symfony
+- Ruby: Net::HTTP, Faraday, pg, mysql2, redis, sidekiq, rack, rails, sinatra, bunny, grpc via opentelemetry-sdk with auto-detection of installed instrumentations
+
 SDK install commands (all repos under github.com/obtraceai/):
 - JS: npm install @obtrace/sdk-js (npmjs.com, v1.0.2, ESM+CJS)
 - Browser: npm install @obtrace/sdk-browser (npmjs.com, v1.0.1)
@@ -178,18 +194,18 @@ Minimum SDK setup patterns (absolute minimum code per language):
 - Ruby: `OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(api_key: ..., ingest_base_url: ..., service_name: ...))`
 - Ruby (Rails): Add `gem "obtrace-sdk-ruby"` to Gemfile + set env vars (Railtie auto-initializes)
 
-Auto-instrumentation coverage by SDK:
+Auto-instrumentation coverage by SDK (all powered by OpenTelemetry):
 
-| SDK | Console/Logging | Inbound HTTP | Outbound HTTP | Errors/Exceptions | Trace Propagation | Shutdown Flush |
-|-----|----------------|--------------|---------------|-------------------|-------------------|----------------|
-| Node/Bun | console.* | http.createServer (all frameworks) | globalThis.fetch | uncaughtException, unhandledRejection | traceparent inject+read | SIGTERM handler |
-| Browser | console.* | N/A | window.fetch | window.onerror, onunhandledrejection | traceparent inject | beforeunload |
-| Python | logging.* | No (use middleware) | requests, httpx (auto-patched) | No (use middleware) | traceparent inject on outbound | atexit |
-| Go | log.* | No (use middleware) | http.DefaultTransport (auto-wrapped) | No | traceparent inject on outbound | defer Shutdown |
-| Java | java.util.logging | No (use Spring filter) | getHttpClient() instrumented client | No | traceparent inject via getHttpClient | JVM shutdown hook |
-| .NET | Console.Out/Error | No (use AddObtrace middleware) | HttpClient (auto-instrumented) | No | traceparent inject on outbound | IAsyncDisposable |
-| PHP | No | No (use middleware) | cURL, Guzzle (auto-instrumented) | set_error_handler, set_exception_handler | traceparent inject on outbound | register_shutdown_function |
-| Ruby | Logger instances | No (use Rack middleware) | Net::HTTP (auto-patched) | TracePoint(:raise), at_exit for fatal | traceparent inject on outbound | at_exit |
+| SDK | Console/Logging | Inbound HTTP | Outbound HTTP | Databases | gRPC | Messaging | Errors/Exceptions | Trace Propagation | Shutdown Flush |
+|-----|----------------|--------------|---------------|-----------|------|-----------|-------------------|-------------------|----------------|
+| Node/Bun | console.*, pino, winston, bunyan | All frameworks via OTel http instrumentation | fetch, http/https | pg, mysql2, mongodb, ioredis, redis | grpc | amqplib, kafkajs | uncaughtException, unhandledRejection | W3C traceparent | SIGTERM handler |
+| Browser | console.* | N/A | fetch, XHR via OTel sdk-trace-web | N/A | N/A | N/A | window.onerror, onunhandledrejection | traceparent inject | beforeunload |
+| Python | logging.* | django, flask, fastapi via OTel | requests, httpx, urllib3, aiohttp | psycopg2, asyncpg, sqlalchemy, pymongo | grpc | celery, boto3 | No (use middleware) | traceparent inject | atexit |
+| Go | log.* | net/http via otelhttp | otelhttp | otelsql (database/sql) | otelgrpc | N/A | No | traceparent inject | defer Shutdown |
+| Java | JUL, Logback, Log4j2 | Spring Boot auto-instrumented | java.net.http | JDBC, Hibernate, Lettuce, Jedis | grpc | Kafka, RabbitMQ | No | traceparent inject | JVM shutdown hook |
+| .NET | Console.Out/Error | ASP.NET Core via OTel | HttpClient via OTel | SqlClient, EntityFramework | GrpcNetClient | N/A | No | traceparent inject | IAsyncDisposable |
+| PHP | No | Laravel, Symfony via OTel | cURL, Guzzle | PDO | N/A | N/A | set_error_handler, set_exception_handler | traceparent inject | register_shutdown_function |
+| Ruby | Logger instances | rack, rails, sinatra via OTel | Net::HTTP, Faraday | pg, mysql2, redis | grpc | sidekiq, bunny | TracePoint(:raise), at_exit for fatal | traceparent inject | at_exit |
 
 Opt-out flags for auto-instrumentation:
 - Python: `auto_instrument_http=False` in ObtraceConfig

@@ -1,6 +1,6 @@
 ---
 title: .NET SDK
-description: Plug-and-play observability for .NET services — Console output and outbound HTTP captured automatically, with explicit APIs for metrics and traces.
+description: Full observability for .NET services — HTTP, databases, gRPC, and logging captured automatically via OpenTelemetry
 ---
 
 ## Installation
@@ -26,15 +26,23 @@ var client = new ObtraceClient(new ObtraceConfig
 
 Three fields are required: `ApiKey`, `IngestBaseUrl`, and `ServiceName`. Everything else has defaults.
 
+## Built on OpenTelemetry
+
+The .NET SDK uses `OpenTelemetry.Instrumentation.Http` and `OpenTelemetry.Instrumentation.AspNetCore` under the hood. The `AddObtrace()` extension method configures everything via the standard .NET dependency injection system, including OTel exporters, resource attributes, and all available instrumentations.
+
 ## What's Captured Automatically
 
-After creating an `ObtraceClient`, the SDK intercepts `Console` output and outbound `HttpClient` calls. You don't need to write any extra code for this:
+After creating an `ObtraceClient`, the SDK configures OpenTelemetry and instruments your application. You don't need to write any extra code for this:
 
 | What | How | Needs code? |
 |------|-----|-------------|
 | **Console.WriteLine()** | `Console.Out` writes are intercepted and sent as `info` logs | No |
 | **Console.Error.WriteLine()** | `Console.Error` writes are intercepted and sent as `error` logs | No |
-| **Outbound HttpClient calls** | `HttpClient` requests are instrumented with spans containing method, URL, status, and duration, plus `traceparent` header injection | No |
+| **Outbound HttpClient calls** | `HttpClient` instrumented via `OpenTelemetry.Instrumentation.Http` with spans and `traceparent` injection | No |
+| **Inbound ASP.NET Core requests** | Instrumented via `OpenTelemetry.Instrumentation.AspNetCore` when using `AddObtrace()` | No |
+| **SQL Server / EF Core** | `SqlClient` and Entity Framework instrumented via OTel when packages are installed | No |
+| **gRPC** | `Grpc.Net.Client` instrumented via `OpenTelemetry.Instrumentation.GrpcNetClient` | No |
+| **Redis** | `StackExchange.Redis` instrumented via OTel when the instrumentation package is installed | No |
 | **Shutdown flush** | `IAsyncDisposable` flushes remaining data on dispose | No |
 
 Console auto-capture is enabled by default (`AutoCaptureConsole = true`). Set `AutoCaptureConsole = false` to disable it.
@@ -85,7 +93,7 @@ app.MapGet("/api/orders/{id}", (string id, ObtraceClient client) =>
 app.Run();
 ```
 
-`AddObtrace()` registers `ObtraceClient` as a singleton, adds request instrumentation middleware, and hooks into `ApplicationStopping` to flush on shutdown.
+`AddObtrace()` configures OpenTelemetry via the .NET DI system: it registers the OTLP exporter, adds `OpenTelemetry.Instrumentation.AspNetCore` for inbound request spans, adds `OpenTelemetry.Instrumentation.Http` for outbound HttpClient spans, registers `ObtraceClient` as a singleton, and hooks into `ApplicationStopping` to flush on shutdown. If you have `OpenTelemetry.Instrumentation.SqlClient`, `OpenTelemetry.Instrumentation.EntityFrameworkCore`, `OpenTelemetry.Instrumentation.GrpcNetClient`, or `OpenTelemetry.Instrumentation.StackExchangeRedis` packages installed, they are also configured automatically.
 
 ## Optional: Custom Telemetry
 

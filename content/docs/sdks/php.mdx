@@ -1,6 +1,6 @@
 ---
 title: PHP SDK
-description: Plug-and-play observability for PHP services — errors, exceptions, and outbound HTTP captured automatically, with explicit APIs for metrics and traces.
+description: Full observability for PHP services — HTTP, databases, errors, and exceptions captured automatically via OpenTelemetry
 ---
 
 ## Installation
@@ -28,16 +28,22 @@ $client = new ObtraceClient(new ObtraceConfig(
 
 Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
 
+## Built on OpenTelemetry
+
+The PHP SDK uses `open-telemetry/sdk` under the hood to export telemetry to the Obtrace ingest endpoint. The OTel tracer is used for span creation and trace context propagation. Laravel middleware and Symfony event subscribers use the OTel tracer for request instrumentation.
+
 ## What's Captured Automatically
 
-After creating an `ObtraceClient`, the SDK registers error handlers, exception handlers, HTTP instrumentation, and a shutdown function. You don't need to write any extra code for this:
+After creating an `ObtraceClient`, the SDK configures OpenTelemetry and registers error handlers, HTTP instrumentation, and a shutdown function. You don't need to write any extra code for this:
 
 | What | How | Needs code? |
 |------|-----|-------------|
 | **PHP errors** | `set_error_handler` intercepts errors with level mapping: `E_NOTICE` -> `info`, `E_WARNING` -> `warn`, `E_ERROR` -> `error` | No |
 | **Uncaught exceptions** | `set_exception_handler` catches unhandled exceptions and logs them at `fatal` level | No |
-| **Outbound HTTP (cURL)** | `curl_exec` calls are instrumented with spans containing method, URL, status, and duration, plus `traceparent` header injection | No |
-| **Outbound HTTP (Guzzle)** | Guzzle middleware is auto-registered when Guzzle is detected, creating spans and injecting trace headers | No |
+| **Outbound HTTP (cURL)** | `curl_exec` calls are instrumented via OTel with spans containing method, URL, status, and duration, plus `traceparent` header injection | No |
+| **Outbound HTTP (Guzzle)** | Guzzle middleware is auto-registered via OTel when Guzzle is detected, creating spans and injecting trace headers | No |
+| **PDO database queries** | PDO operations are instrumented with spans when the OTel PDO instrumentation is installed | No |
+| **Laravel auto-detection** | Laravel requests, database queries, and queue jobs are instrumented when using the ServiceProvider | No |
 | **Shutdown flush** | `register_shutdown_function` flushes buffered telemetry when the PHP process exits | No |
 
 ### Opting Out of Auto HTTP Instrumentation

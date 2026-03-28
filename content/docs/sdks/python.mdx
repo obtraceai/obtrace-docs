@@ -1,13 +1,19 @@
 ---
 title: Python SDK
-description: Plug-and-play observability for Python — logging and outbound HTTP captured automatically, metrics and traces for what matters
+description: Full observability for Python — databases, HTTP, frameworks, messaging, and logging captured automatically via OpenTelemetry
 ---
+
+## Built on OpenTelemetry
+
+The Python SDK is a thin wrapper that configures OpenTelemetry with the Obtrace ingest endpoint. Installing it with the `[auto]` extra gives you every OTel auto-instrumentation for Python with zero extra code.
 
 ## Installation
 
 ```bash
-pip install obtrace-sdk-python
+pip install obtrace-sdk-python[auto]
 ```
+
+The `[auto]` extra installs all available OpenTelemetry instrumentations. Use `pip install obtrace-sdk-python` for the base package without auto-instrumentations.
 
 ## Setup
 
@@ -26,15 +32,23 @@ Import this module early in your app. That's it.
 
 ## What's Captured Automatically
 
+With `obtrace-sdk-python[auto]`, the SDK enables all available OpenTelemetry instrumentations for your installed packages:
+
 | What | How | Needs code? |
 |------|-----|-------------|
 | **All stdlib logging** | `logging.Handler` auto-installed on init | No |
-| **Outbound HTTP calls** | `requests` and `httpx` are patched with span creation and trace propagation | No |
+| **Outbound HTTP** | `requests`, `httpx`, `urllib3`, `aiohttp` instrumented via OTel | No |
+| **Inbound HTTP** | `django`, `flask`, `fastapi` instrumented via OTel (no middleware needed) | No |
+| **Databases** | `psycopg2`, `asyncpg`, `sqlalchemy`, `pymongo` instrumented when installed | No |
+| **Redis** | `redis-py` instrumented via OTel | No |
+| **Task queues** | `celery` tasks instrumented with spans | No |
+| **gRPC** | `grpcio` client and server calls instrumented | No |
+| **AWS** | `boto3` calls instrumented via OTel | No |
 | **Process shutdown flush** | `atexit` handler registered | No |
 
 Every `logging.info("...")`, `logging.warning("...")`, `logging.error("...")` in your application (and libraries) is captured and sent to Obtrace as structured logs.
 
-Every outbound call made through `requests.get()`, `requests.post()`, `httpx.get()`, `httpx.post()`, etc. is automatically wrapped with a span containing method, URL, status code, and duration. Trace context (`traceparent` header) is injected into outbound requests so downstream services can correlate traces.
+Outbound HTTP, database queries, cache operations, and task queue jobs are all automatically traced with method, URL/query, status, and duration. Trace context (`traceparent` header) is injected into outbound requests so downstream services can correlate traces.
 
 ### Opting Out of Auto HTTP Instrumentation
 
@@ -49,7 +63,9 @@ client = ObtraceClient(ObtraceConfig(
 
 ### FastAPI / Flask Middleware
 
-For inbound HTTP request spans, add the middleware:
+With `obtrace-sdk-python[auto]`, inbound HTTP instrumentation is automatic via OpenTelemetry. No middleware registration is needed for Django, Flask, or FastAPI.
+
+The explicit middleware still works if you prefer manual control:
 
 ```python title="main.py"
 from obtrace_sdk.http import fastapi_middleware
@@ -57,8 +73,6 @@ from obtrace_sdk.http import fastapi_middleware
 app = FastAPI()
 app.middleware("http")(fastapi_middleware(client))
 ```
-
-This auto-captures every inbound request as a span with method, path, status, and duration.
 
 ## Logging
 
@@ -243,6 +257,7 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] No `401` or `403` errors appear during OTLP submission (check with `debug=True`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
 - [ ] Outbound HTTP calls show auto-generated spans (or use `inject_propagation` manually if auto HTTP is disabled)
-- [ ] FastAPI/Flask middleware is registered if using those frameworks
+- [ ] Database queries (psycopg2, sqlalchemy, etc.) show auto-generated spans when using `obtrace-sdk-python[auto]`
+- [ ] FastAPI/Flask/Django requests are auto-instrumented via OTel (explicit middleware is optional)
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
