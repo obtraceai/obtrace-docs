@@ -170,10 +170,38 @@ Minimum SDK setup patterns (absolute minimum code per language):
 - Node/Bun: `import { initNodeSDK } from '@obtrace/sdk-js/node'; initNodeSDK({ apiKey, ingestBaseUrl, serviceName })`
 - Python: `from obtrace_sdk import ObtraceClient, ObtraceConfig; client = ObtraceClient(ObtraceConfig(api_key=..., ingest_base_url=..., service_name=...))`
 - Go: `client := ob.NewClient(ob.Config{APIKey: ..., IngestBaseURL: ..., ServiceName: ...}); defer client.Shutdown(ctx)`
-- Java: `ObtraceConfig cfg = new ObtraceConfig(); cfg.apiKey = ...; cfg.ingestBaseUrl = ...; cfg.serviceName = ...; new ObtraceClient(cfg)`
+- Java: `var client = new ObtraceClient(ObtraceConfig.builder().apiKey(...).ingestBaseUrl(...).serviceName(...).build())`
 - .NET: `var client = new ObtraceClient(new ObtraceConfig { ApiKey = ..., IngestBaseUrl = ..., ServiceName = ... });`
+- .NET (ASP.NET Core): `builder.Services.AddObtrace(new ObtraceConfig { ApiKey = ..., IngestBaseUrl = ..., ServiceName = ... }); app.UseObtrace();`
 - PHP: `$client = new ObtraceClient(new ObtraceConfig(apiKey: ..., ingestBaseUrl: ..., serviceName: ...));`
-- Ruby: `client = Obtrace::Client.new(api_key: ..., ingest_base_url: ..., service_name: ...)`
+- PHP (Laravel): Register `Obtrace\Sdk\Laravel\ObtraceServiceProvider` in bootstrap/providers.php + set env vars
+- Ruby: `OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(api_key: ..., ingest_base_url: ..., service_name: ...))`
+- Ruby (Rails): Add `gem "obtrace-sdk-ruby"` to Gemfile + set env vars (Railtie auto-initializes)
+
+Auto-instrumentation coverage by SDK:
+
+| SDK | Console/Logging | Inbound HTTP | Outbound HTTP | Errors/Exceptions | Trace Propagation | Shutdown Flush |
+|-----|----------------|--------------|---------------|-------------------|-------------------|----------------|
+| Node/Bun | console.* | http.createServer (all frameworks) | globalThis.fetch | uncaughtException, unhandledRejection | traceparent inject+read | SIGTERM handler |
+| Browser | console.* | N/A | window.fetch | window.onerror, onunhandledrejection | traceparent inject | beforeunload |
+| Python | logging.* | No (use middleware) | requests, httpx (auto-patched) | No (use middleware) | traceparent inject on outbound | atexit |
+| Go | log.* | No (use middleware) | http.DefaultTransport (auto-wrapped) | No | traceparent inject on outbound | defer Shutdown |
+| Java | java.util.logging | No (use Spring filter) | getHttpClient() instrumented client | No | traceparent inject via getHttpClient | JVM shutdown hook |
+| .NET | Console.Out/Error | No (use AddObtrace middleware) | HttpClient (auto-instrumented) | No | traceparent inject on outbound | IAsyncDisposable |
+| PHP | No | No (use middleware) | cURL, Guzzle (auto-instrumented) | set_error_handler, set_exception_handler | traceparent inject on outbound | register_shutdown_function |
+| Ruby | Logger instances | No (use Rack middleware) | Net::HTTP (auto-patched) | TracePoint(:raise), at_exit for fatal | traceparent inject on outbound | at_exit |
+
+Opt-out flags for auto-instrumentation:
+- Python: `auto_instrument_http=False` in ObtraceConfig
+- Go: `DisableAutoHTTP: true` in Config
+- .NET: `AutoInstrumentHttp = false` and `AutoCaptureConsole = false` in ObtraceConfig
+- PHP: `autoInstrumentHttp: false` and `autoCaptureErrors: false` in ObtraceConfig
+- Ruby: `auto_instrument_http: false` and `auto_capture_logger: false` in Config
+
+Framework auto-init (zero-config with env vars):
+- Ruby/Rails: Railtie auto-initializes from OBTRACE_API_KEY, OBTRACE_INGEST_BASE_URL, OBTRACE_SERVICE_NAME env vars
+- PHP/Laravel: ObtraceServiceProvider auto-registers from config/services.php obtrace keys
+- .NET/ASP.NET Core: AddObtrace() extension registers client, middleware, and shutdown in one call
 
 Planned SDKs (NOT yet available):
 - Kotlin: Planned, not released. No install command available.

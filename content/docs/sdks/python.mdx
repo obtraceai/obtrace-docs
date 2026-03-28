@@ -1,6 +1,6 @@
 ---
 title: Python SDK
-description: Plug-and-play observability for Python — logging captured automatically, metrics and traces for what matters
+description: Plug-and-play observability for Python — logging and outbound HTTP captured automatically, metrics and traces for what matters
 ---
 
 ## Installation
@@ -11,19 +11,15 @@ pip install obtrace-sdk-python
 
 ## Setup
 
-Create a client. Three fields. Logs are captured automatically.
-
 ```python title="obtrace_client.py"
-import os
 from obtrace_sdk import ObtraceClient, ObtraceConfig
+import os
 
-client = ObtraceClient(
-    ObtraceConfig(
-        api_key=os.getenv("OBTRACE_API_KEY"),
-        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-        service_name="checkout-api",
-    )
-)
+client = ObtraceClient(ObtraceConfig(
+    api_key=os.getenv("OBTRACE_API_KEY"),
+    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+    service_name="checkout-api",
+))
 ```
 
 Import this module early in your app. That's it.
@@ -32,23 +28,37 @@ Import this module early in your app. That's it.
 
 | What | How | Needs code? |
 |------|-----|-------------|
-| **All stdlib logging** | `logging.Handler` auto-installed on init — `logging.info()`, `logging.error()` etc. | No |
+| **All stdlib logging** | `logging.Handler` auto-installed on init | No |
+| **Outbound HTTP calls** | `requests` and `httpx` are patched with span creation and trace propagation | No |
 | **Process shutdown flush** | `atexit` handler registered | No |
 
 Every `logging.info("...")`, `logging.warning("...")`, `logging.error("...")` in your application (and libraries) is captured and sent to Obtrace as structured logs.
 
-### FastAPI / Flask Middleware
+Every outbound call made through `requests.get()`, `requests.post()`, `httpx.get()`, `httpx.post()`, etc. is automatically wrapped with a span containing method, URL, status code, and duration. Trace context (`traceparent` header) is injected into outbound requests so downstream services can correlate traces.
 
-For HTTP request spans, add the middleware:
+### Opting Out of Auto HTTP Instrumentation
 
-```python title="main.py"
-from obtrace_sdk.fastapi_middleware import fastapi_middleware
-
-app = FastAPI()
-fastapi_middleware(app, client)
+```python
+client = ObtraceClient(ObtraceConfig(
+    api_key=os.getenv("OBTRACE_API_KEY"),
+    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+    service_name="checkout-api",
+    auto_instrument_http=False,
+))
 ```
 
-This auto-captures every request as a span with method, path, status, and duration.
+### FastAPI / Flask Middleware
+
+For inbound HTTP request spans, add the middleware:
+
+```python title="main.py"
+from obtrace_sdk.http import fastapi_middleware
+
+app = FastAPI()
+app.middleware("http")(fastapi_middleware(client))
+```
+
+This auto-captures every inbound request as a span with method, path, status, and duration.
 
 ## Logging
 
@@ -127,11 +137,9 @@ Omit `trace_id` and `span_id` to auto-generate them. Pass an existing `trace_id`
 
 ### Propagating Trace Context
 
-When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+Trace context is injected automatically on outbound `requests` and `httpx` calls. For other HTTP clients, inject manually:
 
 ```python
-import requests
-
 trace = client.span("http.client GET /inventory", attrs={
     "http.method": "GET",
     "http.url": "https://inventory.internal/stock",
@@ -146,9 +154,7 @@ resp = requests.get("https://inventory.internal/stock", headers=headers)
 
 ## Framework Integration
 
-### FastAPI Middleware
-
-The SDK includes middleware for FastAPI that automatically creates a span and log entry for each request:
+### FastAPI
 
 ```python title="main.py"
 import os
@@ -157,13 +163,11 @@ from fastapi import FastAPI
 from obtrace_sdk import ObtraceClient, ObtraceConfig
 from obtrace_sdk.http import fastapi_middleware
 
-client = ObtraceClient(
-    ObtraceConfig(
-        api_key=os.getenv("OBTRACE_API_KEY"),
-        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
-        service_name="checkout-api",
-    )
-)
+client = ObtraceClient(ObtraceConfig(
+    api_key=os.getenv("OBTRACE_API_KEY"),
+    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+    service_name="checkout-api",
+))
 
 app = FastAPI()
 app.middleware("http")(fastapi_middleware(client))
@@ -174,7 +178,7 @@ async def checkout():
     return {"ok": True}
 ```
 
-The middleware emits one span (`http.server METHOD`) and one log per request, with method, route, status code, and duration attached. Your route handlers can add additional logs, metrics, and spans on top of what the middleware captures.
+The middleware emits one span (`http.server METHOD`) and one log per request, with method, route, status code, and duration attached.
 
 ### Flask
 
@@ -196,16 +200,18 @@ def after_request(response):
     return response
 ```
 
-### Outgoing HTTP (requests / httpx)
+### Django
 
-Wrap your HTTP client function to auto-instrument outgoing calls with spans and propagation:
+```python title="settings.py"
+MIDDLEWARE = [
+    "obtrace_sdk.django.ObtraceMiddleware",
+]
 
-```python
-import requests
-from obtrace_sdk.http import instrument_requests
-
-instrumented = instrument_requests(client, requests.request)
-resp = instrumented("GET", "https://api.example.com/data")
+OBTRACE = {
+    "API_KEY": os.getenv("OBTRACE_API_KEY"),
+    "INGEST_BASE_URL": os.getenv("OBTRACE_INGEST_BASE_URL"),
+    "SERVICE_NAME": "checkout-api",
+}
 ```
 
 ## Configuration Reference
@@ -220,6 +226,7 @@ resp = instrumented("GET", "https://api.example.com/data")
 | `project_id` | `str` | `None` | Scoped ingest identity. |
 | `app_id` | `str` | `None` | Scoped ingest identity. |
 | `env` | `str` | `None` | Environment name (`prod`, `staging`, `dev`). |
+| `auto_instrument_http` | `bool` | `True` | Patch `requests` and `httpx` with automatic spans and trace propagation. |
 | `request_timeout_sec` | `float` | `5.0` | HTTP timeout per OTLP request in seconds. |
 | `max_queue_size` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
 | `validate_semantic_metrics` | `bool` | `False` | When `True` + `debug`, warns on non-canonical metric names. |
@@ -235,7 +242,7 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] `client.flush()` is called before process exit, or you use the context manager
 - [ ] No `401` or `403` errors appear during OTLP submission (check with `debug=True`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
-- [ ] Outgoing HTTP calls use `inject_propagation` if the downstream service also reports to Obtrace
+- [ ] Outbound HTTP calls show auto-generated spans (or use `inject_propagation` manually if auto HTTP is disabled)
 - [ ] FastAPI/Flask middleware is registered if using those frameworks
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

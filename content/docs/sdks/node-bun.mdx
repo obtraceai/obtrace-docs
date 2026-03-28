@@ -1,6 +1,6 @@
 ---
 title: Node.js / Bun SDK
-description: Plug-and-play observability for Node.js and Bun — logs, traces, and errors captured automatically
+description: Plug-and-play observability for Node.js and Bun — logs, traces, HTTP, and errors captured automatically
 ---
 
 ## Installation
@@ -10,8 +10,6 @@ npm install @obtrace/sdk-js
 ```
 
 ## Setup
-
-One call. Three fields. Everything else is automatic.
 
 ```ts title="src/obtrace.ts"
 import { initNodeSDK } from "@obtrace/sdk-js/node";
@@ -29,14 +27,14 @@ Import this file early in your application entry point (e.g. top of `src/index.t
 
 After `initNodeSDK()`, the SDK instruments your application at runtime. You don't need to write any code for any of this:
 
-| What | How | Example in Obtrace UI |
-|------|-----|----------------------|
-| **All console output** | `console.log`, `console.warn`, `console.error` etc. are intercepted and sent as structured logs | `info: "Server started on port 3000"` |
-| **Every inbound HTTP request** | Node's `http.createServer` is patched — works with Express, Fastify, Hono, NestJS, Koa, or any framework | Span: `http.request GET /api/orders` with status, duration, trace ID |
-| **Every outbound fetch call** | `globalThis.fetch` is replaced with an instrumented version | Span: `server.fetch POST https://stripe.com/v1/charges` |
-| **Uncaught exceptions** | `process.on("uncaughtException")` | Log: `fatal: TypeError: Cannot read property...` |
-| **Unhandled promise rejections** | `process.on("unhandledRejection")` | Log: `error: unhandledRejection: ...` |
-| **Trace propagation** | W3C `traceparent` header injected on outbound, read on inbound | Correlated traces across services |
+| What | How | Needs code? |
+|------|-----|-------------|
+| **All console output** | `console.log`, `console.warn`, `console.error` etc. are intercepted and sent as structured logs | No |
+| **Every inbound HTTP request** | Node's `http.createServer` is patched — works with Express, Fastify, Hono, NestJS, Koa, or any framework | No |
+| **Every outbound fetch call** | `globalThis.fetch` is replaced with an instrumented version | No |
+| **Uncaught exceptions** | `process.on("uncaughtException")` | No |
+| **Unhandled promise rejections** | `process.on("unhandledRejection")` | No |
+| **Trace propagation** | W3C `traceparent` header injected on outbound, read on inbound | No |
 
 ### What about Express middleware?
 
@@ -91,6 +89,100 @@ try {
 } catch (err) {
   ob.captureError(err, { attrs: { table: "orders" } });
 }
+```
+
+## Framework Examples
+
+### Express
+
+No middleware needed for basic instrumentation. For route-level detail:
+
+```ts title="src/index.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+import express from "express";
+
+const ob = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
+  serviceName: "payments-api",
+});
+
+const app = express();
+
+app.post("/checkout", async (req, res) => {
+  ob.log("info", "checkout.started", { attrs: { user_id: req.user?.id } });
+  const result = await processCheckout(req.body);
+  ob.metric("checkout.total", result.total, "usd");
+  res.json(result);
+});
+
+app.listen(3000);
+```
+
+### Fastify
+
+```ts title="src/index.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+import Fastify from "fastify";
+
+const ob = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
+  serviceName: "payments-api",
+});
+
+const app = Fastify();
+
+app.post("/checkout", async (request, reply) => {
+  ob.log("info", "checkout.started");
+  return { ok: true };
+});
+
+app.listen({ port: 3000 });
+```
+
+### NestJS
+
+```ts title="src/main.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+
+initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
+  serviceName: "payments-api",
+});
+
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+### Hono
+
+```ts title="src/index.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+import { Hono } from "hono";
+import { serve } from "@hono/node-server";
+
+const ob = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_URL!,
+  serviceName: "payments-api",
+});
+
+const app = new Hono();
+
+app.post("/checkout", async (c) => {
+  ob.log("info", "checkout.started");
+  return c.json({ ok: true });
+});
+
+serve(app);
 ```
 
 ## Configuration Reference

@@ -1,6 +1,6 @@
 ---
 title: .NET SDK
-description: Plug-and-play observability for .NET services — Console output captured automatically, with explicit APIs for metrics and traces.
+description: Plug-and-play observability for .NET services — Console output and outbound HTTP captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -13,40 +13,83 @@ Targets .NET 6+ and .NET Standard 2.1.
 
 ## Minimum Setup
 
-Create a file at the root of your project or in your startup path:
-
 ```csharp title="Program.cs"
 using Obtrace.Sdk;
 
-var cfg = new ObtraceConfig
+var client = new ObtraceClient(new ObtraceConfig
 {
     ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
     IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
     ServiceName = "order-api"
-};
-
-await using var client = new ObtraceClient(cfg);
+});
 ```
 
-Three fields are required: `ApiKey`, `IngestBaseUrl`, and `ServiceName`. Everything else has defaults. The `await using` pattern calls `ShutdownAsync` at the end of scope, flushing any buffered telemetry.
+Three fields are required: `ApiKey`, `IngestBaseUrl`, and `ServiceName`. Everything else has defaults.
 
 ## What's Captured Automatically
 
-After creating an `ObtraceClient`, the SDK intercepts `Console` output. You don't need to write any extra code for this:
+After creating an `ObtraceClient`, the SDK intercepts `Console` output and outbound `HttpClient` calls. You don't need to write any extra code for this:
 
-| What | How | Example in Obtrace UI |
-|------|-----|----------------------|
-| **Console.WriteLine()** | `Console.Out` writes are intercepted and sent as `info` logs | `info: "Processing order batch 42"` |
-| **Console.Error.WriteLine()** | `Console.Error` writes are intercepted and sent as `error` logs | `error: "Failed to connect to database"` |
-| **Shutdown flush** | `IAsyncDisposable` flushes remaining data on dispose | Ensures no data is lost on clean shutdown |
+| What | How | Needs code? |
+|------|-----|-------------|
+| **Console.WriteLine()** | `Console.Out` writes are intercepted and sent as `info` logs | No |
+| **Console.Error.WriteLine()** | `Console.Error` writes are intercepted and sent as `error` logs | No |
+| **Outbound HttpClient calls** | `HttpClient` requests are instrumented with spans containing method, URL, status, and duration, plus `traceparent` header injection | No |
+| **Shutdown flush** | `IAsyncDisposable` flushes remaining data on dispose | No |
 
-To disable console auto-capture, set `AutoCaptureConsole = false` in your config.
+Console auto-capture is enabled by default (`AutoCaptureConsole = true`). Set `AutoCaptureConsole = false` to disable it.
 
-There are no diagnostic listeners, no HTTP handler wrappers, and no background collectors beyond console interception. Use the ASP.NET Core middleware (see [Framework Integration](#framework-integration)) or the explicit APIs below for HTTP spans and business telemetry.
+### Opting Out of Auto HTTP Instrumentation
+
+```csharp
+var client = new ObtraceClient(new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
+    IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
+    ServiceName = "order-api",
+    AutoInstrumentHttp = false
+});
+```
+
+## ASP.NET Core Integration with AddObtrace()
+
+For ASP.NET Core apps, use the `AddObtrace()` extension method to register the client in DI, add the HTTP request middleware, and wire up shutdown:
+
+```csharp title="Program.cs"
+using Obtrace.Sdk;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddObtrace(new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
+    IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
+    ServiceName = "order-api",
+    Env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "production",
+    ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "1.0.0"
+});
+
+var app = builder.Build();
+
+app.UseObtrace();
+
+app.MapGet("/api/orders/{id}", (string id, ObtraceClient client) =>
+{
+    client.Log("info", "order.fetched", new Dictionary<string, object?>
+    {
+        ["order.id"] = id
+    });
+    return Results.Ok(new { id, status = "shipped" });
+});
+
+app.Run();
+```
+
+`AddObtrace()` registers `ObtraceClient` as a singleton, adds request instrumentation middleware, and hooks into `ApplicationStopping` to flush on shutdown.
 
 ## Optional: Custom Telemetry
 
-The automatic console capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+The automatic console and HTTP capture covers basic observability. For **business-specific** events, use the SDK methods directly.
 
 ### Logging
 
@@ -134,25 +177,23 @@ client.Span("queue.publish order.created", attrs: new Dictionary<string, object?
 
 ## Framework Integration
 
-### ASP.NET Core
+### ASP.NET Core (Manual)
 
-Register the client in DI and use middleware to instrument requests:
+If you prefer manual setup over `AddObtrace()`:
 
 ```csharp title="Program.cs"
 using Obtrace.Sdk;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var cfg = new ObtraceConfig
+var client = new ObtraceClient(new ObtraceConfig
 {
     ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
     IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
     ServiceName = "order-api",
     Env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "production",
     ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "1.0.0"
-};
-
-var client = new ObtraceClient(cfg);
+});
 builder.Services.AddSingleton(client);
 
 var app = builder.Build();
@@ -255,6 +296,8 @@ public class OrderProcessor : BackgroundService
 | `AppId` | `string?` | No | | Application identifier within the project |
 | `Env` | `string` | No | `"production"` | Deployment environment |
 | `ServiceVersion` | `string?` | No | | Version string for this deployment |
+| `AutoCaptureConsole` | `bool` | No | `true` | Intercept Console.Out and Console.Error as logs |
+| `AutoInstrumentHttp` | `bool` | No | `true` | Instrument outbound HttpClient calls with spans and trace propagation |
 | `ValidateSemanticMetrics` | `bool` | No | `false` | Warn on non-standard metric names |
 | `Debug` | `bool` | No | `false` | Enable verbose logging to stdout |
 | `MaxQueueSize` | `int` | No | `2048` | Maximum buffered items before dropping |
@@ -267,5 +310,6 @@ After deploying, verify:
 - `ServiceName`, `Env`, and `ServiceVersion` are stable across restarts and match what you see in the Obtrace UI
 - At least one real request path emits both a log and a span
 - No `401` or `403` errors appear in stdout when `Debug = true`
-- `FlushAsync` or `ShutdownAsync` is called before process exit (use `await using` or register with `ApplicationStopping`)
+- `FlushAsync` or `ShutdownAsync` is called before process exit (use `await using`, `AddObtrace()`, or register with `ApplicationStopping`)
+- Outbound HttpClient calls show auto-generated spans
 - Metrics use OTLP-standard units (`ms`, `By`, `1`) not custom strings

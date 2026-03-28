@@ -1,6 +1,6 @@
 ---
 title: Go SDK
-description: Plug-and-play observability for Go services — stdlib logs captured automatically, with explicit APIs for metrics and traces.
+description: Plug-and-play observability for Go services — stdlib logs and outbound HTTP captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -10,8 +10,6 @@ go get github.com/obtraceai/obtrace-sdk-go
 ```
 
 ## Minimum Setup
-
-Three fields are required: `APIKey`, `IngestBaseURL`, and `ServiceName`. Everything else has defaults.
 
 ```go title="main.go"
 package main
@@ -30,9 +28,6 @@ func main() {
 		ServiceName:   "checkout-api",
 	})
 	defer client.Shutdown(context.Background())
-
-	client.Log("INFO", "service.started", nil)
-	client.Flush(context.Background())
 }
 ```
 
@@ -40,24 +35,35 @@ Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `Servic
 
 ## What's Captured Automatically
 
-After `ob.NewClient()`, the SDK intercepts Go's standard library `log` package. You don't need to write any extra code for this:
+After `ob.NewClient()`, the SDK intercepts Go's standard library `log` package and patches `http.DefaultTransport` to instrument outbound HTTP calls. You don't need to write any extra code for this:
 
-| What | How | Example in Obtrace UI |
-|------|-----|----------------------|
-| **All stdlib log output** | `log.Println()`, `log.Printf()`, `log.Fatalf()` etc. are intercepted and sent as structured logs | `info: "Listening on :8080"` |
+| What | How | Needs code? |
+|------|-----|-------------|
+| **All stdlib log output** | `log.Println()`, `log.Printf()`, `log.Fatalf()` etc. are intercepted and sent as structured logs | No |
+| **Outbound HTTP calls** | `http.DefaultTransport` is wrapped to emit spans with method, URL, status, and duration, and inject `traceparent` headers | No |
 
-Go does not support monkey-patching, so HTTP requests, goroutines, and runtime metrics are **not** auto-instrumented. Use the `net/http` middleware (see [Framework Integration](#framework-integration)) for HTTP spans, and the explicit APIs below for everything else.
+Every `http.Get()`, `http.Post()`, or request made through `http.DefaultClient` is automatically traced. Trace context is propagated to downstream services via the `traceparent` header.
+
+### Opting Out of Auto HTTP Instrumentation
+
+```go
+client := ob.NewClient(ob.Config{
+	APIKey:          os.Getenv("OBTRACE_API_KEY"),
+	IngestBaseURL:   os.Getenv("OBTRACE_INGEST_BASE_URL"),
+	ServiceName:     "checkout-api",
+	DisableAutoHTTP: true,
+})
+```
 
 ### What's NOT auto-captured
 
-- HTTP requests (use middleware instead)
 - Goroutine stats or runtime metrics
 - Database queries
-- Outbound HTTP calls
+- Custom HTTP clients that use a non-default `Transport`
 
 ## Optional: Custom Telemetry
 
-The automatic log capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+The automatic log and HTTP capture covers basic observability. For **business-specific** events, use the SDK methods directly.
 
 ### Logging
 
@@ -136,21 +142,21 @@ Pass an empty string for `traceID` and `spanID` to auto-generate them. Pass an e
 
 ### Propagating Trace Context
 
-When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+Trace context is injected automatically on outbound HTTP calls made through `http.DefaultTransport`. For custom transports or non-HTTP protocols, inject manually:
 
 ```go
 traceID, spanID := client.Span("http.client GET /inventory", "", "", 0, "", nil)
 
 req, _ := http.NewRequest("GET", "https://inventory-api.internal/stock", nil)
 client.InjectPropagation(req.Header, traceID, spanID, "")
-resp, err := http.DefaultClient.Do(req)
+resp, err := customClient.Do(req)
 ```
 
 ## Framework Integration
 
 ### net/http Middleware
 
-The SDK includes middleware for `net/http` that automatically creates a span and log entry for each request:
+The SDK includes middleware for `net/http` that automatically creates a span and log entry for each inbound request:
 
 ```go title="main.go"
 package main
@@ -200,6 +206,7 @@ Gin and Echo middleware are also available under `middleware/gin` and `middlewar
 | `ProjectID` | `string` | `""` | Scoped ingest identity. |
 | `AppID` | `string` | `""` | Scoped ingest identity. |
 | `Env` | `string` | `""` | Environment name (`prod`, `staging`, `dev`). |
+| `DisableAutoHTTP` | `bool` | `false` | Disable automatic `http.DefaultTransport` instrumentation. |
 | `RequestTimeoutMS` | `int` | `5000` | HTTP timeout per OTLP request in milliseconds. |
 | `MaxQueueSize` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
 | `ValidateSemanticMetrics` | `bool` | `false` | When `true` + `Debug`, warns on non-canonical metric names. |
@@ -217,6 +224,7 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] `client.Flush()` or `client.Shutdown()` is called before process exit (use `defer`)
 - [ ] No `401` or `403` errors appear in logs during OTLP submission (check with `Debug: true`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
-- [ ] Outgoing HTTP calls use `InjectPropagation` if the downstream service also reports to Obtrace
+- [ ] Outbound HTTP calls via `http.DefaultTransport` show auto-generated spans
+- [ ] Custom HTTP clients with non-default transports use `InjectPropagation` manually
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)

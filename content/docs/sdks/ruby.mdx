@@ -1,6 +1,6 @@
 ---
 title: Ruby SDK
-description: Plug-and-play observability for Ruby services — exceptions captured automatically, with explicit APIs for metrics and traces.
+description: Plug-and-play observability for Ruby services — exceptions, outbound HTTP, and Logger output captured automatically, with explicit APIs for metrics and traces.
 ---
 
 ## Installation
@@ -22,32 +22,52 @@ Requires Ruby 3.0+.
 ```ruby title="config/initializers/obtrace.rb"
 require "obtrace_sdk"
 
-cfg = ObtraceSDK::Config.new(
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
   api_key: ENV.fetch("OBTRACE_API_KEY"),
   ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
   service_name: "order-api"
-)
-
-OBTRACE = ObtraceSDK::Client.new(cfg)
+))
 ```
 
 Three fields are required: `api_key`, `ingest_base_url`, and `service_name`. Everything else has defaults.
 
 ## What's Captured Automatically
 
-After creating an `ObtraceSDK::Client`, the SDK hooks into Ruby's exception system and registers an exit handler. You don't need to write any extra code for this:
+After creating an `ObtraceSDK::Client`, the SDK hooks into Ruby's exception system, patches `Net::HTTP`, captures Logger output, and registers an exit handler. You don't need to write any extra code for this:
 
-| What | How | Example in Obtrace UI |
-|------|-----|----------------------|
-| **All raised exceptions** | `TracePoint(:raise)` intercepts every `raise` and sends it as an `error` log | `error: "ActiveRecord::RecordNotFound: Couldn't find Order with id=42"` |
-| **Unhandled fatal exceptions** | Fatal exceptions that reach the top of the stack are captured at process exit | `fatal: "NoMemoryError: failed to allocate memory"` |
-| **Shutdown flush** | `at_exit` flushes buffered telemetry on process exit, covering normal termination and most signal-based shutdowns | Ensures no data is lost |
+| What | How | Needs code? |
+|------|-----|-------------|
+| **All raised exceptions** | `TracePoint(:raise)` intercepts every `raise` and sends it as an `error` log | No |
+| **Unhandled fatal exceptions** | Fatal exceptions that reach the top of the stack are captured at process exit | No |
+| **Outbound HTTP (Net::HTTP)** | `Net::HTTP` is patched to emit spans with method, URL, status, and duration, plus `traceparent` header injection | No |
+| **Logger output** | `Logger` instances are intercepted and forwarded as structured logs with level mapping | No |
+| **Shutdown flush** | `at_exit` flushes buffered telemetry on process exit | No |
 
-There are no Rack middleware injections, no ActiveSupport notification subscriptions, and no monkey-patches beyond exception tracing. Use the Rails/Rack middleware (see [Framework Integration](#framework-integration)) for HTTP spans, and the explicit APIs below for business telemetry.
+### Opting Out of Auto HTTP Instrumentation
+
+```ruby
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
+  api_key: ENV.fetch("OBTRACE_API_KEY"),
+  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
+  service_name: "order-api",
+  auto_instrument_http: false
+))
+```
+
+### Opting Out of Logger Capture
+
+```ruby
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
+  api_key: ENV.fetch("OBTRACE_API_KEY"),
+  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
+  service_name: "order-api",
+  auto_capture_logger: false
+))
+```
 
 ## Optional: Custom Telemetry
 
-The automatic exception capture covers basic observability. For **business-specific** events, use the SDK methods directly.
+The automatic exception, HTTP, and Logger capture covers basic observability. For **business-specific** events, use the SDK methods directly.
 
 ### Logging
 
@@ -125,9 +145,33 @@ OBTRACE.span("queue.publish order.created", attrs: {
 
 ## Framework Integration
 
-### Rails
+### Rails (Railtie Auto-Init)
 
-Create an initializer and a middleware to instrument requests:
+The SDK includes a Rails Railtie that automatically initializes when Rails boots. Add your credentials to `config/credentials.yml.enc` or environment variables, then add the gem to your Gemfile:
+
+```ruby title="Gemfile"
+gem "obtrace-sdk-ruby"
+```
+
+Set the required environment variables:
+
+```bash
+OBTRACE_API_KEY=your-key
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+OBTRACE_SERVICE_NAME=order-api
+```
+
+The Railtie auto-initializes `ObtraceSDK::Client`, registers Rack middleware for request instrumentation, and wires up shutdown flushing. No initializer file needed.
+
+To access the client instance:
+
+```ruby
+ObtraceSDK.client.log("info", "order.created", "order.id" => order_id)
+```
+
+### Rails (Manual)
+
+If you prefer manual setup over the Railtie:
 
 ```ruby title="config/initializers/obtrace.rb"
 require "obtrace_sdk"
@@ -254,6 +298,8 @@ end
 | `app_id` | `String?` | No | | Application identifier within the project |
 | `env` | `String` | No | `"production"` | Deployment environment |
 | `service_version` | `String?` | No | | Version string for this deployment |
+| `auto_instrument_http` | `Boolean` | No | `true` | Patch Net::HTTP with automatic spans and trace propagation |
+| `auto_capture_logger` | `Boolean` | No | `true` | Intercept Logger output and forward as structured logs |
 | `validate_semantic_metrics` | `Boolean` | No | `false` | Warn on non-standard metric names |
 | `debug` | `Boolean` | No | `false` | Enable verbose logging to stderr |
 | `max_queue_size` | `Integer` | No | `2048` | Maximum buffered items before dropping |
@@ -267,5 +313,7 @@ After deploying, verify:
 - At least one real request path emits both a log and a span
 - No `401` or `403` errors appear in stderr when `debug` is `true`
 - The `at_exit` hook is firing (check that telemetry arrives from short-lived scripts without explicit `flush` calls)
+- Outbound Net::HTTP calls show auto-generated spans
+- Logger output appears as structured logs in the Obtrace UI
 - Sidekiq or other long-running workers flush after each job rather than relying solely on the exit hook
 - Metrics use OTLP-standard units (`ms`, `By`, `1`) not custom strings

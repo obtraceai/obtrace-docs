@@ -1,6 +1,6 @@
 ---
 title: Java SDK
-description: Plug-and-play observability for JVM services — java.util.logging captured automatically, with explicit APIs for metrics and traces.
+description: Plug-and-play observability for JVM services — java.util.logging captured automatically, builder pattern config, instrumented HTTP client.
 ---
 
 ## Installation
@@ -23,41 +23,52 @@ implementation 'io.obtrace:obtrace-sdk-java:1.0.0'
 
 ## Minimum Setup
 
-Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
-
 ```java title="Main.java"
 import io.obtrace.sdk.core.ObtraceClient;
 import io.obtrace.sdk.model.ObtraceConfig;
 
 public class Main {
     public static void main(String[] args) {
-        ObtraceConfig cfg = new ObtraceConfig();
-        cfg.apiKey = System.getenv("OBTRACE_API_KEY");
-        cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
-        cfg.serviceName = "checkout-api";
-
-        try (ObtraceClient client = new ObtraceClient(cfg)) {
+        try (var client = new ObtraceClient(ObtraceConfig.builder()
+                .apiKey(System.getenv("OBTRACE_API_KEY"))
+                .ingestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
+                .serviceName("checkout-api")
+                .build())) {
             client.log("info", "service.started", null);
-            client.flush();
         }
     }
 }
 ```
 
-Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `serviceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
+Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
 
-`ObtraceClient` implements `AutoCloseable`, so use try-with-resources to ensure the internal executor shuts down cleanly. The default config also registers a JVM shutdown hook that calls `flush()` before exit. Disable it with `cfg.registerShutdownHook = false` if you manage lifecycle yourself.
+`ObtraceClient` implements `AutoCloseable`, so use try-with-resources to ensure the internal executor shuts down cleanly. The default config also registers a JVM shutdown hook that calls `flush()` before exit. Disable it with `.registerShutdownHook(false)` on the builder if you manage lifecycle yourself.
 
 ## What's Captured Automatically
 
 After creating an `ObtraceClient`, the SDK intercepts `java.util.logging` and registers a shutdown hook. You don't need to write any extra code for this:
 
-| What | How | Example in Obtrace UI |
-|------|-----|----------------------|
-| **All java.util.logging output** | JUL log records are intercepted and mapped to Obtrace levels: `FINE` -> `debug`, `INFO` -> `info`, `WARNING` -> `warn`, `SEVERE` -> `error` | `warn: "Connection pool exhausted"` |
-| **Shutdown flush** | A JVM shutdown hook flushes pending telemetry before exit (disable with `cfg.registerShutdownHook = false`) | Ensures no data is lost on clean shutdown |
+| What | How | Needs code? |
+|------|-----|-------------|
+| **All java.util.logging output** | JUL log records are intercepted and mapped to Obtrace levels: `FINE` -> `debug`, `INFO` -> `info`, `WARNING` -> `warn`, `SEVERE` -> `error` | No |
+| **Shutdown flush** | A JVM shutdown hook flushes pending telemetry before exit (disable with `.registerShutdownHook(false)`) | No |
 
-There is no bytecode manipulation, no Java agent, and no hidden overhead. HTTP servlets, JDBC queries, thread pools, and JMX metrics are **not** auto-instrumented. Use the Spring Boot integration (see [Framework Integration](#framework-integration)) or the explicit APIs below for those.
+There is no bytecode manipulation, no Java agent, and no hidden overhead.
+
+## Instrumented HTTP Client
+
+The SDK provides an instrumented `java.net.http.HttpClient` that automatically creates spans for outbound HTTP calls and injects trace propagation headers:
+
+```java
+var httpClient = client.getHttpClient();
+var req = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.stripe.com/v1/charges"))
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+var resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+```
+
+Each call through `getHttpClient()` emits a span with method, URL, status code, and duration. The `traceparent` header is injected automatically.
 
 ## Optional: Custom Telemetry
 
@@ -75,10 +86,11 @@ Use `client.log(level, message, ctx)` to record events you need to search for la
 ```java
 import io.obtrace.sdk.model.ObtraceContext;
 
-ObtraceContext ctx = new ObtraceContext();
-ctx.attrs.put("order_id", orderId);
-ctx.attrs.put("provider", "stripe");
-ctx.attrs.put("decline_code", resp.getDeclineCode());
+var ctx = ObtraceContext.builder()
+    .attr("order_id", orderId)
+    .attr("provider", "stripe")
+    .attr("decline_code", resp.getDeclineCode())
+    .build();
 client.log("error", "payment.declined", ctx);
 
 client.log("info", "user.signup", null);
@@ -86,7 +98,7 @@ client.log("info", "user.signup", null);
 
 The `level` parameter accepts: `debug`, `info`, `warn`, `error`, `fatal`. Messages are truncated at 32KB.
 
-The `ctx` parameter is optional (pass `null` to skip). When provided, it attaches structured attributes to the log entry. Use `attrs` for custom key-value pairs, and the built-in fields (`traceId`, `spanId`, `method`, `endpoint`, `statusCode`) to correlate logs with traces.
+The `ctx` parameter is optional (pass `null` to skip). When provided, it attaches structured attributes to the log entry. Use `attr()` on the builder for custom key-value pairs, and the built-in fields (`traceId`, `spanId`, `method`, `endpoint`, `statusCode`) to correlate logs with traces.
 
 ### Metrics
 
@@ -98,10 +110,10 @@ Use `client.metric(name, value, unit, ctx)` to record measurements you want to g
 - Business KPIs (revenue per checkout, items per cart)
 
 ```java
-ObtraceContext ctx = new ObtraceContext();
-ctx.method = "POST";
-ctx.endpoint = "/api/checkout";
-client.metric("http.server.duration", 142.5, "ms", ctx);
+client.metric("http.server.duration", 142.5, "ms", ObtraceContext.builder()
+    .method("POST")
+    .endpoint("/api/checkout")
+    .build());
 
 client.metric("checkout.revenue", 49.99, "USD", null);
 
@@ -140,7 +152,7 @@ The 7-argument overload also accepts `parentSpanId` to build span hierarchies wi
 
 ### Propagating Trace Context
 
-When calling another service, inject the trace context into outgoing HTTP headers so spans link across service boundaries:
+When using `getHttpClient()`, trace context is injected automatically. For other HTTP clients, inject manually:
 
 ```java
 String[] ids = client.span("http.client GET /inventory", null, null, null, "", Map.of(
@@ -173,13 +185,13 @@ import org.springframework.context.annotation.Configuration;
 public class ObtraceBootstrap {
     @Bean
     public ObtraceClient obtraceClient() {
-        ObtraceConfig cfg = new ObtraceConfig();
-        cfg.apiKey = System.getenv("OBTRACE_API_KEY");
-        cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
-        cfg.serviceName = "checkout-api";
-        cfg.env = System.getenv("OBTRACE_ENV");
-        cfg.serviceVersion = System.getenv("OBTRACE_SERVICE_VERSION");
-        return new ObtraceClient(cfg);
+        return new ObtraceClient(ObtraceConfig.builder()
+            .apiKey(System.getenv("OBTRACE_API_KEY"))
+            .ingestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
+            .serviceName("checkout-api")
+            .env(System.getenv("OBTRACE_ENV"))
+            .serviceVersion(System.getenv("OBTRACE_SERVICE_VERSION"))
+            .build());
     }
 
     @Bean
@@ -227,22 +239,24 @@ Your controllers can still call `client.log()`, `client.metric()`, and `client.s
 
 ## Configuration Reference
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `apiKey` | `String` | | **Required.** Your Obtrace API key. |
-| `ingestBaseUrl` | `String` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
-| `serviceName` | `String` | | **Required.** Stable name for this service. |
-| `serviceVersion` | `String` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
-| `tenantId` | `String` | `null` | Scoped ingest identity. |
-| `projectId` | `String` | `null` | Scoped ingest identity. |
-| `appId` | `String` | `null` | Scoped ingest identity. |
-| `env` | `String` | `null` | Environment name (`prod`, `staging`, `dev`). |
-| `requestTimeoutMs` | `int` | `5000` | HTTP timeout per OTLP request in milliseconds. |
-| `maxQueueSize` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
-| `flushTimeoutMs` | `int` | `30000` | Max time allowed for a single flush cycle. |
-| `validateSemanticMetrics` | `boolean` | `false` | When `true` + `debug`, warns on non-canonical metric names. |
-| `debug` | `boolean` | `false` | Enables SDK diagnostic output to stderr. |
-| `registerShutdownHook` | `boolean` | `true` | Registers a JVM shutdown hook that flushes on exit. |
+All config is set through `ObtraceConfig.builder()`:
+
+| Builder method | Type | Default | Description |
+|----------------|------|---------|-------------|
+| `.apiKey()` | `String` | | **Required.** Your Obtrace API key. |
+| `.ingestBaseUrl()` | `String` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
+| `.serviceName()` | `String` | | **Required.** Stable name for this service. |
+| `.serviceVersion()` | `String` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
+| `.tenantId()` | `String` | `null` | Scoped ingest identity. |
+| `.projectId()` | `String` | `null` | Scoped ingest identity. |
+| `.appId()` | `String` | `null` | Scoped ingest identity. |
+| `.env()` | `String` | `null` | Environment name (`prod`, `staging`, `dev`). |
+| `.requestTimeoutMs()` | `int` | `5000` | HTTP timeout per OTLP request in milliseconds. |
+| `.maxQueueSize()` | `int` | `1000` | Max queued telemetry items before oldest are dropped. |
+| `.flushTimeoutMs()` | `int` | `30000` | Max time allowed for a single flush cycle. |
+| `.validateSemanticMetrics()` | `boolean` | `false` | When `true` + `debug`, warns on non-canonical metric names. |
+| `.debug()` | `boolean` | `false` | Enables SDK diagnostic output to stderr. |
+| `.registerShutdownHook()` | `boolean` | `true` | Registers a JVM shutdown hook that flushes on exit. |
 
 ## Validation Checklist
 
@@ -251,9 +265,9 @@ After integrating the SDK, verify these before shipping to production:
 - [ ] `serviceName`, `env`, and `serviceVersion` are set and survive restarts and deploys
 - [ ] At least one request path emits both a log and a span
 - [ ] `ObtraceClient` is closed on shutdown (try-with-resources, Spring `@PreDestroy`, or shutdown hook)
-- [ ] No `401` or `403` errors appear during OTLP submission (check with `debug = true`)
+- [ ] No `401` or `403` errors appear during OTLP submission (check with `.debug(true)`)
 - [ ] Metrics use correct units (`ms`, `By`, `1`) not free-form strings
-- [ ] Outgoing HTTP calls use `injectPropagation` if the downstream service also reports to Obtrace
+- [ ] Outbound HTTP calls use `getHttpClient()` or `injectPropagation` if the downstream service also reports to Obtrace
 - [ ] Spring interceptor is registered in `WebMvcConfigurer.addInterceptors` if using Spring
 
 See also: [Semantic Metrics](/docs/sdks/semantic-metrics)
