@@ -14,6 +14,7 @@ on:
       - "Dockerfile"
       - "next.config.mjs"
       - "tsconfig.json"
+      - "llm.txt"
       - ".github/workflows/images.yml"
   workflow_dispatch:
     inputs:
