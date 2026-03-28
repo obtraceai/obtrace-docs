@@ -36,18 +36,30 @@ Start with:
 - [Kubernetes](/docs/environments/kubernetes)
 - [Serverless](/docs/environments/serverless)
 
-## Official SDKs
+## Official SDKs (GA)
 
-| SDK | Status | Primary Runtime | Best first use |
-|---|---|---|---|
-| JavaScript Browser | GA | Browser | User-facing telemetry and frontend correlation |
-| JavaScript Node/Bun | GA | Node.js / Bun | APIs, workers, edge-compatible JS services |
-| Python | GA | CPython | FastAPI, Django, workers, data services |
-| Go | GA | Go 1.21+ | Low-latency APIs and high-throughput services |
-| Java | GA | JVM 17+ | Spring and enterprise microservices |
-| .NET | GA | .NET 8+ | ASP.NET APIs and enterprise backends |
-| PHP | GA | PHP 8.2+ | Laravel and traditional web backends |
-| Ruby | GA | Ruby 3.2+ | Rails and background jobs |
+| SDK | Primary Runtime | Best first use |
+|---|---|---|
+| [JavaScript Browser](/docs/sdks/browser) | Browser | User-facing telemetry and frontend correlation |
+| [JavaScript Node/Bun](/docs/sdks/node-bun) | Node.js / Bun | APIs, workers, edge-compatible JS services |
+| [Python](/docs/sdks/python) | CPython | FastAPI, Django, workers, data services |
+| [Go](/docs/sdks/go) | Go 1.21+ | Low-latency APIs and high-throughput services |
+| [Java](/docs/sdks/java) | JVM 17+ | Spring and enterprise microservices |
+| [.NET](/docs/sdks/dotnet) | .NET 8+ | ASP.NET APIs and enterprise backends |
+| [PHP](/docs/sdks/php) | PHP 8.2+ | Laravel and traditional web backends |
+| [Ruby](/docs/sdks/ruby) | Ruby 3.2+ | Rails and background jobs |
+
+## Coming Soon (Not Yet Available)
+
+These SDKs are planned but have not been released. No installation instructions are available.
+
+| SDK | Target Runtime | Status |
+|---|---|---|
+| Kotlin | JVM (Ktor, Spring Boot) | Planned |
+| Rust | Rust async | Planned |
+| Swift | iOS | Planned |
+
+For Kotlin projects, use the [Java SDK](/docs/sdks/java) which works with any JVM language.
 
 ## Decision rules
 

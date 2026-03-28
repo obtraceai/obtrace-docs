@@ -9,16 +9,71 @@ description: Frontend telemetry with session replay, Web Vitals, and error captu
 npm install @obtrace/sdk-browser
 ```
 
-## Minimum Setup
+## Zero-Config Setup (Recommended)
 
-Three fields. That is all you need.
+One import. No configuration object. The SDK reads your environment variables automatically.
+
+```ts title="src/main.ts"
+import '@obtrace/sdk-browser/auto'
+```
+
+Set these environment variables (Vite example shown, but `NEXT_PUBLIC_` and `REACT_APP_` prefixes also work):
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_OBTRACE_API_KEY` | Yes | - | Your Obtrace API key |
+| `VITE_OBTRACE_INGEST_BASE_URL` | Yes | - | Obtrace ingest endpoint URL |
+| `VITE_OBTRACE_SERVICE_NAME` | No | `"web-app"` | Identifies this frontend in the Obtrace UI |
+| `VITE_OBTRACE_APP_ID` | No | - | Application identifier within a project |
+| `VITE_OBTRACE_ENV` | No | `NODE_ENV` or `"production"` | Deployment environment |
+
+The `/auto` entry point does everything: initializes the SDK, patches `window.fetch` globally so all HTTP calls are instrumented, captures errors, console output, Web Vitals, and session replay.
+
+To access the SDK instance later:
+
+```ts
+import { getObtrace } from '@obtrace/sdk-browser/auto'
+
+const ob = getObtrace()
+ob?.log("info", "checkout.started")
+```
+
+## React Setup
+
+For React apps that want typed helper functions:
+
+```ts title="src/obtrace.ts"
+import { obtrace } from '@obtrace/sdk-browser/react'
+
+export const ob = obtrace({
+  apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
+  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
+  serviceName: "checkout-web",
+})
+```
+
+The React wrapper also exports convenience functions that work without holding a reference to the SDK instance:
+
+```ts
+import { obtraceLog, obtraceMetric, obtraceError } from '@obtrace/sdk-browser/react'
+
+obtraceLog("info", "page.loaded")
+obtraceMetric("search.results", 42)
+obtraceError(new Error("something broke"))
+```
+
+The `obtrace()` call also patches `window.fetch` globally.
+
+## Manual Setup
+
+For full control over configuration:
 
 ```ts title="src/obtrace.ts"
 import { initBrowserSDK } from "@obtrace/sdk-browser/browser";
 
 export const ob = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_URL,
+  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   serviceName: "checkout-web",
 });
 ```
@@ -31,6 +86,7 @@ Import `ob` wherever you need it. Initialize once at app startup, before any use
 |--------|---------|
 | `log(level, message, context?)` | Send a structured log |
 | `captureException(error, context?)` | Capture an error with context |
+| `captureError(error, context?)` | Alias for `captureException` |
 | `metric(name, value, unit?, context?)` | Record a numeric metric |
 | `instrumentFetch()` | Returns a fetch wrapper that auto-creates spans |
 | `captureReplayEvent(type, payload)` | Attach a custom event to the session replay |
@@ -158,35 +214,24 @@ interface SDKContext {
 
 The `sessionId` is auto-injected by the browser SDK. The `attrs` field is for arbitrary key-value pairs.
 
-## Tracing HTTP Calls
+## HTTP Instrumentation
 
-`instrumentFetch()` returns a fetch wrapper that auto-creates spans for every outbound HTTP request. It records method, URL, status code, and duration. It also propagates trace context and session ID to your backend, and captures network requests into the session replay.
+If you use the `/auto` or `/react` entry point, `window.fetch` is patched globally. Every `fetch()` call in your app is automatically instrumented with no extra code.
+
+If you use the manual `initBrowserSDK` entry point, fetch is also patched by default (controlled by the `instrumentGlobalFetch` config option). You can also get an instrumented fetch wrapper explicitly:
 
 ```ts title="src/api.ts"
 import { ob } from "./obtrace";
 
 const fetcher = ob.instrumentFetch();
-
-export async function getOrders(): Promise<Order[]> {
-  const res = await fetcher("/api/orders");
-  return res.json();
-}
-
-export async function createOrder(cart: Cart): Promise<Order> {
-  const res = await fetcher("/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(cart),
-  });
-  return res.json();
-}
 ```
 
-Each call produces:
+Every instrumented fetch call produces:
 - A span named `browser.fetch POST` (or whatever the method is) with `http.method`, `http.url`, `http.status_code`, `http.duration_ms`, and `replay_id`
 - A log entry with the request outcome
 - A `network` replay event (visible in the session replay timeline)
 - A recipe step for request replay (used by Obtrace's replay analysis)
+- Automatic W3C `traceparent` header injection for backend trace correlation
 
 Failed requests also produce an error log and a `network_error` replay event.
 

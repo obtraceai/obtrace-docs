@@ -11,34 +11,71 @@ Use this guide for NestJS backends where request lifecycle, dependency injection
 - Service/provider calls.
 - Outbound HTTP/DB/queue operations.
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK before app starts listening.
-2. Instrument request lifecycle (ingress -> handler -> response).
-3. Capture structured errors from global exception filters.
-4. Add spans around DB and external service calls.
+Initialize the Node SDK before the NestJS app starts listening:
 
-## Minimum Data Contract
+```ts title="src/main.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
-- Stable service name per app/module domain.
-- Environment and version tags in every event.
-- Correlation ID propagation through async operations.
+const ob = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "orders-api",
+  env: process.env.NODE_ENV,
+  serviceVersion: process.env.OBTRACE_SERVICE_VERSION,
+});
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+The Node SDK auto-instruments all inbound HTTP requests, outbound `fetch()` calls, and console output. No NestJS-specific middleware or interceptor is needed for basic telemetry.
+
+For business-specific telemetry, use the SDK instance:
+
+```ts title="src/orders/orders.service.ts"
+import { ob } from "../main";
+
+export class OrdersService {
+  async create(dto: CreateOrderDto) {
+    ob.log("info", "order.created", {
+      attrs: { customer_id: dto.customerId, total: dto.total },
+    });
+    ob.metric("order.total", dto.total, "usd");
+  }
+}
+```
+
+## Environment Variables
+
+```bash
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+NODE_ENV=production
+OBTRACE_SERVICE_VERSION=1.0.0
+```
 
 ## Validation Checklist
 
-- 4xx/5xx errors include trace context.
-- Slow endpoints produce spans with useful attributes.
-- Startup/shutdown hooks flush telemetry correctly.
+- [ ] 4xx/5xx errors include trace context
+- [ ] All HTTP endpoints produce spans automatically
+- [ ] Console output appears as structured logs
+- [ ] Startup/shutdown hooks flush telemetry correctly
 
 ## Production Hardening
 
-1. Bound queue and retry configuration.
-2. Add ingestion failure alerting.
+1. Call `ob.shutdown()` in the NestJS `onApplicationShutdown` lifecycle hook.
+2. Bound queue and retry configuration.
 3. Validate after module refactors.
-4. Keep key rotation runbook documented.
 
 ## Troubleshooting
 
-- No events after deploy: verify bootstrap path still initializes SDK.
+- No events after deploy: verify `initNodeSDK` runs before `NestFactory.create`.
 - Missing spans in async handlers: confirm context propagation.
 - High noise: reduce low-value event emission.

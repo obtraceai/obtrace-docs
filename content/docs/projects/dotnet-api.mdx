@@ -11,24 +11,82 @@ Use this guide for ASP.NET APIs where reliability depends on visibility into con
 - Service/repository layers.
 - Outbound HTTP, DB, and message clients.
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK during host startup.
-2. Instrument middleware boundaries.
-3. Capture structured exceptions.
-4. Instrument outbound dependencies with spans.
+Register the Obtrace client and add request instrumentation middleware:
 
-## Minimum Data Contract
+```csharp title="Program.cs"
+using Obtrace.Sdk;
 
-- Stable `service`, `env`, `version` tags.
-- Endpoint/operation naming consistency.
-- Deploy metadata from CI/CD.
+var builder = WebApplication.CreateBuilder(args);
+
+var cfg = new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY")!,
+    IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL")!,
+    ServiceName = "order-api",
+    Env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "production",
+    ServiceVersion = Environment.GetEnvironmentVariable("OBTRACE_SERVICE_VERSION") ?? "1.0.0"
+};
+
+var client = new ObtraceClient(cfg);
+builder.Services.AddSingleton(client);
+
+var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    await next();
+    sw.Stop();
+
+    var route = context.GetEndpoint()?.DisplayName ?? context.Request.Path.Value ?? "unknown";
+    var method = context.Request.Method;
+
+    client.Span($"http.server {method} {route}", attrs: new Dictionary<string, object?>
+    {
+        ["http.method"] = method,
+        ["http.route"] = route,
+        ["http.status_code"] = context.Response.StatusCode
+    });
+
+    client.Metric("http.server.request.duration", sw.Elapsed.TotalMilliseconds, "ms", new Dictionary<string, object?>
+    {
+        ["http.method"] = method,
+        ["http.route"] = route,
+        ["http.status_code"] = context.Response.StatusCode
+    });
+});
+
+app.MapGet("/api/orders/{id}", (string id) =>
+{
+    client.Log("info", "order.fetched", new Dictionary<string, object?>
+    {
+        ["order.id"] = id
+    });
+    return Results.Ok(new { id, status = "shipped" });
+});
+
+app.Run();
+```
+
+The `await using` pattern on `ObtraceClient` calls `ShutdownAsync` at end of scope. Console output is captured automatically.
+
+## Environment Variables
+
+```bash
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+ASPNETCORE_ENVIRONMENT=Production
+OBTRACE_SERVICE_VERSION=1.0.0
+```
 
 ## Validation Checklist
 
-- Request telemetry visible with status and latency.
-- Exception telemetry trace-linked.
-- Host shutdown flushes pending events.
+- [ ] Request telemetry visible with status and latency
+- [ ] Exception telemetry trace-linked
+- [ ] Console output appears as structured logs
+- [ ] Host shutdown flushes pending events
 
 ## Production Hardening
 
@@ -38,6 +96,6 @@ Use this guide for ASP.NET APIs where reliability depends on visibility into con
 
 ## Troubleshooting
 
-- Missing telemetry after startup changes: confirm host init path.
-- Missing outbound spans: wrap HttpClient/DB calls.
+- Missing telemetry after startup changes: confirm middleware is registered before `app.Run()`.
+- Missing outbound spans: wrap HttpClient/DB calls with `client.Span()`.
 - Volume spikes: review emission points and sampling.

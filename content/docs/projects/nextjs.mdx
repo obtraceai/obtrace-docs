@@ -11,39 +11,92 @@ Use this guide when your product surface is Next.js and you need end-to-end visi
 - Browser runtime: user interactions, route transitions, frontend errors.
 - Shared context: service/env/version/release IDs for correlation.
 
-## Recommended Setup
+## Server-Side Setup
 
-1. Configure environment-scoped credentials.
-2. Initialize Node SDK on server startup paths.
-3. Initialize Browser SDK on client bootstrap.
-4. Capture request boundaries, external calls, and error paths.
-5. Attach release metadata from CI/CD.
+Initialize the Node SDK in your instrumentation file. This runs once when the server starts.
 
-## Minimum Data Contract
+```ts title="instrumentation.ts"
+import { initNodeSDK } from "@obtrace/sdk-js/node";
 
-Emit and standardize:
+export const ob = initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
+  serviceName: "web-nextjs",
+  env: process.env.NODE_ENV,
+  serviceVersion: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
+});
+```
 
-- `service`: `web-nextjs`
-- `env`: `dev` / `staging` / `prod`
-- `version`: commit SHA or build ID
-- Request identifiers for server/client correlation
+The Node SDK auto-instruments all HTTP requests and console output.
+
+## Browser-Side Setup (Zero-Config)
+
+Import the auto entry point in your root layout. Set `NEXT_PUBLIC_OBTRACE_API_KEY` and `NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL` in your environment.
+
+```tsx title="app/layout.tsx"
+import '@obtrace/sdk-browser/auto'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+The `/auto` entry point detects `NEXT_PUBLIC_` prefixed env vars, initializes the SDK, patches `window.fetch`, and starts capturing errors, console output, Web Vitals, and session replay.
+
+## Browser-Side Setup (React Wrapper)
+
+For more control, use the React entry point:
+
+```ts title="lib/obtrace.ts"
+import { obtrace } from '@obtrace/sdk-browser/react'
+
+export const ob = obtrace({
+  apiKey: process.env.NEXT_PUBLIC_OBTRACE_API_KEY!,
+  ingestBaseUrl: process.env.NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL!,
+  serviceName: "web-nextjs",
+})
+```
+
+```tsx title="app/layout.tsx"
+import '../lib/obtrace'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+## Environment Variables
+
+```bash title=".env.local"
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+NEXT_PUBLIC_OBTRACE_API_KEY=obt_...
+NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+NEXT_PUBLIC_OBTRACE_SERVICE_NAME=web-nextjs
+```
+
+Server-side variables use no prefix. Browser-side variables require `NEXT_PUBLIC_`.
 
 ## Validation Checklist
 
-- Browser and server events are both visible.
-- Server errors include request context.
-- Frontend incidents can be mapped to backend traces.
-- Deploy events are visible in incident timeline.
+- [ ] Browser and server events are both visible in the Obtrace UI
+- [ ] Server errors include request context and trace ID
+- [ ] Frontend fetch calls produce correlated spans in backend traces
+- [ ] Web Vitals metrics appear after page load
+- [ ] Session replay records user interactions
+- [ ] Deploy events are visible in incident timeline
 
 ## Production Hardening
 
-1. Keep server keys private; only use public keys in browser where required.
-2. Configure replay/sampling to control cost.
+1. Keep server keys private; only use `NEXT_PUBLIC_` keys in browser.
+2. Configure replay sampling to control cost.
 3. Ensure graceful shutdown flush for server runtime.
-4. Validate instrumentation after each framework upgrade.
-
-## Troubleshooting
-
-- Missing client data: verify client bootstrap executes once.
-- Missing server data: verify SDK initialization in server runtime path.
-- Broken correlation: standardize version/release fields.
+4. Validate instrumentation after each Next.js upgrade.

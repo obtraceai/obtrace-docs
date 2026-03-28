@@ -53,9 +53,6 @@ SDK docs with concrete examples:
 - https://docs.obtrace.ai/docs/sdks/php
 - https://docs.obtrace.ai/docs/sdks/ruby
 - https://docs.obtrace.ai/docs/sdks/browser
-- https://docs.obtrace.ai/docs/sdks/kotlin
-- https://docs.obtrace.ai/docs/sdks/rust
-- https://docs.obtrace.ai/docs/sdks/swift
 - https://docs.obtrace.ai/docs/sdks/db-agent
 - https://docs.obtrace.ai/docs/sdks/semantic-metrics
 
@@ -145,6 +142,7 @@ Comparisons:
 SDK install commands (all repos under github.com/obtraceai/):
 - JS: npm install @obtrace/sdk-js (npmjs.com, v1.0.2, ESM+CJS)
 - Browser: npm install @obtrace/sdk-browser (npmjs.com, v1.0.1)
+  Entry points: @obtrace/sdk-browser/browser (manual init), @obtrace/sdk-browser/auto (zero-config), @obtrace/sdk-browser/react (React wrapper)
 - Go: go get github.com/obtraceai/obtrace-sdk-go (Go proxy, v1.0.0)
 - Python: pip install obtrace-sdk-python (PyPI, v1.0.0)
 - Java: Maven Central io.obtrace:obtrace-sdk-java:1.0.0
@@ -157,6 +155,30 @@ Tools:
 - MCP: go install github.com/obtraceai/obtrace-mcp/cmd/mcp-obtrace@latest or Docker ghcr.io/obtraceai/obtrace-mcp
 - DB Agent: Docker ghcr.io/obtraceai/db-agent
 - Zero CLI: Docker ghcr.io/obtraceai/obtrace-zero-cli
+
+Zero-config browser setup:
+- Import `@obtrace/sdk-browser/auto` with no arguments. The SDK reads env vars automatically.
+- Supported env var prefixes: VITE_, NEXT_PUBLIC_, REACT_APP_, or unprefixed.
+- Required env vars: OBTRACE_API_KEY, OBTRACE_INGEST_BASE_URL.
+- Optional env vars: OBTRACE_SERVICE_NAME (defaults to "web-app"), OBTRACE_APP_ID, OBTRACE_ENV.
+- The /auto entry point patches window.fetch globally, captures errors, console output, Web Vitals, and session replay with zero additional code.
+- For React apps, use `@obtrace/sdk-browser/react` which exports `obtrace(config)`, `getObtrace()`, `obtraceLog()`, `obtraceMetric()`, and `obtraceError()`.
+
+Minimum SDK setup patterns (absolute minimum code per language):
+- Browser (zero-config): `import '@obtrace/sdk-browser/auto'` (one line, reads env vars)
+- Browser (manual): `import { initBrowserSDK } from '@obtrace/sdk-browser/browser'; initBrowserSDK({ apiKey, ingestBaseUrl, serviceName })`
+- Node/Bun: `import { initNodeSDK } from '@obtrace/sdk-js/node'; initNodeSDK({ apiKey, ingestBaseUrl, serviceName })`
+- Python: `from obtrace_sdk import ObtraceClient, ObtraceConfig; client = ObtraceClient(ObtraceConfig(api_key=..., ingest_base_url=..., service_name=...))`
+- Go: `client := ob.NewClient(ob.Config{APIKey: ..., IngestBaseURL: ..., ServiceName: ...}); defer client.Shutdown(ctx)`
+- Java: `ObtraceConfig cfg = new ObtraceConfig(); cfg.apiKey = ...; cfg.ingestBaseUrl = ...; cfg.serviceName = ...; new ObtraceClient(cfg)`
+- .NET: `var client = new ObtraceClient(new ObtraceConfig { ApiKey = ..., IngestBaseUrl = ..., ServiceName = ... });`
+- PHP: `$client = new ObtraceClient(new ObtraceConfig(apiKey: ..., ingestBaseUrl: ..., serviceName: ...));`
+- Ruby: `client = Obtrace::Client.new(api_key: ..., ingest_base_url: ..., service_name: ...)`
+
+Planned SDKs (NOT yet available):
+- Kotlin: Planned, not released. No install command available.
+- Rust: Planned, not released. No install command available.
+- Swift: Planned, not released. No install command available.
 
 Source-of-truth setup rules:
 - Backend SDKs send OTLP payloads to `/otlp/v1/logs`, `/otlp/v1/traces`, and `/otlp/v1/metrics`.

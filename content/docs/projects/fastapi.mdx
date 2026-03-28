@@ -11,33 +11,60 @@ Use this guide for FastAPI services where async request handling and dependency 
 - Async DB calls and background tasks.
 - Exception handling and response serialization.
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK at app startup event.
-2. Instrument middleware for request timing and status.
-3. Wrap outbound calls (DB/HTTP/queue) with spans.
-4. Flush on graceful shutdown event.
+```python title="main.py"
+import os
 
-## Minimum Data Contract
+from fastapi import FastAPI
+from obtrace_sdk import ObtraceClient, ObtraceConfig
+from obtrace_sdk.http import fastapi_middleware
 
-- `service`, `env`, `version` on all emitted signals.
-- Request ID and user/session context where policy allows.
-- Error type and stack context for triage.
+client = ObtraceClient(
+    ObtraceConfig(
+        api_key=os.getenv("OBTRACE_API_KEY"),
+        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
+        service_name="checkout-api",
+        env=os.getenv("OBTRACE_ENV", "production"),
+        service_version=os.getenv("OBTRACE_SERVICE_VERSION"),
+    )
+)
+
+app = FastAPI()
+app.middleware("http")(fastapi_middleware(client))
+
+@app.post("/checkout")
+async def checkout():
+    client.log("info", "checkout.started")
+    return {"ok": True}
+```
+
+The middleware auto-captures every request as a span with method, path, status, and duration. All `logging.*` calls are captured automatically.
+
+## Environment Variables
+
+```bash
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+OBTRACE_ENV=production
+OBTRACE_SERVICE_VERSION=1.0.0
+```
 
 ## Validation Checklist
 
-- Synthetic request emits log + span + metric.
-- Error responses include correlated trace context.
-- Shutdown flush emits final queue successfully.
+- [ ] Synthetic request emits log + span + metric
+- [ ] Error responses include correlated trace context
+- [ ] `logging.error()` calls appear in Obtrace as error logs
+- [ ] Shutdown flush emits final queue successfully
 
 ## Production Hardening
 
 1. Restrict sensitive fields before emission.
 2. Tune queue and flush interval for async workloads.
-3. Validate startup/shutdown hooks after framework upgrades.
+3. Register `atexit` or FastAPI shutdown event for clean flush.
 
 ## Troubleshooting
 
-- Startup works but no data: inspect middleware order.
+- Startup works but no data: inspect middleware order (obtrace middleware should be first).
 - Drops under load: tune queue backpressure settings.
 - Trace gaps: instrument manual spans around async boundaries.

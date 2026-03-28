@@ -11,24 +11,61 @@ Use this guide for Go APIs where low latency and predictable resource usage are 
 - Service/domain packages.
 - DB and outbound client boundaries.
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK once at process start.
-2. Instrument middleware for request timing/status.
-3. Add spans around DB/outbound calls.
-4. Flush gracefully on SIGTERM.
+Initialize the SDK and wrap your handler with the provided middleware:
 
-## Minimum Data Contract
+```go title="main.go"
+package main
 
-- `service`, `env`, `version` in all key events.
-- Request correlation IDs propagated through handlers.
-- Error events with operation context.
+import (
+	"context"
+	"net/http"
+	"os"
+
+	ob "github.com/obtraceai/obtrace-sdk-go/pkg/obtrace"
+	mw "github.com/obtraceai/obtrace-sdk-go/middleware/nethttp"
+)
+
+func main() {
+	client := ob.NewClient(ob.Config{
+		APIKey:        os.Getenv("OBTRACE_API_KEY"),
+		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
+		ServiceName:   "checkout-api",
+		Env:           os.Getenv("OBTRACE_ENV"),
+	})
+	defer client.Shutdown(context.Background())
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/checkout", handleCheckout)
+
+	http.ListenAndServe(":8080", mw.Middleware(client, mux))
+}
+
+func handleCheckout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"ok":true}`))
+}
+```
+
+The middleware emits one span (`http.server METHOD`) and one log per request with method, route, status, and duration. Stdlib `log.*` calls are also captured automatically.
+
+Gin and Echo middleware are available under `middleware/gin` and `middleware/echo`.
+
+## Environment Variables
+
+```bash
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+OBTRACE_ENV=production
+```
 
 ## Validation Checklist
 
-- Synthetic load emits stable telemetry.
-- Slow handlers appear clearly in spans.
-- Shutdown path flushes final queue.
+- [ ] Synthetic load emits stable telemetry
+- [ ] Slow handlers appear clearly in spans
+- [ ] Shutdown path flushes final queue
+- [ ] `log.Println()` calls appear as structured logs
 
 ## Production Hardening
 
@@ -39,5 +76,5 @@ Use this guide for Go APIs where low latency and predictable resource usage are 
 ## Troubleshooting
 
 - Missing data under load: tune buffering/retry and inspect backpressure.
-- Missing spans: instrument all I/O boundaries.
+- Missing spans: ensure `mw.Middleware` wraps the outermost handler.
 - Inconsistent tags: enforce shared middleware decorators.

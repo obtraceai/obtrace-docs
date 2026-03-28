@@ -11,34 +11,64 @@ Use this guide for Spring Boot services where request pipelines, services, and r
 - Service and repository layers.
 - Outbound clients (HTTP, messaging, DB).
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK during application startup.
-2. Instrument inbound HTTP requests.
-3. Capture exceptions and map to traces.
-4. Instrument DB and external client calls.
+Register the Obtrace client as a Spring bean and add the filter for request instrumentation:
 
-## Minimum Data Contract
+```java title="src/main/java/com/example/config/ObtraceBootstrap.java"
+import io.obtrace.sdk.core.ObtraceClient;
+import io.obtrace.sdk.model.ObtraceConfig;
+import io.obtrace.sdk.framework.SpringObtraceFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-- `service`, `env`, `version` tags in every signal.
-- Release metadata for deployment correlation.
-- Error events with stack context and route name.
+@Configuration
+public class ObtraceBootstrap {
+    @Bean
+    public ObtraceClient obtraceClient() {
+        ObtraceConfig cfg = new ObtraceConfig();
+        cfg.apiKey = System.getenv("OBTRACE_API_KEY");
+        cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
+        cfg.serviceName = "checkout-api";
+        cfg.env = System.getenv("OBTRACE_ENV");
+        cfg.serviceVersion = System.getenv("OBTRACE_SERVICE_VERSION");
+        return new ObtraceClient(cfg);
+    }
+
+    @Bean
+    public SpringObtraceFilter obtraceFilter(ObtraceClient client) {
+        return new SpringObtraceFilter(client);
+    }
+}
+```
+
+The `SpringObtraceFilter` auto-captures every HTTP request as a span with method, route, status, and duration. All `java.util.logging` output is also captured automatically.
+
+## Environment Variables
+
+```bash
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+OBTRACE_ENV=production
+OBTRACE_SERVICE_VERSION=1.0.0
+```
 
 ## Validation Checklist
 
-- Boot sequence emits startup signal.
-- 5xx responses are trace-linked.
-- Slow queries appear in span timeline.
+- [ ] Boot sequence emits startup signal
+- [ ] 5xx responses are trace-linked
+- [ ] Slow queries appear in span timeline
+- [ ] JVM shutdown hook flushes pending telemetry
 
 ## Production Hardening
 
-1. Ensure shutdown hooks flush telemetry.
+1. Ensure shutdown hooks flush telemetry (`ObtraceClient` registers one by default).
 2. Keep retry bounded to avoid cascading failures.
 3. Add alerts on ingestion/auth errors.
 4. Validate after dependency and Java version updates.
 
 ## Troubleshooting
 
-- No data after startup refactor: confirm bean init path.
-- Missing DB spans: ensure instrumentation wraps driver/repo boundaries.
+- No data after startup refactor: confirm `@Configuration` class is scanned.
+- Missing DB spans: wrap JDBC calls with `client.span()`.
 - High cardinality: normalize dynamic tag values.

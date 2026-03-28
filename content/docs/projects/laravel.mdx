@@ -11,33 +11,116 @@ Use this guide for Laravel services that need stable incident context across req
 - Controllers/services/repositories.
 - Queue workers and scheduled jobs.
 
-## Recommended Setup
+## Setup
 
-1. Initialize SDK in application bootstrap/service provider.
-2. Instrument HTTP request lifecycle.
-3. Capture exceptions from global handler.
-4. Instrument queue jobs and external APIs.
+Create a service provider to initialize the SDK:
 
-## Minimum Data Contract
+```php title="app/Providers/ObtraceServiceProvider.php"
+<?php
 
-- Consistent `service`, `env`, `version` tags.
-- Correlation ID between request and queued work.
-- Error context with route and exception class.
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use Obtrace\Sdk\ObtraceClient;
+use Obtrace\Sdk\ObtraceConfig;
+
+class ObtraceServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->singleton(ObtraceClient::class, function () {
+            return new ObtraceClient(new ObtraceConfig(
+                apiKey: config("services.obtrace.api_key"),
+                ingestBaseUrl: config("services.obtrace.ingest_url"),
+                serviceName: "order-api",
+                env: app()->environment(),
+                serviceVersion: config("app.version", "1.0.0"),
+            ));
+        });
+    }
+}
+```
+
+Create middleware for HTTP request instrumentation:
+
+```php title="app/Http/Middleware/ObtraceMiddleware.php"
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Obtrace\Sdk\ObtraceClient;
+
+class ObtraceMiddleware
+{
+    public function __construct(private ObtraceClient $client) {}
+
+    public function handle(Request $request, Closure $next)
+    {
+        $start = microtime(true);
+        $response = $next($request);
+        $durationMs = (microtime(true) - $start) * 1000;
+
+        $route = $request->route()?->uri() ?? $request->getPathInfo();
+        $method = $request->getMethod();
+
+        $this->client->span("http.server {$method} /{$route}", attrs: [
+            "http.method" => $method,
+            "http.route" => "/{$route}",
+            "http.status_code" => $response->getStatusCode(),
+        ]);
+
+        $this->client->metric("http.server.request.duration", $durationMs, "ms", [
+            "http.method" => $method,
+            "http.route" => "/{$route}",
+            "http.status_code" => $response->getStatusCode(),
+        ]);
+
+        return $response;
+    }
+}
+```
+
+Register in `bootstrap/app.php`:
+
+```php
+->withMiddleware(function ($middleware) {
+    $middleware->append(\App\Http\Middleware\ObtraceMiddleware::class);
+})
+```
+
+## Environment Variables
+
+```bash title=".env"
+OBTRACE_API_KEY=obt_...
+OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
+```
+
+Add to `config/services.php`:
+
+```php
+'obtrace' => [
+    'api_key' => env('OBTRACE_API_KEY'),
+    'ingest_url' => env('OBTRACE_INGEST_BASE_URL'),
+],
+```
 
 ## Validation Checklist
 
-- Web requests emit logs/traces.
-- Queue jobs emit telemetry with same environment tags.
-- Failed jobs include enough context for triage.
+- [ ] Web requests emit logs and spans
+- [ ] Queue jobs emit telemetry with same environment tags
+- [ ] Failed jobs include enough context for triage
+- [ ] `error_log()` calls appear in Obtrace
 
 ## Production Hardening
 
-1. Keep credentials in deployment secret stores.
+1. Keep credentials in deployment secret stores, not `.env` in version control.
 2. Use queue-safe buffering settings.
 3. Validate observability after framework upgrades.
 
 ## Troubleshooting
 
-- Web data present but queue data missing: initialize SDK in worker context.
+- Web data present but queue data missing: initialize SDK in worker context too.
 - Noisy logs: restrict low-value events.
 - Correlation breaks: enforce shared request/job identifiers.
