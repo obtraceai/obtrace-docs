@@ -93,9 +93,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.INFRA_DEPLOY_TOKEN }}
         run: |
-          gh api repos/obtraceai/obtrace-infra/dispatches \
-            -f event_type=image-update \
-            -f "client_payload[source]=docs" \
-            -f "client_payload[version]=${{ steps.version.outputs.tag }}" \
-            -f "client_payload[sha]=${{ steps.version.outputs.sha }}" \
-            -f "client_payload[services]=docs"
+          curl -sf -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/obtraceai/obtrace-infra/dispatches" \
+            -d '{"event_type":"image-update","client_payload":{"source":"docs","version":"${{ steps.version.outputs.tag }}","sha":"${{ steps.version.outputs.sha }}","services":"docs"}}'
