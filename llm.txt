@@ -132,18 +132,57 @@ Browser (@obtrace/browser, npm):
 
   Env var prefixes: VITE_OBTRACE_PUBLIC_KEY, NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
 
-API KEY TYPES
--------------
+================================================================================
+API KEY TYPES & SECURITY MODEL
+================================================================================
 
-Private keys (obt_live_*, obt_stg_*, obt_dev_*):
-  Server-side only. Full access. Never expose in client-side code.
+Two key types exist. The dashboard generates both automatically during setup.
+
+PRIVATE KEYS (server-side only)
+  Prefixes: obt_live_* (prod), obt_stg_* (staging), obt_dev_* (dev)
+  Full access to all ingest endpoints. Never expose in client-side code.
   Used by: Node.js, Python, Go, Java, .NET, PHP, Ruby SDKs.
+  Store in server env vars: OBTRACE_API_KEY=obt_live_...
 
-Public keys (obt_pub_live_*, obt_pub_stg_*, obt_pub_dev_*):
-  Browser-safe. Ingest-only. Requires origin allowlist.
-  Used by: Browser SDK. Visible in DevTools — this is expected.
-  The ingest-edge validates the Origin header against the configured allowlist.
-  Create in dashboard: Project > API Keys > type "public", add allowed origins.
+PUBLIC KEYS (browser-safe)
+  Prefixes: obt_pub_live_* (prod), obt_pub_stg_* (staging), obt_pub_dev_* (dev)
+  Restricted to ingest-only endpoints. Requires origin allowlist.
+  Used by: Browser SDK exclusively.
+  Store in frontend env vars: VITE_OBTRACE_PUBLIC_KEY=obt_pub_live_...
+
+  Public keys are visible in browser DevTools — this is expected and by design.
+  Security is enforced server-side via origin validation.
+
+ORIGIN ALLOWLIST (required for public keys)
+  Every public key must have at least one allowed origin configured.
+  The ingest-edge validates the Origin header on every request using a public key.
+  Requests without a matching origin are rejected with 403 Forbidden.
+
+  Supported formats:
+    - Exact: https://myapp.com
+    - Wildcard subdomain: https://*.myapp.com (matches app.myapp.com, staging.myapp.com)
+
+  Configure via dashboard: Project > API Keys > edit origins
+  API: PUT /control-panel/api-keys/{id}/allowed-origins
+    Body: { "allowed_origins": ["https://myapp.com", "https://*.myapp.com"] }
+
+  Propagation delay: origin changes take up to 60 seconds (cache TTL).
+
+SETUP FLOW
+  1. Create project in dashboard
+  2. Dashboard auto-generates both private + public keys per environment
+  3. Server SDKs: use private key in OBTRACE_API_KEY env var
+  4. Browser SDK: use public key in VITE_OBTRACE_PUBLIC_KEY env var
+  5. Configure allowed origins for the public key (your app domain)
+  6. Only apiKey and serviceName are required — ingest URL is hardcoded to https://ingest.obtrace.ai
+
+WHY TWO KEY TYPES?
+  Browser JavaScript exposes everything in DevTools. Anyone can see the API key,
+  copy it, and replay requests. Public keys mitigate this:
+  - Restricted to ingest endpoints only (cannot query data or access control plane)
+  - Origin validation blocks requests from unauthorized domains
+  - Rate limiting per key prevents abuse
+  Private keys have full access and must never leave the server.
 
 ================================================================================
 Agents — zero-code monitoring for databases and infrastructure
