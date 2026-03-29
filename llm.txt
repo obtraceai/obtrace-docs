@@ -139,7 +139,7 @@ Private keys (obt_live_*, obt_stg_*, obt_dev_*):
   Server-side only. Full access. Never expose in client-side code.
   Used by: Node.js, Python, Go, Java, .NET, PHP, Ruby SDKs.
 
-Public keys (obt_pub_*):
+Public keys (obt_pub_live_*, obt_pub_stg_*, obt_pub_dev_*):
   Browser-safe. Ingest-only. Requires origin allowlist.
   Used by: Browser SDK. Visible in DevTools — this is expected.
   The ingest-edge validates the Origin header against the configured allowlist.
