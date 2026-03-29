@@ -20,7 +20,6 @@ import (
 
 client := ob.NewClient(ob.Config{
   APIKey: os.Getenv("OBTRACE_API_KEY"),
-  IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
   TenantID: os.Getenv("OBTRACE_TENANT_ID"),
   ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
   AppID: "checkout-api",

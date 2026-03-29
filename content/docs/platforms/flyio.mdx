@@ -16,7 +16,6 @@ Fly.io apps are instrumented by setting secrets and adding the Obtrace SDK or us
 ```bash
 fly secrets set \
   OBTRACE_API_KEY=obt_live_xxxxx \
-  OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai \
   OBTRACE_PLATFORM=flyio
 ```
 
@@ -35,14 +34,13 @@ import { initNodeSDK } from "@obtrace/sdk-js/node";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: process.env.FLY_APP_NAME || "my-app",
 });
 ```
 
 ### Python / Go / Java
 
-Same pattern — read `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` from environment.
+Same pattern — read `OBTRACE_API_KEY` from environment.
 
 ## OTLP native export
 

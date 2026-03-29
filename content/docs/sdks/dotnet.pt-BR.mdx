@@ -16,7 +16,6 @@ using Obtrace.Sdk;
 
 var cfg = new ObtraceConfig {
   ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
-  IngestBaseUrl = Environment.GetEnvironmentVariable("OBTRACE_INGEST_BASE_URL"),
   TenantId = Environment.GetEnvironmentVariable("OBTRACE_TENANT_ID"),
   ProjectId = Environment.GetEnvironmentVariable("OBTRACE_PROJECT_ID"),
   AppId = "checkout-api",

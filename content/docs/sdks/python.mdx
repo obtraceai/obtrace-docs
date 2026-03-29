@@ -23,7 +23,6 @@ import os
 
 client = ObtraceClient(ObtraceConfig(
     api_key=os.getenv("OBTRACE_API_KEY"),
-    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
     service_name="checkout-api",
 ))
 ```
@@ -55,7 +54,6 @@ Outbound HTTP, database queries, cache operations, and task queue jobs are all a
 ```python
 client = ObtraceClient(ObtraceConfig(
     api_key=os.getenv("OBTRACE_API_KEY"),
-    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
     service_name="checkout-api",
     auto_instrument_http=False,
 ))
@@ -179,7 +177,6 @@ from obtrace_sdk.http import fastapi_middleware
 
 client = ObtraceClient(ObtraceConfig(
     api_key=os.getenv("OBTRACE_API_KEY"),
-    ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
     service_name="checkout-api",
 ))
 
@@ -223,7 +220,6 @@ MIDDLEWARE = [
 
 OBTRACE = {
     "API_KEY": os.getenv("OBTRACE_API_KEY"),
-    "INGEST_BASE_URL": os.getenv("OBTRACE_INGEST_BASE_URL"),
     "SERVICE_NAME": "checkout-api",
 }
 ```
@@ -233,7 +229,6 @@ OBTRACE = {
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `api_key` | `str` | | **Required.** Your Obtrace API key. |
-| `ingest_base_url` | `str` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
 | `service_name` | `str` | | **Required.** Stable name for this service. |
 | `service_version` | `str` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
 | `tenant_id` | `str` | `None` | Scoped ingest identity. |

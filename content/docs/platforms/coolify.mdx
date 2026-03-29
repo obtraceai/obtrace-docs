@@ -38,7 +38,6 @@ services:
       - obtrace-agent:/obtrace:ro
     environment:
       - OBTRACE_API_KEY=obt_live_xxxxx
-      - OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
       - OBTRACE_PLATFORM=coolify
       - NODE_OPTIONS=--require /obtrace/obtrace-loader.js
     depends_on:
@@ -81,7 +80,6 @@ import { initNodeSDK } from "@obtrace/sdk-js/node";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: "my-coolify-app",
 });
 ```

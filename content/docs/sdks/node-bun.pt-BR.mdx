@@ -18,7 +18,6 @@ import { initNodeSDK, SemanticMetrics } from "@obtrace/sdk-js/node";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   tenantId: process.env.OBTRACE_TENANT_ID,
   projectId: process.env.OBTRACE_PROJECT_ID,
   appId: "checkout-api",

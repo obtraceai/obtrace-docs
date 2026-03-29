@@ -35,7 +35,6 @@ from obtrace_sdk.http import fastapi_middleware
 client = ObtraceClient(
     ObtraceConfig(
         api_key=os.getenv("OBTRACE_API_KEY"),
-        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
         tenant_id=os.getenv("OBTRACE_TENANT_ID"),
         project_id=os.getenv("OBTRACE_PROJECT_ID"),
         app_id="checkout-api",

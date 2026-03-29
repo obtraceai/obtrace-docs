@@ -28,14 +28,13 @@ import (
 func main() {
 	client := ob.NewClient(ob.Config{
 		APIKey:        os.Getenv("OBTRACE_API_KEY"),
-		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
 		ServiceName:   "checkout-api",
 	})
 	defer client.Shutdown(context.Background())
 }
 ```
 
-Set `OBTRACE_API_KEY` and `OBTRACE_INGEST_BASE_URL` in your environment. `ServiceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
+Set `OBTRACE_API_KEY` in your environment. `ServiceName` should be a stable, lowercase identifier that matches what your team calls the service (e.g., `checkout-api`, `billing-worker`).
 
 ## What's Captured Automatically
 
@@ -58,7 +57,6 @@ OTel contrib packages for Go require explicit wiring (unlike dynamic languages),
 ```go
 client := ob.NewClient(ob.Config{
 	APIKey:          os.Getenv("OBTRACE_API_KEY"),
-	IngestBaseURL:   os.Getenv("OBTRACE_INGEST_BASE_URL"),
 	ServiceName:     "checkout-api",
 	DisableAutoHTTP: true,
 })
@@ -176,7 +174,6 @@ import (
 func main() {
 	client := ob.NewClient(ob.Config{
 		APIKey:        os.Getenv("OBTRACE_API_KEY"),
-		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
 		ServiceName:   "checkout-api",
 	})
 	defer client.Shutdown(context.Background())
@@ -202,7 +199,6 @@ Gin, Echo, Chi, Gorilla Mux, and Fiber middleware are also available under `midd
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `APIKey` | `string` | `""` | **Required.** Your Obtrace API key. |
-| `IngestBaseURL` | `string` | `""` | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
 | `ServiceName` | `string` | `""` | **Required.** Stable name for this service. |
 | `ServiceVersion` | `string` | `""` | Deployment version (git SHA, semver, date). |
 | `TenantID` | `string` | `""` | Scoped ingest identity. |

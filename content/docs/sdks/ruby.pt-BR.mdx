@@ -16,7 +16,6 @@ require_relative "../lib/obtrace_sdk"
 
 cfg = ObtraceSDK::Config.new(
   api_key: ENV.fetch("OBTRACE_API_KEY"),
-  ingest_base_url: ENV.fetch("OBTRACE_INGEST_BASE_URL"),
   tenant_id: ENV["OBTRACE_TENANT_ID"],
   project_id: ENV["OBTRACE_PROJECT_ID"],
   app_id: "checkout-api",

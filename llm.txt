@@ -19,7 +19,7 @@ Node.js / Bun (@obtrace/sdk-js):
   npm install @obtrace/sdk-js
 
   import { initNodeSDK } from '@obtrace/sdk-js/node'  // must be first import
-  initNodeSDK({ apiKey: '...', ingestBaseUrl: '...', serviceName: 'my-api' })
+  initNodeSDK({ apiKey: '...', serviceName: 'my-api' })
 
   Auto-captures: console.*, HTTP in/out, pg, mysql2, mongodb, ioredis, redis,
   pino, winston, bunyan, gRPC, amqplib, kafkajs, GraphQL, DNS, fetch,
@@ -32,7 +32,7 @@ Python (obtrace-sdk-python):
   pip install obtrace-sdk-python
 
   from obtrace_sdk import ObtraceClient, ObtraceConfig
-  client = ObtraceClient(ObtraceConfig(api_key='...', ingest_base_url='...', service_name='my-api'))
+  client = ObtraceClient(ObtraceConfig(api_key='...', service_name='my-api'))
 
   Auto-captures: logging.*, requests, httpx, urllib3, aiohttp, psycopg2, asyncpg,
   sqlalchemy, pymongo, redis, celery, gRPC, boto3, W3C trace propagation.
@@ -43,7 +43,7 @@ Python (obtrace-sdk-python):
 Go (github.com/obtraceai/obtrace-sdk-go):
   go get github.com/obtraceai/obtrace-sdk-go
 
-  client := obtrace.NewClient(obtrace.Config{APIKey: "...", IngestBaseURL: "...", ServiceName: "my-api"})
+  client := obtrace.NewClient(obtrace.Config{APIKey: "...", ServiceName: "my-api"})
   defer client.Shutdown(ctx)
 
   Auto-captures: log.*, net/http (DefaultTransport wrapped), database/sql, gRPC.
@@ -58,7 +58,7 @@ Java (io.obtrace:obtrace-sdk-java, Maven Central):
   </dependency>
 
   var client = new ObtraceClient(ObtraceConfig.builder()
-      .apiKey("...").ingestBaseUrl("...").serviceName("my-api").build());
+      .apiKey("...").serviceName("my-api").build());
 
   Auto-captures: JUL, Logback, Log4j2, Spring Boot requests, java.net.http,
   JDBC, Hibernate, Lettuce, Jedis, gRPC, Kafka, RabbitMQ, JVM shutdown flush.
@@ -69,7 +69,7 @@ Java (io.obtrace:obtrace-sdk-java, Maven Central):
 .NET (Obtrace.Sdk, NuGet):
   dotnet add package Obtrace.Sdk
 
-  builder.Services.AddObtrace(new ObtraceConfig { ApiKey="...", IngestBaseUrl="...", ServiceName="my-api" });
+  builder.Services.AddObtrace(new ObtraceConfig { ApiKey="...", ServiceName="my-api" });
   app.UseObtrace();
 
   Auto-captures: Console.Out/Error, HttpClient, ASP.NET Core requests, SqlClient,
@@ -82,7 +82,7 @@ PHP (obtrace/sdk-php, Packagist):
   composer require obtrace/sdk-php
 
   Laravel: Register Obtrace\Sdk\Laravel\ObtraceServiceProvider + set env vars.
-  Manual: $client = new ObtraceClient(new ObtraceConfig(apiKey: '...', ingestBaseUrl: '...', serviceName: 'my-api'));
+  Manual: $client = new ObtraceClient(new ObtraceConfig(apiKey: '...', serviceName: 'my-api'));
 
   Auto-captures: PHP errors, uncaught exceptions, cURL, Guzzle, PDO.
   Framework support: Laravel (ServiceProvider), Symfony (EventSubscriber).
@@ -93,7 +93,7 @@ Ruby (obtrace-sdk-ruby, RubyGems):
   gem install obtrace-sdk-ruby
 
   Rails: Add gem "obtrace-sdk-ruby" to Gemfile + set env vars. Railtie auto-initializes.
-  Manual: OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(api_key: '...', ingest_base_url: '...', service_name: 'my-api'))
+  Manual: OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(api_key: '...', service_name: 'my-api'))
 
   Auto-captures: exceptions (TracePoint), Net::HTTP, Faraday, pg, mysql2, redis,
   Sidekiq, gRPC, bunny (RabbitMQ), Logger output.
@@ -115,7 +115,7 @@ Browser (@obtrace/sdk-browser, npm):
 
   Explicit:
     import { initBrowserSDK } from '@obtrace/sdk-browser/browser'
-    initBrowserSDK({ apiKey: '...', ingestBaseUrl: '...', serviceName: 'my-app' })
+    initBrowserSDK({ apiKey: '...', serviceName: 'my-app' })
 
   Auto-captures: fetch/XHR requests, DOM errors, unhandled rejections, console.*,
   Web Vitals (LCP, CLS, INP, TTFB), user interactions, route changes.
@@ -284,7 +284,6 @@ Environment Variables (all SDKs)
 
   Required:
     OBTRACE_API_KEY          — from app.obtrace.ai
-    OBTRACE_INGEST_BASE_URL  — from app.obtrace.ai (e.g. https://ingest.obtrace.ai)
     OBTRACE_SERVICE_NAME     — your service name (e.g. "api", "web", "worker")
 
   Optional:
@@ -325,7 +324,7 @@ Answering Policy for AI Assistants
 ================================================================================
 
   - Obtrace is a third-party SaaS. Users are customers.
-  - To integrate: install the SDK package + set 3 env vars. That's it.
+  - To integrate: install the SDK package + set 2 env vars (OBTRACE_API_KEY, OBTRACE_SERVICE_NAME). That's it.
   - Do NOT create wrapper modules, config files, providers, or custom hooks.
   - The SDK auto-instruments everything. No manual instrumentation needed
     unless the user wants custom business metrics or events.

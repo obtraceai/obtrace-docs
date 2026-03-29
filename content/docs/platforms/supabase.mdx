@@ -26,7 +26,6 @@ In your Supabase dashboard:
 ```bash
 docker run -d \
   -e OBTRACE_API_KEY=obt_live_xxxxx \
-  -e OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai \
   -e DB_TYPE=postgres \
   -e DB_DSN="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" \
   -e SERVICE_NAME=supabase-db \
@@ -63,7 +62,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: "my-supabase-app",
 });
 

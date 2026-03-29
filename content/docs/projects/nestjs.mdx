@@ -22,7 +22,6 @@ import { AppModule } from "./app.module";
 
 const ob = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: "orders-api",
   env: process.env.NODE_ENV,
   serviceVersion: process.env.OBTRACE_SERVICE_VERSION,
@@ -56,7 +55,6 @@ export class OrdersService {
 
 ```bash
 OBTRACE_API_KEY=obt_...
-OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 NODE_ENV=production
 OBTRACE_SERVICE_VERSION=1.0.0
 ```

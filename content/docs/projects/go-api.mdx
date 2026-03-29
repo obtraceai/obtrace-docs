@@ -30,7 +30,6 @@ import (
 func main() {
 	client := ob.NewClient(ob.Config{
 		APIKey:        os.Getenv("OBTRACE_API_KEY"),
-		IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
 		ServiceName:   "checkout-api",
 		Env:           os.Getenv("OBTRACE_ENV"),
 	})
@@ -56,7 +55,6 @@ Gin and Echo middleware are available under `middleware/gin` and `middleware/ech
 
 ```bash
 OBTRACE_API_KEY=obt_...
-OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 OBTRACE_ENV=production
 ```
 

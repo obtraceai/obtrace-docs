@@ -21,12 +21,11 @@ use Obtrace\Sdk\ObtraceConfig;
 
 $client = new ObtraceClient(new ObtraceConfig(
     apiKey: getenv("OBTRACE_API_KEY") ?: "",
-    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "",
     serviceName: "order-api",
 ));
 ```
 
-Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
+Two fields are required: `apiKey` and `serviceName`. Everything else has defaults.
 
 ## Built on OpenTelemetry
 
@@ -51,7 +50,6 @@ After creating an `ObtraceClient`, the SDK configures OpenTelemetry and register
 ```php
 $client = new ObtraceClient(new ObtraceConfig(
     apiKey: getenv("OBTRACE_API_KEY") ?: "",
-    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "",
     serviceName: "order-api",
     autoInstrumentHttp: false,
 ));
@@ -62,7 +60,6 @@ $client = new ObtraceClient(new ObtraceConfig(
 ```php
 $client = new ObtraceClient(new ObtraceConfig(
     apiKey: getenv("OBTRACE_API_KEY") ?: "",
-    ingestBaseUrl: getenv("OBTRACE_INGEST_BASE_URL") ?: "",
     serviceName: "order-api",
     autoCaptureErrors: false,
 ));
@@ -155,7 +152,6 @@ The SDK includes a Laravel ServiceProvider for zero-config setup. Add your crede
 ```php title="config/services.php"
 'obtrace' => [
     'api_key' => env('OBTRACE_API_KEY'),
-    'ingest_url' => env('OBTRACE_INGEST_BASE_URL'),
 ],
 ```
 
@@ -212,7 +208,6 @@ class ObtraceServiceProvider extends ServiceProvider
         $this->app->singleton(ObtraceClient::class, function () {
             return new ObtraceClient(new ObtraceConfig(
                 apiKey: config("services.obtrace.api_key"),
-                ingestBaseUrl: config("services.obtrace.ingest_url"),
                 serviceName: "order-api",
                 env: app()->environment(),
                 serviceVersion: config("app.version", "1.0.0"),
@@ -340,7 +335,6 @@ while ($job = $queue->pop()) {
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `apiKey` | `string` | Yes | | Obtrace API key |
-| `ingestBaseUrl` | `string` | Yes | | Ingest endpoint URL |
 | `serviceName` | `string` | Yes | | Stable name for this service |
 | `tenantId` | `?string` | No | from key | Tenant identifier |
 | `projectId` | `?string` | No | from key | Project identifier |

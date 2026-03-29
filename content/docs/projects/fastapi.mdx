@@ -23,7 +23,6 @@ from obtrace_sdk.http import fastapi_middleware
 client = ObtraceClient(
     ObtraceConfig(
         api_key=os.getenv("OBTRACE_API_KEY"),
-        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
         service_name="checkout-api",
         env=os.getenv("OBTRACE_ENV", "production"),
         service_version=os.getenv("OBTRACE_SERVICE_VERSION"),
@@ -45,7 +44,6 @@ The middleware auto-captures every request as a span with method, path, status, 
 
 ```bash
 OBTRACE_API_KEY=obt_...
-OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 OBTRACE_ENV=production
 OBTRACE_SERVICE_VERSION=1.0.0
 ```

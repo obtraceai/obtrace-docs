@@ -28,7 +28,6 @@ Set these environment variables (Vite example shown, but `NEXT_PUBLIC_` and `REA
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `VITE_OBTRACE_API_KEY` | Yes | - | Your Obtrace API key |
-| `VITE_OBTRACE_INGEST_BASE_URL` | Yes | - | Obtrace ingest endpoint URL |
 | `VITE_OBTRACE_SERVICE_NAME` | No | `"web-app"` | Identifies this frontend in the Obtrace UI |
 | `VITE_OBTRACE_APP_ID` | No | - | Application identifier within a project |
 | `VITE_OBTRACE_ENV` | No | `NODE_ENV` or `"production"` | Deployment environment |
@@ -53,7 +52,6 @@ import { obtrace } from '@obtrace/sdk-browser/react'
 
 export const ob = obtrace({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   serviceName: "checkout-web",
 })
 ```
@@ -79,7 +77,6 @@ import { initBrowserSDK } from "@obtrace/sdk-browser/browser";
 
 export const ob = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   serviceName: "checkout-web",
 });
 ```
@@ -258,7 +255,6 @@ Failed requests also produce an error log and a `network_error` replay event.
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `apiKey` | `string` | Yes | - | Your Obtrace API key |
-| `ingestBaseUrl` | `string` | Yes | - | URL of your Obtrace ingest endpoint |
 | `serviceName` | `string` | Yes | - | Identifies this frontend app in the Obtrace UI |
 | `tenantId` | `string` | No | - | Your tenant ID (auto-resolved from API key if not set) |
 | `projectId` | `string` | No | - | Your project ID (auto-resolved from API key if not set) |

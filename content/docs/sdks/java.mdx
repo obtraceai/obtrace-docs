@@ -31,7 +31,6 @@ public class Main {
     public static void main(String[] args) {
         try (var client = new ObtraceClient(ObtraceConfig.builder()
                 .apiKey(System.getenv("OBTRACE_API_KEY"))
-                .ingestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
                 .serviceName("checkout-api")
                 .build())) {
             client.log("info", "service.started", null);
@@ -40,7 +39,7 @@ public class Main {
 }
 ```
 
-Three fields are required: `apiKey`, `ingestBaseUrl`, and `serviceName`. Everything else has defaults.
+Two fields are required: `apiKey` and `serviceName`. Everything else has defaults.
 
 `ObtraceClient` implements `AutoCloseable`, so use try-with-resources to ensure the internal executor shuts down cleanly. The default config also registers a JVM shutdown hook that calls `flush()` before exit. Disable it with `.registerShutdownHook(false)` on the builder if you manage lifecycle yourself.
 
@@ -195,7 +194,6 @@ public class ObtraceBootstrap {
     public ObtraceClient obtraceClient() {
         return new ObtraceClient(ObtraceConfig.builder()
             .apiKey(System.getenv("OBTRACE_API_KEY"))
-            .ingestBaseUrl(System.getenv("OBTRACE_INGEST_BASE_URL"))
             .serviceName("checkout-api")
             .env(System.getenv("OBTRACE_ENV"))
             .serviceVersion(System.getenv("OBTRACE_SERVICE_VERSION"))
@@ -252,7 +250,6 @@ All config is set through `ObtraceConfig.builder()`:
 | Builder method | Type | Default | Description |
 |----------------|------|---------|-------------|
 | `.apiKey()` | `String` | | **Required.** Your Obtrace API key. |
-| `.ingestBaseUrl()` | `String` | | **Required.** Ingest endpoint URL (e.g., `https://ingest.obtrace.ai`). |
 | `.serviceName()` | `String` | | **Required.** Stable name for this service. |
 | `.serviceVersion()` | `String` | `"0.0.0"` | Deployment version (git SHA, semver, date). |
 | `.tenantId()` | `String` | `null` | Scoped ingest identity. |

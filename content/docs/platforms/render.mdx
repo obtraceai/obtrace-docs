@@ -36,7 +36,6 @@ In your Render service settings, add:
 | Variable | Value |
 |----------|-------|
 | `OBTRACE_API_KEY` | `obt_live_...` |
-| `OBTRACE_INGEST_BASE_URL` | `https://ingest.obtrace.ai` |
 | `OBTRACE_PLATFORM` | `render` |
 
 Or via Render Blueprint (`render.yaml`):
@@ -49,8 +48,6 @@ services:
     envVars:
       - key: OBTRACE_API_KEY
         sync: false
-      - key: OBTRACE_INGEST_BASE_URL
-        value: https://ingest.obtrace.ai
       - key: OBTRACE_PLATFORM
         value: render
 ```
@@ -66,7 +63,6 @@ import { initNodeSDK } from "@obtrace/sdk-js/node";
 
 const sdk = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: "my-render-service",
 });
 ```

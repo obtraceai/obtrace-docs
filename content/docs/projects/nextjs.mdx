@@ -20,7 +20,6 @@ import { initNodeSDK } from "@obtrace/sdk-js/node";
 
 export const ob = initNodeSDK({
   apiKey: process.env.OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.OBTRACE_INGEST_BASE_URL!,
   serviceName: "web-nextjs",
   env: process.env.NODE_ENV,
   serviceVersion: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
@@ -31,7 +30,7 @@ The Node SDK auto-instruments all HTTP requests and console output.
 
 ## Browser-Side Setup (Zero-Config)
 
-Import the auto entry point in your root layout. Set `NEXT_PUBLIC_OBTRACE_API_KEY` and `NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL` in your environment.
+Import the auto entry point in your root layout. Set `NEXT_PUBLIC_OBTRACE_API_KEY` in your environment.
 
 ```tsx title="app/layout.tsx"
 import '@obtrace/sdk-browser/auto'
@@ -56,7 +55,6 @@ import { obtrace } from '@obtrace/sdk-browser/react'
 
 export const ob = obtrace({
   apiKey: process.env.NEXT_PUBLIC_OBTRACE_API_KEY!,
-  ingestBaseUrl: process.env.NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL!,
   serviceName: "web-nextjs",
 })
 ```
@@ -77,9 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ```bash title=".env.local"
 OBTRACE_API_KEY=obt_...
-OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 NEXT_PUBLIC_OBTRACE_API_KEY=obt_...
-NEXT_PUBLIC_OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 NEXT_PUBLIC_OBTRACE_SERVICE_NAME=web-nextjs
 ```
 

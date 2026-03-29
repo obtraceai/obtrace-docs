@@ -31,7 +31,6 @@ class ObtraceServiceProvider extends ServiceProvider
         $this->app->singleton(ObtraceClient::class, function () {
             return new ObtraceClient(new ObtraceConfig(
                 apiKey: config("services.obtrace.api_key"),
-                ingestBaseUrl: config("services.obtrace.ingest_url"),
                 serviceName: "order-api",
                 env: app()->environment(),
                 serviceVersion: config("app.version", "1.0.0"),
@@ -94,7 +93,6 @@ Register in `bootstrap/app.php`:
 
 ```bash title=".env"
 OBTRACE_API_KEY=obt_...
-OBTRACE_INGEST_BASE_URL=https://ingest.obtrace.ai
 ```
 
 Add to `config/services.php`:
@@ -102,7 +100,6 @@ Add to `config/services.php`:
 ```php
 'obtrace' => [
     'api_key' => env('OBTRACE_API_KEY'),
-    'ingest_url' => env('OBTRACE_INGEST_BASE_URL'),
 ],
 ```
 

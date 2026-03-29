@@ -16,7 +16,6 @@ import { initBrowserSDK, SemanticMetrics } from "@obtrace/sdk-browser/browser";
 
 const sdk = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  ingestBaseUrl: import.meta.env.VITE_OBTRACE_INGEST_BASE_URL,
   tenantId: import.meta.env.VITE_OBTRACE_TENANT_ID,
   projectId: import.meta.env.VITE_OBTRACE_PROJECT_ID,
   appId: "checkout-web",
@@ -49,6 +48,6 @@ await sdk.shutdown();
 
 ## Solução de problemas
 
-- Sem dados: valide `VITE_OBTRACE_INGEST_BASE_URL` e CORS.
+- Sem dados: valide a API key e CORS.
 - Sem replay: confira inicialização no runtime de browser.
 - Ative logs de debug em ambiente não produtivo.

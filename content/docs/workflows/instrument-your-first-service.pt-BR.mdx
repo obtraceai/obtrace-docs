@@ -47,7 +47,6 @@ Exemplos reais:
 client = ObtraceClient(
     ObtraceConfig(
         api_key=os.getenv("OBTRACE_API_KEY"),
-        ingest_base_url=os.getenv("OBTRACE_INGEST_BASE_URL"),
         tenant_id=os.getenv("OBTRACE_TENANT_ID"),
         project_id=os.getenv("OBTRACE_PROJECT_ID"),
         app_id="checkout-api",
@@ -63,7 +62,6 @@ client.span("checkout.charge", attrs={"cloud.region": os.getenv("AWS_REGION", "u
 ```go
 client := ob.NewClient(ob.Config{
   APIKey: os.Getenv("OBTRACE_API_KEY"),
-  IngestBaseURL: os.Getenv("OBTRACE_INGEST_BASE_URL"),
   TenantID: os.Getenv("OBTRACE_TENANT_ID"),
   ProjectID: os.Getenv("OBTRACE_PROJECT_ID"),
   AppID: "checkout-api",
@@ -76,7 +74,6 @@ client := ob.NewClient(ob.Config{
 ```java
 ObtraceConfig cfg = new ObtraceConfig();
 cfg.apiKey = System.getenv("OBTRACE_API_KEY");
-cfg.ingestBaseUrl = System.getenv("OBTRACE_INGEST_BASE_URL");
 cfg.tenantId = System.getenv("OBTRACE_TENANT_ID");
 cfg.projectId = System.getenv("OBTRACE_PROJECT_ID");
 cfg.appId = "checkout-api";

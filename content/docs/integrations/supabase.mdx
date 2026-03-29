@@ -14,7 +14,6 @@ npm install @obtrace/sdk-js
 Edge Function secrets:
 
 - `OBTRACE_API_KEY`
-- `OBTRACE_INGEST_BASE_URL`
 - `OBTRACE_TENANT_ID`
 - `OBTRACE_PROJECT_ID`
 - `OBTRACE_ENV`
@@ -22,7 +21,6 @@ Edge Function secrets:
 Frontend:
 
 - `VITE_OBTRACE_API_KEY`
-- `VITE_OBTRACE_INGEST_BASE_URL`
 - `VITE_OBTRACE_TENANT_ID`
 - `VITE_OBTRACE_PROJECT_ID`
 
@@ -35,7 +33,6 @@ import { ObtraceClient } from "@obtrace/sdk-js";
 
 const client = new ObtraceClient({
   apiKey: Deno.env.get("OBTRACE_API_KEY")!,
-  ingestBaseUrl: Deno.env.get("OBTRACE_INGEST_BASE_URL")!,
   serviceName: "supabase-edge",
   appId: "supabase-edge"
 });
