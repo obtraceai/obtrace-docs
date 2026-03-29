@@ -15,10 +15,10 @@ SDKs — 8 languages, all built on OpenTelemetry with full auto-instrumentation
 BACKEND SDKs
 -------------
 
-Node.js / Bun (@obtrace/sdk-js):
-  npm install @obtrace/sdk-js
+Node.js / Bun (@obtrace/sdk):
+  npm install @obtrace/sdk
 
-  import { initNodeSDK } from '@obtrace/sdk-js/node'  // must be first import
+  import { initNodeSDK } from '@obtrace/sdk/node'  // must be first import
   initNodeSDK({ apiKey: '...', serviceName: 'my-api' })
 
   Auto-captures: console.*, HTTP in/out, pg, mysql2, mongodb, ioredis, redis,
@@ -51,9 +51,9 @@ Go (github.com/obtraceai/obtrace-sdk-go):
 
   Manual APIs: client.Log(), client.Metric(), client.Span(), client.InjectPropagation()
 
-Java (io.obtrace:obtrace-sdk-java, Maven Central):
+Java (ai.obtrace:obtrace-sdk-java, Maven Central):
   <dependency>
-    <groupId>io.obtrace</groupId>
+    <groupId>ai.obtrace</groupId>
     <artifactId>obtrace-sdk-java</artifactId>
   </dependency>
 
@@ -78,7 +78,7 @@ Java (io.obtrace:obtrace-sdk-java, Maven Central):
 
   Manual APIs: client.Log(), client.Metric(), client.Span()
 
-PHP (obtrace/sdk-php, Packagist):
+PHP (obtrace/sdk, Packagist):
   composer require obtrace/sdk-php
 
   Laravel: Register Obtrace\Sdk\Laravel\ObtraceServiceProvider + set env vars.
@@ -89,10 +89,10 @@ PHP (obtrace/sdk-php, Packagist):
 
   Manual APIs: $client->log(), $client->metric(), $client->span()
 
-Ruby (obtrace-sdk-ruby, RubyGems):
-  gem install obtrace-sdk-ruby
+Ruby (obtrace, RubyGems):
+  gem install obtrace
 
-  Rails: Add gem "obtrace-sdk-ruby" to Gemfile + set env vars. Railtie auto-initializes.
+  Rails: Add gem "obtrace" to Gemfile + set env vars. Railtie auto-initializes.
   Manual: OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(api_key: '...', service_name: 'my-api'))
 
   Auto-captures: exceptions (TracePoint), Net::HTTP, Faraday, pg, mysql2, redis,
@@ -104,18 +104,22 @@ Ruby (obtrace-sdk-ruby, RubyGems):
 BROWSER SDK
 -----------
 
-Browser (@obtrace/sdk-browser, npm):
-  npm install @obtrace/sdk-browser
+Browser (@obtrace/browser, npm):
+  npm install @obtrace/browser
 
   Zero-config (one line):
-    import '@obtrace/sdk-browser/auto'
+    import '@obtrace/browser/auto'
 
   React:
-    import { initBrowserSDK } from '@obtrace/sdk-browser/react'
+    import { initBrowserSDK } from '@obtrace/browser/react'
 
   Explicit:
-    import { initBrowserSDK } from '@obtrace/sdk-browser/browser'
-    initBrowserSDK({ apiKey: '...', serviceName: 'my-app' })
+    import { initBrowserSDK } from '@obtrace/browser/browser'
+    initBrowserSDK({ apiKey: 'obt_pub_...', serviceName: 'my-app' })
+
+  IMPORTANT: Browser SDKs MUST use public keys (obt_pub_*), never private keys.
+  Public keys are restricted to ingest-only endpoints and require origin allowlist.
+  Create a public key in the dashboard and configure allowed origins for your domain.
 
   Auto-captures: fetch/XHR requests, DOM errors, unhandled rejections, console.*,
   Web Vitals (LCP, CLS, INP, TTFB), user interactions, route changes.
@@ -126,7 +130,20 @@ Browser (@obtrace/sdk-browser, npm):
 
   Manual APIs: ob.log(), ob.captureException(), ob.metric(), ob.captureReplayEvent()
 
-  Env var prefixes: VITE_OBTRACE_*, NEXT_PUBLIC_OBTRACE_*, REACT_APP_OBTRACE_*
+  Env var prefixes: VITE_OBTRACE_PUBLIC_KEY, NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
+
+API KEY TYPES
+-------------
+
+Private keys (obt_live_*, obt_stg_*, obt_dev_*):
+  Server-side only. Full access. Never expose in client-side code.
+  Used by: Node.js, Python, Go, Java, .NET, PHP, Ruby SDKs.
+
+Public keys (obt_pub_*):
+  Browser-safe. Ingest-only. Requires origin allowlist.
+  Used by: Browser SDK. Visible in DevTools — this is expected.
+  The ingest-edge validates the Origin header against the configured allowlist.
+  Create in dashboard: Project > API Keys > type "public", add allowed origins.
 
 ================================================================================
 Agents — zero-code monitoring for databases and infrastructure
