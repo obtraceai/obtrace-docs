@@ -29,8 +29,15 @@ BACKEND SDKs
 Node.js / Bun (@obtrace/sdk):
   npm install @obtrace/sdk
 
-  import { initNodeSDK } from '@obtrace/sdk/node'  // must be first import
-  initNodeSDK({ apiKey: '...', serviceName: 'my-api' })
+  .env (ONLY the key):
+    OBTRACE_API_KEY=obt_live_xxxxx
+
+  Code (must be first import):
+    import { initNodeSDK } from '@obtrace/sdk/node'
+    initNodeSDK({
+      apiKey: process.env.OBTRACE_API_KEY,
+      serviceName: 'my-api',  // hardcode this, do NOT read from env var
+    })
 
   Auto-captures: console.*, HTTP in/out, pg, mysql2, mongodb, ioredis, redis,
   pino, winston, bunyan, gRPC, amqplib, kafkajs, GraphQL, DNS, fetch,
@@ -118,30 +125,26 @@ BROWSER SDK
 Browser (@obtrace/browser, npm):
   npm install @obtrace/browser
 
-  Zero-config (one line):
-    import '@obtrace/browser/auto'
+  .env (ONLY the key — nothing else):
+    VITE_OBTRACE_PUBLIC_KEY=obt_pub_live_xxxxx
 
-  React:
-    import { initBrowserSDK } from '@obtrace/browser/react'
-
-  Explicit:
-    import { initBrowserSDK } from '@obtrace/browser/browser'
-    initBrowserSDK({ apiKey: 'obt_pub_...', serviceName: 'my-app' })
+  Code (serviceName is a CODE param, NOT an env var):
+    import { initBrowserSDK } from '@obtrace/browser'
+    initBrowserSDK({
+      apiKey: import.meta.env.VITE_OBTRACE_PUBLIC_KEY,
+      serviceName: 'my-app',  // hardcode this, do NOT read from env var
+    })
 
   IMPORTANT: Browser SDKs MUST use public keys (obt_pub_*), never private keys.
-  Public keys are restricted to ingest-only endpoints and require origin allowlist.
-  Create a public key in the dashboard and configure allowed origins for your domain.
+  NEVER create VITE_OBTRACE_SERVICE_NAME — serviceName goes in code only.
+  NEVER create VITE_OBTRACE_API_KEY — use VITE_OBTRACE_PUBLIC_KEY instead.
+  Public keys require origin allowlist configured in the dashboard.
 
   Auto-captures: fetch/XHR requests, DOM errors, unhandled rejections, console.*,
   Web Vitals (LCP, CLS, INP, TTFB), user interactions, route changes.
-
-  Session Replay: DOM mutation recording, network waterfall, console logs,
-  user interaction timeline. Privacy: input masking, CSS blocking (ob-block, ob-mask),
-  server-side PII scrubbing. Configurable sample rate (error-triggered or continuous).
+  Session Replay: DOM recording, network waterfall, console logs.
 
   Manual APIs: ob.log(), ob.captureException(), ob.metric(), ob.captureReplayEvent()
-
-  Env var prefixes: VITE_OBTRACE_PUBLIC_KEY, NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
 
 PLATFORM & EDGE SDKs
 ---------------------
@@ -162,9 +165,17 @@ Next.js (@obtrace/sdk + @obtrace/browser):
   Env: .env.local with OBTRACE_API_KEY + NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
 
 Supabase Edge Functions (@obtrace/sdk):
-  // supabase/functions/_shared/obtrace.ts
-  import { initNodeSDK } from "@obtrace/sdk/node"
-  initNodeSDK({ apiKey: Deno.env.get("OBTRACE_API_KEY"), serviceName: 'my-app' })
+  Env (ONLY the key — nothing else):
+    OBTRACE_API_KEY=obt_live_xxxxx
+
+  Code (supabase/functions/_shared/obtrace.ts):
+    import { initNodeSDK } from "@obtrace/sdk/node"
+    initNodeSDK({
+      apiKey: Deno.env.get("OBTRACE_API_KEY"),
+      serviceName: 'my-edge',  // hardcode this, do NOT read from env var
+    })
+
+  NEVER create OBTRACE_SERVICE_NAME env var — serviceName goes in code only.
 
 Vercel Functions (@obtrace/sdk):
   npm install @obtrace/sdk
