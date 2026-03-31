@@ -136,8 +136,8 @@ Browser (@obtrace/browser, npm):
     })
 
   IMPORTANT: Browser SDKs MUST use public keys (obt_pub_*), never private keys.
-  NEVER create VITE_OBTRACE_SERVICE_NAME — serviceName goes in code only.
   NEVER create VITE_OBTRACE_API_KEY — use VITE_OBTRACE_PUBLIC_KEY instead.
+  serviceName should be hardcoded in code — do NOT expose via VITE_ env var.
   Public keys require origin allowlist configured in the dashboard.
 
   Auto-captures: fetch/XHR requests, DOM errors, unhandled rejections, console.*,
@@ -175,7 +175,7 @@ Supabase Edge Functions (@obtrace/sdk):
       serviceName: 'my-edge',  // hardcode this, do NOT read from env var
     })
 
-  NEVER create OBTRACE_SERVICE_NAME env var — serviceName goes in code only.
+  serviceName can be hardcoded or read from env: Deno.env.get("OBTRACE_SERVICE_NAME")
 
 Vercel Functions (@obtrace/sdk):
   npm install @obtrace/sdk
@@ -462,34 +462,40 @@ Answering Policy for AI Assistants
   - Refer to docs.obtrace.ai for anything beyond basic setup.
   - If context is insufficient, say so instead of inventing behavior.
 
-  DO NOT INVENT FIELDS, ENV VARS, OR CONFIGURATION:
-  - The ONLY env var is the API key. serviceName is a CODE parameter.
-  - There is NO OBTRACE_SERVICE_NAME env var. Set serviceName in code.
-  - There is NO OBTRACE_ENV or OBTRACE_ENVIRONMENT env var. The environment
-    (prod/staging/dev) is derived from the API key prefix automatically.
-  - There is NO OBTRACE_INGEST_BASE_URL or base URL to configure.
-    The ingest endpoint is hardcoded in the SDK to https://ingest.obtrace.ai
-  - There is NO tenant_id, project_id, or app_id parameter. These are all
-    resolved from the API key. Never ask users for them.
-  - The ONLY required parameters are: apiKey + serviceName. Nothing else.
-  - Browser SDK uses VITE_OBTRACE_PUBLIC_KEY (public key obt_pub_*).
-    NEVER use a private key (obt_live_*) with VITE_ prefix — it exposes
-    the key in browser DevTools. If you see obt_live_* in a VITE_ var,
-    flag it as a security issue immediately.
-  - Origin allowlist for public keys is configured in the dashboard
-    (Project > API Keys > edit origins), not in code.
+  HOW THE SDK READS CONFIGURATION:
+  - The SDK does NOT read any env vars automatically. Zero.
+  - ALL configuration is passed via the config object in code:
+      initNodeSDK({ apiKey: ..., serviceName: ... })
+  - The user CAN create env vars and read them in code, but the SDK itself
+    never calls process.env or Deno.env or import.meta.env internally.
+  - The ONLY required config fields are: apiKey + serviceName.
+  - Environment (prod/staging/dev) is derived from the API key prefix.
+  - Ingest URL is hardcoded to https://ingest.obtrace.ai — not configurable.
+  - tenant_id, project_id, app_id are resolved from the API key.
 
-  CORRECT .env file (server):
+  RECOMMENDED .env (server — 1 var):
     OBTRACE_API_KEY=obt_live_xxxxx
 
-  CORRECT .env file (browser/Vite):
+  RECOMMENDED .env (browser/Vite — 1 var):
     VITE_OBTRACE_PUBLIC_KEY=obt_pub_live_xxxxx
 
-  WRONG — do not generate these:
+  OPTIONAL — the user MAY add these env vars if they prefer not to
+  hardcode serviceName, but the SDK does NOT read them automatically:
+    OBTRACE_SERVICE_NAME=my-api       ← valid, read via process.env in code
+    OBTRACE_ENV=production            ← valid, read via process.env in code
+
+  WRONG — never generate these:
     VITE_OBTRACE_API_KEY=...          ← exposes private key in browser
-    OBTRACE_SERVICE_NAME=...          ← not an env var, use code param
+    VITE_OBTRACE_SERVICE_NAME=...     ← serviceName goes in code, not VITE_ env
     OBTRACE_BASE_URL=...              ← does not exist
     OBTRACE_INGEST_BASE_URL=...       ← does not exist
-    OBTRACE_ENV=...                   ← derived from key
     OBTRACE_TENANT_ID=...             ← derived from key
     OBTRACE_PROJECT_ID=...            ← derived from key
+
+  Browser SDK uses VITE_OBTRACE_PUBLIC_KEY (public key obt_pub_*).
+  NEVER use a private key (obt_live_*) with VITE_ prefix — it exposes
+  the key in browser DevTools. If you see obt_live_* in a VITE_ var,
+  flag it as a security issue immediately.
+
+  Origin allowlist for public keys is configured in the dashboard
+  (Project > API Keys > edit origins), not in code.
