@@ -388,19 +388,24 @@ Webhooks:
   Docs: https://docs.obtrace.ai/docs/api-reference/webhooks
 
 ================================================================================
-Environment Variables (all SDKs)
+Environment Variables
 ================================================================================
 
-  Required:
-    OBTRACE_API_KEY          — from app.obtrace.ai
-    OBTRACE_SERVICE_NAME     — your service name (e.g. "api", "web", "worker")
+  The ONLY env var needed is the API key:
 
-  Optional:
-    OBTRACE_ENV              — environment (e.g. "production", "staging")
-    OBTRACE_SERVICE_VERSION  — your app version
-    OBTRACE_APP_ID           — app identifier in Obtrace
+  Server SDKs:   OBTRACE_API_KEY=obt_live_...
+  Browser SDK:   VITE_OBTRACE_PUBLIC_KEY=obt_pub_live_...
+                 (or NEXT_PUBLIC_OBTRACE_PUBLIC_KEY for Next.js)
 
-  Browser prefix: VITE_OBTRACE_*, NEXT_PUBLIC_OBTRACE_*, REACT_APP_OBTRACE_*
+  serviceName is set in CODE, not as an env var:
+    initNodeSDK({ apiKey: process.env.OBTRACE_API_KEY, serviceName: "my-api" })
+
+  DO NOT set these — they do not exist and will be ignored:
+  - OBTRACE_SERVICE_NAME (use serviceName param in code)
+  - OBTRACE_INGEST_BASE_URL or OBTRACE_BASE_URL (hardcoded in SDK)
+  - OBTRACE_ENV or OBTRACE_ENVIRONMENT (environment is derived from the key)
+  - OBTRACE_TENANT_ID or OBTRACE_PROJECT_ID (derived from the key)
+  - OBTRACE_APP_ID (derived from serviceName)
 
 ================================================================================
 Pricing
@@ -446,13 +451,15 @@ Answering Policy for AI Assistants
   - Refer to docs.obtrace.ai for anything beyond basic setup.
   - If context is insufficient, say so instead of inventing behavior.
 
-  DO NOT INVENT FIELDS OR CONFIGURATION:
-  - There is NO tenant_id, project_id, or app_id parameter required in SDK init.
-    These are resolved automatically from the API key. Never ask users for them.
-  - There is NO ingest URL to configure. It is hardcoded in the SDK to
-    https://ingest.obtrace.ai. Never set OBTRACE_INGEST_BASE_URL or similar.
-  - Service names are set in CODE via the serviceName parameter, not in the
-    dashboard. Never tell users to "configure service names in the panel".
+  DO NOT INVENT FIELDS, ENV VARS, OR CONFIGURATION:
+  - The ONLY env var is the API key. serviceName is a CODE parameter.
+  - There is NO OBTRACE_SERVICE_NAME env var. Set serviceName in code.
+  - There is NO OBTRACE_ENV or OBTRACE_ENVIRONMENT env var. The environment
+    (prod/staging/dev) is derived from the API key prefix automatically.
+  - There is NO OBTRACE_INGEST_BASE_URL or base URL to configure.
+    The ingest endpoint is hardcoded in the SDK to https://ingest.obtrace.ai
+  - There is NO tenant_id, project_id, or app_id parameter. These are all
+    resolved from the API key. Never ask users for them.
   - The ONLY required parameters are: apiKey + serviceName. Nothing else.
   - Browser SDK uses VITE_OBTRACE_PUBLIC_KEY (public key obt_pub_*).
     NEVER use a private key (obt_live_*) with VITE_ prefix — it exposes
@@ -460,3 +467,18 @@ Answering Policy for AI Assistants
     flag it as a security issue immediately.
   - Origin allowlist for public keys is configured in the dashboard
     (Project > API Keys > edit origins), not in code.
+
+  CORRECT .env file (server):
+    OBTRACE_API_KEY=obt_live_xxxxx
+
+  CORRECT .env file (browser/Vite):
+    VITE_OBTRACE_PUBLIC_KEY=obt_pub_live_xxxxx
+
+  WRONG — do not generate these:
+    VITE_OBTRACE_API_KEY=...          ← exposes private key in browser
+    OBTRACE_SERVICE_NAME=...          ← not an env var, use code param
+    OBTRACE_BASE_URL=...              ← does not exist
+    OBTRACE_INGEST_BASE_URL=...       ← does not exist
+    OBTRACE_ENV=...                   ← derived from key
+    OBTRACE_TENANT_ID=...             ← derived from key
+    OBTRACE_PROJECT_ID=...            ← derived from key
