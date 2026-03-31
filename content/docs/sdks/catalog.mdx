@@ -28,6 +28,15 @@ Start with:
 - [Browser SDK](/docs/sdks/browser)
 - [Node/Bun SDK](/docs/sdks/node-bun)
 
+### I have a multi-stack project (e.g. React + Supabase)
+
+Obtrace auto-detects all stacks. Instrument each one:
+
+- **React + Supabase Edge Functions** → [Browser SDK](/docs/sdks/browser) + [Supabase](/docs/platforms/supabase)
+- **Next.js fullstack** → [Next.js guide](/docs/projects/nextjs) (single setup)
+- **Vite + Cloudflare Workers** → [Browser SDK](/docs/sdks/browser) + [Cloudflare](/docs/integrations/cloudflare)
+- **Any frontend + Railway** → [Browser SDK](/docs/sdks/browser) + [Railway](/docs/platforms/railway)
+
 ### I need platform-specific rollout guidance
 
 Start with:
@@ -48,6 +57,25 @@ Start with:
 | [.NET](/docs/sdks/dotnet) | .NET 8+ | ASP.NET APIs and enterprise backends |
 | [PHP](/docs/sdks/php) | PHP 8.2+ | Laravel and traditional web backends |
 | [Ruby](/docs/sdks/ruby) | Ruby 3.2+ | Rails and background jobs |
+
+## Platform & Edge SDKs (GA)
+
+| SDK | Runtime | Best first use |
+|---|---|---|
+| [Next.js](/docs/projects/nextjs) | Next.js 13+ | Fullstack apps (server + client in one setup) |
+| [Supabase](/docs/platforms/supabase) | Deno (Edge Functions) | Supabase Edge Functions |
+| [Vercel](/docs/platforms/vercel) | Vercel Functions | Vercel serverless functions |
+| [Cloudflare](/docs/integrations/cloudflare) | Cloudflare Workers | Edge compute |
+| [Railway](/docs/platforms/railway) | Any (Node default) | Railway-hosted services |
+
+## Agents
+
+| Agent | Runtime | Best first use |
+|---|---|---|
+| [Database Agent](/docs/sdks/db-agent) | Docker | Database monitoring (Postgres, MySQL, MongoDB, Redis, etc.) |
+| [Infrastructure Agent](/docs/sdks/infra-agent) | Docker | Host/container metrics (CPU, memory, disk, network) |
+| [Kubernetes (Zero)](/docs/obtrace-zero) | K8s | Zero-code cluster-wide auto-instrumentation |
+| [MCP Server](/docs/mcp) | Go / Docker | AI assistant integration (Claude, Cursor) |
 
 ## Coming Soon (Not Yet Available)
 

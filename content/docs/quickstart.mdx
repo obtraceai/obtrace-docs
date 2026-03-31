@@ -15,7 +15,7 @@ Obtrace is most useful when telemetry, release metadata, and repository context 
 
 By the end of this guide, you should have:
 
-- One backend service instrumented.
+- Every detected stack instrumented (backend, frontend, edge functions).
 - Stable `service`, `env`, and `version` tagging.
 - One runtime environment connected.
 - Enough context for root cause analysis and remediation decisions.
@@ -37,17 +37,27 @@ Supports Node.js, Python, Java, .NET, PHP, Ruby, and Go out of the box.
 
 For full control over what gets captured, use an SDK directly:
 
-- [Python](/docs/sdks/python)
-- [Go](/docs/sdks/go)
-- [Java](/docs/sdks/java)
-- [Node/Bun](/docs/sdks/node-bun)
-- [.NET](/docs/sdks/dotnet)
-- [PHP](/docs/sdks/php)
-- [Ruby](/docs/sdks/ruby)
-- [Kotlin](/docs/sdks/kotlin)
-- [Rust](/docs/sdks/rust)
-- [Swift](/docs/sdks/swift)
-- [Browser](/docs/sdks/browser)
+**Backend:**
+- [Node/Bun](/docs/sdks/node-bun) · [Python](/docs/sdks/python) · [Go](/docs/sdks/go) · [Java](/docs/sdks/java) · [.NET](/docs/sdks/dotnet) · [PHP](/docs/sdks/php) · [Ruby](/docs/sdks/ruby)
+
+**Frontend:**
+- [Browser (Vite/React/Vue)](/docs/sdks/browser)
+
+**Fullstack frameworks:**
+- [Next.js](/docs/projects/nextjs) — server + client in one setup
+
+**Platforms & Edge:**
+- [Supabase Edge Functions](/docs/platforms/supabase) · [Vercel](/docs/platforms/vercel) · [Cloudflare Workers](/docs/integrations/cloudflare) · [Railway](/docs/platforms/railway)
+
+### Multi-stack projects
+
+Obtrace auto-detects all stacks in your repository. If your project combines multiple runtimes (e.g. a React frontend with Supabase Edge Functions), you get a setup snippet for **each** stack. Instrument all of them for full end-to-end visibility.
+
+Common combinations:
+- **React + Supabase** → Browser SDK + Supabase Edge Functions SDK
+- **Next.js** → single Next.js SDK (covers server + client)
+- **Vite + Express** → Browser SDK + Node SDK
+- **React + Cloudflare Workers** → Browser SDK + Cloudflare SDK
 
 ### Agents
 

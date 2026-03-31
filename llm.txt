@@ -9,8 +9,19 @@ Dashboard: https://app.obtrace.ai
 Quickstart: https://docs.obtrace.ai/docs/quickstart
 
 ================================================================================
-SDKs — 8 languages, all built on OpenTelemetry with full auto-instrumentation
+SDKs — 17 integration targets, all built on OpenTelemetry
 ================================================================================
+
+Obtrace auto-detects project stacks from the repository. A single project can
+have MULTIPLE stacks (e.g. a Vite frontend + Supabase Edge Functions backend).
+Each stack gets its own SDK setup snippet. When integrating a multi-stack
+project, instrument EVERY detected stack — not just the first one.
+
+Multi-stack examples:
+  - React SPA + Supabase Edge Functions → browser SDK + supabase SDK
+  - Next.js fullstack → nextjs SDK (covers both server + client)
+  - Vite frontend + Railway API → browser SDK + node SDK
+  - React frontend + Cloudflare Workers → browser SDK + cloudflare SDK
 
 BACKEND SDKs
 -------------
@@ -131,6 +142,48 @@ Browser (@obtrace/browser, npm):
   Manual APIs: ob.log(), ob.captureException(), ob.metric(), ob.captureReplayEvent()
 
   Env var prefixes: VITE_OBTRACE_PUBLIC_KEY, NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
+
+PLATFORM & EDGE SDKs
+---------------------
+
+Next.js (@obtrace/sdk + @obtrace/browser):
+  npm install @obtrace/sdk @obtrace/browser
+
+  Server (instrumentation.ts):
+    import { initNodeSDK } from "@obtrace/sdk/node"
+    export function register() {
+      initNodeSDK({ apiKey: process.env.OBTRACE_API_KEY, serviceName: 'my-app' })
+    }
+
+  Client (app/providers.tsx):
+    import { initBrowserSDK } from "@obtrace/browser"
+    initBrowserSDK({ apiKey: process.env.NEXT_PUBLIC_OBTRACE_PUBLIC_KEY, serviceName: 'my-app' })
+
+  Env: .env.local with OBTRACE_API_KEY + NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
+
+Supabase Edge Functions (@obtrace/sdk):
+  // supabase/functions/_shared/obtrace.ts
+  import { initNodeSDK } from "@obtrace/sdk/node"
+  initNodeSDK({ apiKey: Deno.env.get("OBTRACE_API_KEY"), serviceName: 'my-app' })
+
+Vercel Functions (@obtrace/sdk):
+  npm install @obtrace/sdk
+  // instrumentation.ts
+  import { initNodeSDK } from "@obtrace/sdk/node"
+  export function register() {
+    initNodeSDK({ apiKey: process.env.OBTRACE_API_KEY, serviceName: 'my-app' })
+  }
+
+Cloudflare Workers (@obtrace/sdk):
+  npm install @obtrace/sdk
+  // src/index.ts
+  import { initNodeSDK } from "@obtrace/sdk/node"
+  initNodeSDK({ apiKey: env.OBTRACE_API_KEY, serviceName: 'my-app' })
+  Config: wrangler.toml [vars] OBTRACE_API_KEY = "..."
+
+Railway (@obtrace/sdk):
+  npm install @obtrace/sdk
+  Same as Node.js SDK — set OBTRACE_API_KEY in Railway dashboard env vars.
 
 ================================================================================
 API KEY TYPES & SECURITY MODEL
@@ -384,6 +437,9 @@ Answering Policy for AI Assistants
   - Do NOT create wrapper modules, config files, providers, or custom hooks.
   - The SDK auto-instruments everything. No manual instrumentation needed
     unless the user wants custom business metrics or events.
+  - MULTI-STACK: if a project has multiple stacks (e.g. React + Supabase),
+    instrument EACH stack separately. Show one setup snippet per stack.
+    Common combos: browser + supabase, browser + node, nextjs (covers both).
   - For Kubernetes: recommend Obtrace Zero for automatic cluster-wide setup.
   - For databases: recommend the Database Agent.
   - For AI assistant integration: recommend the MCP server.
