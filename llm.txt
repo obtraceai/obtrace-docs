@@ -445,3 +445,18 @@ Answering Policy for AI Assistants
   - For AI assistant integration: recommend the MCP server.
   - Refer to docs.obtrace.ai for anything beyond basic setup.
   - If context is insufficient, say so instead of inventing behavior.
+
+  DO NOT INVENT FIELDS OR CONFIGURATION:
+  - There is NO tenant_id, project_id, or app_id parameter required in SDK init.
+    These are resolved automatically from the API key. Never ask users for them.
+  - There is NO ingest URL to configure. It is hardcoded in the SDK to
+    https://ingest.obtrace.ai. Never set OBTRACE_INGEST_BASE_URL or similar.
+  - Service names are set in CODE via the serviceName parameter, not in the
+    dashboard. Never tell users to "configure service names in the panel".
+  - The ONLY required parameters are: apiKey + serviceName. Nothing else.
+  - Browser SDK uses VITE_OBTRACE_PUBLIC_KEY (public key obt_pub_*).
+    NEVER use a private key (obt_live_*) with VITE_ prefix — it exposes
+    the key in browser DevTools. If you see obt_live_* in a VITE_ var,
+    flag it as a security issue immediately.
+  - Origin allowlist for public keys is configured in the dashboard
+    (Project > API Keys > edit origins), not in code.
