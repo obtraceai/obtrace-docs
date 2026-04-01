@@ -1,42 +1,113 @@
 ---
 title: Supabase
-description: Monitor Supabase database performance with the Obtrace DB Agent — query tracking, connection monitoring, and slow query detection.
-category: feature
+description: Instrument Supabase Edge Functions and monitor Supabase PostgreSQL with Obtrace.
+category: platform
 intent: setup
-llm_priority: medium
+llm_priority: high
 sourceOfTruth: true
 ---
 
 # Supabase
 
-Supabase runs on Postgres. The [Obtrace DB Agent](/docs/sdks/db-agent) connects to your Supabase database and monitors query performance, connection counts, lock contention, and slow queries.
+Obtrace integrates with Supabase in two ways: Edge Functions instrumentation and PostgreSQL monitoring.
 
-## Step 1: Get your Supabase connection string
+## Edge Functions
+
+### Install
+
+```bash
+npm install @obtrace/sdk
+```
+
+### Set secrets
+
+In Supabase dashboard, go to **Project Settings > Edge Functions > Secrets** and add:
+
+```
+OBTRACE_API_KEY=obt_live_xxxxx
+OBTRACE_SERVICE_NAME=my-edge
+```
+
+### One-line auto-init
+
+Add a single import to each edge function. The SDK reads `OBTRACE_API_KEY` and `OBTRACE_SERVICE_NAME` from Deno env automatically:
+
+```ts
+// supabase/functions/my-function/index.ts
+import "@obtrace/sdk/supabase";
+
+Deno.serve(async (req) => {
+  // your function code — telemetry is captured automatically
+  return new Response("ok");
+});
+```
+
+### Shared init file (recommended for multiple functions)
+
+```ts
+// supabase/functions/_shared/obtrace.ts
+import "@obtrace/sdk/supabase";
+```
+
+Then import in each function:
+
+```ts
+// supabase/functions/process-sale/index.ts
+import "../_shared/obtrace.ts";
+
+Deno.serve(async (req) => {
+  // telemetry captured
+});
+```
+
+Each edge function must import the SDK explicitly. Creating the shared file without importing it does nothing.
+
+### Explicit init
+
+For full control over configuration:
+
+```ts
+import { initSupabaseSDK } from "@obtrace/sdk/supabase";
+
+const sdk = initSupabaseSDK({
+  apiKey: Deno.env.get("OBTRACE_API_KEY")!,
+  serviceName: "my-edge",
+});
+
+sdk.log("info", "function invoked");
+sdk.metric("edge.duration_ms", 42);
+```
+
+### Verify
+
+After deploying, check the Obtrace dashboard. You should see:
+
+- Traces from your edge function invocations
+- Logs from `console.*` and `sdk.log()` calls
+- Metrics from `sdk.metric()` calls
+
+## PostgreSQL Monitoring (DB Agent)
+
+The [Obtrace DB Agent](/docs/sdks/db-agent) connects to your Supabase database and monitors query performance, connection counts, lock contention, and slow queries.
+
+### Get your connection string
 
 In your Supabase dashboard:
 
-1. Go to **Settings** → **Database**
+1. Go to **Settings > Database**
 2. Copy the **Connection string** (URI format)
 3. Use the **Session mode** connection string for monitoring
 
-## Step 2: Deploy the DB Agent
-
-### Docker
+### Deploy
 
 ```bash
 docker run -d \
   -e OBTRACE_API_KEY=obt_live_xxxxx \
-  -e DB_TYPE=postgres \
-  -e DB_DSN="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" \
-  -e SERVICE_NAME=supabase-db \
-  ghcr.io/obtrace/obtrace-db-agent:latest
+  -e DB_CONNECTIONS='[{"type":"postgres","dsn":"postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres","name":"supabase-db"}]' \
+  ghcr.io/obtraceai/db-agent
 ```
 
-### On Railway/Render/Fly.io
-
-Deploy the DB Agent as a separate service on the same platform as your application, with the env vars above.
-
-## What you get
+### What you get
 
 | Metric | Description |
 |--------|-------------|
@@ -46,27 +117,13 @@ Deploy the DB Agent as a separate service on the same platform as your applicati
 | Lock contention | Blocked queries waiting for locks |
 | Table sizes | Row counts and disk usage per table |
 | Index usage | Hit ratios and unused indexes |
-| Replication lag | Replica delay (if using read replicas) |
 
-## Correlating with application traces
+## Multi-stack: React + Supabase
 
-If your application uses the Obtrace SDK, database spans from your app are correlated with the DB Agent metrics in the Obtrace dashboard — giving you end-to-end visibility from HTTP request to database query.
+If your project has a React/Vite frontend and Supabase Edge Functions, instrument both:
 
-## For your application code
+1. **Frontend**: Use [`@obtrace/browser`](/docs/sdks/browser) with a public key
+2. **Edge Functions**: Use `@obtrace/sdk/supabase` with a private key
+3. **Database**: Deploy the DB Agent for PostgreSQL metrics
 
-If your application connects to Supabase via the client library, add the SDK for HTTP-level instrumentation:
-
-```ts
-import { initNodeSDK } from "@obtrace/sdk-js/node";
-import { createClient } from "@supabase/supabase-js";
-
-const sdk = initNodeSDK({
-  apiKey: process.env.OBTRACE_API_KEY!,
-  serviceName: "my-supabase-app",
-});
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-```
+Each stack gets its own `serviceName` (e.g., `my-web` and `my-edge`) and appears as a separate service in the dashboard with correlated traces.
