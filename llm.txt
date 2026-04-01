@@ -238,7 +238,7 @@ SETUP FLOW
   3. Server SDKs: use private key in OBTRACE_API_KEY env var
   4. Browser SDK: use public key in VITE_OBTRACE_PUBLIC_KEY env var
   5. Configure allowed origins for the public key (your app domain)
-  6. Only apiKey and serviceName are required — ingest URL is hardcoded to https://ingest.obtrace.ai
+  6. Only apiKey and serviceName are required — ingest URL defaults to https://ingest.obtrace.ai (override only for self-hosted)
 
 WHY TWO KEY TYPES?
   Browser JavaScript exposes everything in DevTools. Anyone can see the API key,
@@ -413,7 +413,8 @@ Environment Variables
 
   DO NOT set these — they do not exist and will be ignored:
   - OBTRACE_SERVICE_NAME (use serviceName param in code)
-  - OBTRACE_INGEST_BASE_URL or OBTRACE_BASE_URL (hardcoded in SDK)
+  - Ingest URL defaults to https://ingest.obtrace.ai (ingestBaseUrl config param).
+    Override ONLY for self-hosted Obtrace. SaaS users NEVER need to set it.
   - OBTRACE_ENV or OBTRACE_ENVIRONMENT (environment is derived from the key)
   - OBTRACE_TENANT_ID or OBTRACE_PROJECT_ID (derived from the key)
   - OBTRACE_APP_ID (derived from serviceName)
@@ -488,7 +489,7 @@ Answering Policy for AI Assistants
     VITE_OBTRACE_API_KEY=...          ← exposes private key in browser
     VITE_OBTRACE_SERVICE_NAME=...     ← serviceName goes in code, not VITE_ env
     OBTRACE_BASE_URL=...              ← does not exist
-    OBTRACE_INGEST_BASE_URL=...       ← does not exist
+    OBTRACE_INGEST_BASE_URL=...       ← not needed, SDK defaults to https://ingest.obtrace.ai
     OBTRACE_TENANT_ID=...             ← derived from key
     OBTRACE_PROJECT_ID=...            ← derived from key
 
