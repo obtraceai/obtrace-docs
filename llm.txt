@@ -165,17 +165,24 @@ Next.js (@obtrace/sdk + @obtrace/browser):
   Env: .env.local with OBTRACE_API_KEY + NEXT_PUBLIC_OBTRACE_PUBLIC_KEY
 
 Supabase Edge Functions (@obtrace/sdk):
-  Env (ONLY the key — nothing else):
+  Env secret (set in Supabase dashboard > Project Settings > Edge Functions > Secrets):
     OBTRACE_API_KEY=obt_live_xxxxx
 
-  Code (supabase/functions/_shared/obtrace.ts):
+  Step 1 — Create shared init file (supabase/functions/_shared/obtrace.ts):
     import { initNodeSDK } from "@obtrace/sdk/node"
     initNodeSDK({
-      apiKey: Deno.env.get("OBTRACE_API_KEY"),
-      serviceName: 'my-edge',  // hardcode this, do NOT read from env var
+      apiKey: Deno.env.get("OBTRACE_API_KEY")!,
+      serviceName: 'my-edge',
     })
 
-  serviceName can be hardcoded or read from env: Deno.env.get("OBTRACE_SERVICE_NAME")
+  Step 2 — Import in EVERY edge function that should be instrumented:
+    // supabase/functions/my-function/index.ts
+    import "../_shared/obtrace.ts"  // must be first import
+    // ... rest of the function code
+
+  IMPORTANT: Just creating _shared/obtrace.ts is NOT enough.
+  Each edge function must import it explicitly. Without the import,
+  zero telemetry is sent from that function.
 
 Vercel Functions (@obtrace/sdk):
   npm install @obtrace/sdk
