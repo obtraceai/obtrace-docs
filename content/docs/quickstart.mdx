@@ -72,6 +72,8 @@ Every event, span, and error should include:
 - `version`
 - `region` when applicable
 
+`appId` and `serviceName` must resolve to the connected app in the project. You can configure explicit aliases such as `core -> web`, but arbitrary names are rejected because incident scope, replay, and remediation bind to the canonical project app.
+
 Example:
 
 ```ts

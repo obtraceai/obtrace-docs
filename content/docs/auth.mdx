@@ -17,6 +17,12 @@ Recommended additional identity fields:
 - `OBTRACE_SERVICE_VERSION`
 - language/runtime specific `app_id` and `service_name`
 
+Identity rule:
+
+- `app_id` and `service_name` must match the connected app in the project.
+- If you need a runtime-specific name such as `web`, configure it as an explicit alias of the canonical app, such as `core`.
+- Values outside the canonical app name and configured aliases are treated as invalid scope.
+
 The ingest core accepts SDK traffic on:
 
 - `POST /otlp/v1/logs`

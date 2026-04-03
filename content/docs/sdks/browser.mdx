@@ -28,9 +28,11 @@ Set these environment variables (Vite example shown, but `NEXT_PUBLIC_` and `REA
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `VITE_OBTRACE_API_KEY` | Yes | - | Your Obtrace API key |
-| `VITE_OBTRACE_SERVICE_NAME` | No | `"web-app"` | Identifies this frontend in the Obtrace UI |
-| `VITE_OBTRACE_APP_ID` | No | - | Application identifier within a project |
+| `VITE_OBTRACE_SERVICE_NAME` | No | `"web-app"` | Connected app name for the project, or an explicit alias configured for that app |
+| `VITE_OBTRACE_APP_ID` | No | - | Override for the canonical project app name when you need to pin it explicitly |
 | `VITE_OBTRACE_ENV` | No | `NODE_ENV` or `"production"` | Deployment environment |
+
+Obtrace treats the project app name as the canonical identity. Example: if the project app is `core` and it has alias `web`, browser traffic may send `serviceName: "web"`, but ingest normalizes it to `core`. Names outside the configured app name and aliases are rejected.
 
 The `/auto` entry point does everything: initializes the SDK, patches `window.fetch` globally so all HTTP calls are instrumented, captures errors, console output, Web Vitals, and session replay.
 
@@ -52,7 +54,7 @@ import { obtrace } from '@obtrace/sdk-browser/react'
 
 export const ob = obtrace({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  serviceName: "checkout-web",
+  serviceName: "core",
 })
 ```
 
@@ -77,7 +79,7 @@ import { initBrowserSDK } from "@obtrace/sdk-browser/browser";
 
 export const ob = initBrowserSDK({
   apiKey: import.meta.env.VITE_OBTRACE_API_KEY,
-  serviceName: "checkout-web",
+  serviceName: "core",
 });
 ```
 
@@ -255,10 +257,10 @@ Failed requests also produce an error log and a `network_error` replay event.
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `apiKey` | `string` | Yes | - | Your Obtrace API key |
-| `serviceName` | `string` | Yes | - | Identifies this frontend app in the Obtrace UI |
+| `serviceName` | `string` | Yes | - | Connected app name in the project, or an explicit alias configured for that app |
 | `tenantId` | `string` | No | - | Your tenant ID (auto-resolved from API key if not set) |
 | `projectId` | `string` | No | - | Your project ID (auto-resolved from API key if not set) |
-| `appId` | `string` | No | - | Application identifier within a project |
+| `appId` | `string` | No | - | Canonical project app name when you need to override the inferred value explicitly |
 | `env` | `string` | No | - | Deployment environment (production, staging, etc.) |
 | `serviceVersion` | `string` | No | - | Version string for this deployment |
 | `debug` | `boolean` | No | `false` | Log SDK errors and warnings to console |
@@ -287,7 +289,7 @@ Failed requests also produce an error log and a `network_error` replay event.
 
 After deploying, verify these:
 
-- [ ] Open the Obtrace UI and confirm logs appear under the correct `serviceName`
+- [ ] Open the Obtrace UI and confirm logs appear under the canonical project app for this frontend
 - [ ] Check that Web Vitals metrics (`web_vital_lcp_ms`, etc.) appear after a page load
 - [ ] Trigger a JavaScript error in a test environment -- an `error` log should appear with file and line info
 - [ ] Use the instrumented fetch to make an API call -- a span and network replay event should appear

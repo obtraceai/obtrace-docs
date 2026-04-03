@@ -17,6 +17,12 @@ have MULTIPLE stacks (e.g. a Vite frontend + Supabase Edge Functions backend).
 Each stack gets its own SDK setup snippet. When integrating a multi-stack
 project, instrument EVERY detected stack — not just the first one.
 
+App identity rule:
+  - Every project app has one canonical connected name.
+  - SDK config must use that canonical name, or an explicit alias configured for that app.
+  - Example: canonical app `core` may expose alias `web`; ingest normalizes `web` -> `core`.
+  - Arbitrary serviceName/app_id values are invalid because incident scope, replay, and remediation bind to the canonical app.
+
 Multi-stack examples:
   - React SPA + Supabase Edge Functions → browser SDK + supabase SDK
   - Next.js fullstack → nextjs SDK (covers both server + client)
@@ -132,7 +138,7 @@ Browser (@obtrace/browser, npm):
     import { initBrowserSDK } from '@obtrace/browser'
     initBrowserSDK({
       apiKey: import.meta.env.VITE_OBTRACE_PUBLIC_KEY,
-      serviceName: 'my-app',  // hardcode this, do NOT read from env var
+      serviceName: 'core',  // use the connected app name or an explicit alias
     })
 
   IMPORTANT: Browser SDKs MUST use public keys (obt_pub_*), never private keys.
