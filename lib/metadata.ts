@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { i18n } from "./i18n";
 
 export const DOCS_SITE_URL = "https://docs.obtrace.ai";
-export const DOCS_OG_IMAGE = `${DOCS_SITE_URL}/logo-full.svg`;
+export const DOCS_OG_IMAGE_EN = `${DOCS_SITE_URL}/images/og-image-en.png`;
+export const DOCS_OG_IMAGE_PT = `${DOCS_SITE_URL}/images/og-image.png`;
+
+function getDocsOgImage(lang: string): string {
+  return lang === "pt-BR" ? DOCS_OG_IMAGE_PT : DOCS_OG_IMAGE_EN;
+}
 
 export function getDocsPath(lang: string, slug?: string[]): string {
   const pathSuffix = slug && slug.length > 0 ? `/${slug.join("/")}` : "";
@@ -36,13 +41,14 @@ export function buildDocsMetadata(input: {
       url: canonical,
       type: "article",
       siteName: "Obtrace Docs",
-      images: [DOCS_OG_IMAGE]
+      images: [getDocsOgImage(input.lang)],
+      locale: input.lang === "pt-BR" ? "pt_BR" : "en_US",
     },
     twitter: {
       card: "summary_large_image",
       title: input.title,
       description: input.description,
-      images: [DOCS_OG_IMAGE]
+      images: [getDocsOgImage(input.lang)]
     }
   };
 }
