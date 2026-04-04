@@ -1,50 +1,35 @@
 ---
 title: Supabase Integration
-description: SDK usage for Edge Functions and frontend apps
+description: Managed Supabase observability — connect via OAuth, zero code changes
 ---
 
-## Install
+## Overview
 
-```bash
-npm install @obtrace/sdk-js
-```
+Obtrace monitors Supabase projects via a **managed agent** that connects through OAuth. No SDK installation required.
 
-## Configuration
+## Setup
 
-Edge Function secrets:
+1. Go to **Account > Supabase** in the Obtrace dashboard
+2. Click **Connect Supabase** to authenticate via OAuth
+3. Click **Discover Projects** to see available projects
+4. Enable monitoring and choose collectors (Database, Edge Functions, Auth, Storage, Realtime)
 
-- `OBTRACE_API_KEY`
-- `OBTRACE_TENANT_ID`
-- `OBTRACE_PROJECT_ID`
-- `OBTRACE_ENV`
+See the [full platform guide](/docs/platforms/supabase) for details.
 
-Frontend:
+## What gets collected
 
-- `VITE_OBTRACE_API_KEY`
-- `VITE_OBTRACE_TENANT_ID`
-- `VITE_OBTRACE_PROJECT_ID`
+| Collector | Metrics |
+|-----------|---------|
+| Database | Connections, query latency, slow queries, locks, table sizes |
+| Edge Functions | Invocations, errors, latency per function |
+| Auth | MAU, sign-ins, sign-ups |
+| Storage | Size, object count |
+| Realtime | Connections, messages |
 
-## Quick start
+## Auto-instrumentation
 
-Use `ObtraceClient` in Deno runtime:
+Enable the **Auto-instrument** toggle to inject Obtrace credentials as Supabase project secrets. Edge Functions using the Obtrace SDK will pick them up automatically.
 
-```ts
-import { ObtraceClient } from "@obtrace/sdk-js";
+## Disconnecting
 
-const client = new ObtraceClient({
-  apiKey: Deno.env.get("OBTRACE_API_KEY")!,
-  serviceName: "supabase-edge",
-  appId: "supabase-edge"
-});
-```
-
-## Production hardening
-
-1. Keep keys only in function secrets.
-2. Rotate keys per environment.
-3. Validate logs/replay after deployment.
-
-## Troubleshooting
-
-- Deno runtime issue: avoid Node entrypoint.
-- Missing secrets: validate `Deno.env.get(...)` values.
+Remove the connection from **Account > Supabase**. All monitoring stops immediately.

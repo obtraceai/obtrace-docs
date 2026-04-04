@@ -1,0 +1,290 @@
+# Obtrace — Full LLM Reference
+
+> Observability platform with AI-powered root cause analysis, autofix, and multi-language SDK support.
+
+## Architecture
+
+Obtrace follows a streaming architecture:
+
+```
+SDKs / OTLP sources → ingest-edge (auth, rate-limit, billing gate, PII scrub)
+  → Redpanda/Kafka (TLS, 3-broker)
+  → Workers (otlp, replay, recipes, incident-engine, incident-actions)
+  → Storage (ClickHouse, Postgres, MinIO, Redis)
+  → Serving (query-gateway, control-plane-api, replay-proxy, ai-service)
+  → Frontend
+```
+
+### Storage Roles
+
+- **ClickHouse**: Analytical telemetry (logs, traces, metrics)
+- **Postgres**: Auth, projects, dashboards, incidents, runtime config, billing
+- **MinIO/S3**: Replay session blob chunks
+- **Redis**: Ephemeral cache/locks, billing gate state
+
+### Data Scoping
+
+All data is scoped by `tenant_id / project_id / app_id / env`.
+
+## SDKs
+
+### Node.js / Bun
+
+```bash
+npm i @obtrace/sdk
+```
+
+```ts
+import { initNodeSDK } from "@obtrace/sdk/node";
+
+initNodeSDK({
+  apiKey: process.env.OBTRACE_API_KEY,
+  serviceName: "my-service",
+});
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/node-bun
+
+### Browser (Vite/React/Vue)
+
+```bash
+npm i @obtrace/browser
+```
+
+```ts
+import { initBrowserSDK } from "@obtrace/browser";
+
+initBrowserSDK({
+  apiKey: import.meta.env.VITE_OBTRACE_PUBLIC_KEY,
+  serviceName: "my-web",
+});
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/browser
+
+### Python
+
+```bash
+pip install obtrace-sdk-python
+```
+
+```python
+from obtrace_sdk import ObtraceClient, ObtraceConfig
+
+client = ObtraceClient(ObtraceConfig(
+    api_key=os.environ["OBTRACE_API_KEY"],
+    service_name="my-service",
+))
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/python
+
+### Go
+
+```bash
+go get github.com/obtraceai/obtrace-sdk-go
+```
+
+```go
+client := obtrace.NewClient(obtrace.Config{
+    APIKey:      os.Getenv("OBTRACE_API_KEY"),
+    ServiceName: "my-service",
+})
+defer client.Shutdown(ctx)
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/go
+
+### Java
+
+```java
+var client = new ObtraceClient(ObtraceConfig.builder()
+    .apiKey(System.getenv("OBTRACE_API_KEY"))
+    .serviceName("my-service")
+    .build());
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/java
+
+### .NET
+
+```bash
+dotnet add package Obtrace.Sdk
+```
+
+```csharp
+builder.Services.AddObtrace(new ObtraceConfig
+{
+    ApiKey = Environment.GetEnvironmentVariable("OBTRACE_API_KEY"),
+    ServiceName = "my-service",
+});
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/dotnet
+
+### PHP / Laravel
+
+```bash
+composer require obtrace/sdk
+```
+
+```php
+$client = new ObtraceClient(new ObtraceConfig(
+    apiKey: getenv('OBTRACE_API_KEY'),
+    serviceName: 'my-service',
+));
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/php
+
+### Ruby / Rails
+
+```bash
+bundle add obtrace
+```
+
+```ruby
+OBTRACE = ObtraceSDK::Client.new(ObtraceSDK::Config.new(
+    api_key: ENV["OBTRACE_API_KEY"],
+    service_name: "my-service",
+))
+```
+
+Docs: https://docs.obtrace.ai/docs/sdks/ruby
+
+## Managed Agents
+
+### Database Agent
+
+Monitors PostgreSQL, MySQL, MongoDB, Redis databases.
+
+```bash
+docker run -d \
+  -e OBTRACE_API_KEY=obt_live_xxxxx \
+  -e DB_CONNECTIONS='[{"type":"postgres","dsn":"postgresql://user:pass@host:5432/db","name":"my-db"}]' \
+  ghcr.io/obtraceai/db-agent
+```
+
+Metrics: active connections, query duration (P50/P95/P99), slow queries, lock contention, table sizes, index usage.
+
+### Infrastructure Agent
+
+Monitors host/container metrics.
+
+```bash
+docker run -d --privileged --pid=host --network=host \
+  -e OBTRACE_API_KEY=obt_live_xxxxx \
+  -v /proc:/host/proc:ro -v /sys:/host/sys:ro \
+  ghcr.io/obtraceai/infra-agent
+```
+
+Metrics: CPU, memory, disk, network, container stats.
+
+### Supabase Agent (Managed)
+
+Connects via OAuth to your Supabase account. No SDK installation required.
+
+**Setup:**
+1. Go to Account > Supabase in the Obtrace dashboard
+2. Click "Connect Supabase" to authenticate via OAuth
+3. Discover and enable projects to monitor
+4. Toggle collectors: Database, Edge Functions, Auth, Storage, Realtime
+
+**Metrics emitted:**
+- `supabase.project.health` — project health gauge
+- `db.postgres.*` — database metrics (compatible with DB Agent)
+- `supabase.edge_function.invocations`, `.errors`, `.latency_ms`
+- `supabase.auth.monthly_active_users`, `.signins`, `.signups`
+- `supabase.storage.size_bytes`, `.object_count`
+- `supabase.realtime.connections`, `.messages`
+
+**Auto-instrumentation:** Optionally injects OBTRACE_API_KEY as a secret into Supabase projects so Edge Functions can use the SDK automatically.
+
+Docs: https://docs.obtrace.ai/docs/platforms/supabase
+
+## Platform Integrations
+
+### Next.js
+
+```bash
+npm i @obtrace/sdk @obtrace/browser
+```
+
+Server-side instrumentation.ts + client-side providers.tsx pattern.
+Docs: https://docs.obtrace.ai/docs/projects/nextjs
+
+### Vercel
+
+Add `OBTRACE_API_KEY` as env var, use Node SDK in `instrumentation.ts`.
+Docs: https://docs.obtrace.ai/docs/platforms/vercel
+
+### Cloudflare Workers
+
+Use Node SDK with `env.OBTRACE_API_KEY` from wrangler.toml vars.
+Docs: https://docs.obtrace.ai/docs/integrations/cloudflare
+
+### Railway
+
+Add `OBTRACE_API_KEY` via Railway dashboard or CLI, use Node SDK.
+Docs: https://docs.obtrace.ai/docs/platforms/railway
+
+### Kubernetes (obtrace-zero)
+
+Zero-code cluster-wide auto-instrumentation.
+
+```bash
+obtrace-zero install --api-key=YOUR_KEY --service-name=my-cluster
+```
+
+Docs: https://docs.obtrace.ai/docs/obtrace-zero
+
+## AI Capabilities
+
+- **Chat-to-query**: Natural language queries over telemetry data
+- **Root Cause Analysis (RCA)**: AI analyzes error patterns and identifies probable root causes
+- **Autofix**: Generates code fixes and opens pull requests automatically
+- **Incident Detection**: Pattern-based incident detection with configurable thresholds
+- **Fix Outcome Tracking**: Tracks whether AI-generated fixes resolved the issue (error → fix → result graph)
+
+AI providers: DeepSeek (router/reasoner), Claude (autofix/onboarding code generation).
+
+## MCP Server
+
+AI assistant integration for Claude, Cursor, and other MCP-compatible tools.
+
+```bash
+go install github.com/obtraceai/obtrace-mcp/cmd/mcp-obtrace@latest
+mcp-obtrace --api-key=YOUR_KEY
+```
+
+Docs: https://docs.obtrace.ai/docs/mcp
+
+## Billing & Plans
+
+Plans: free, indie, startup, growth, scale.
+
+Limits per plan: ingest bytes/mo, RCA/mo, autofix/mo, replay/mo, max services, max users, retention days.
+
+Docs: https://docs.obtrace.ai/docs/features/billing
+
+## Ingestion Protocols
+
+- OTLP gRPC: port 4317
+- OTLP HTTP: for telemetry ingestion
+- REST API: external APIs
+- Kafka/Redpanda: internal async streaming
+
+## Security
+
+- Gate1 (ingest-edge): auth, size/quota/rate limiting, billing gate, basic PII scrubbing
+- Gate2 (workers): JSONPath/regex policy-based scrubbing per tenant
+- All tokens encrypted at rest with AES-256-GCM
+- OAuth tokens auto-refreshed before expiry
+- RBAC with tenant/project/app scoping
+
+## Links
+
+- Website: https://obtrace.ai
+- Documentation: https://docs.obtrace.ai
+- GitHub: https://github.com/obtraceai
+- Support: https://docs.obtrace.ai/docs/support

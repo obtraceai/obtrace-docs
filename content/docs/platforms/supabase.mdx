@@ -1,6 +1,6 @@
 ---
 title: Supabase
-description: Instrument Supabase Edge Functions and monitor Supabase PostgreSQL with Obtrace.
+description: Managed Supabase observability — connect via OAuth and monitor database, Edge Functions, Auth, Storage, and Realtime automatically.
 category: platform
 intent: setup
 llm_priority: high
@@ -9,121 +9,71 @@ sourceOfTruth: true
 
 # Supabase
 
-Obtrace integrates with Supabase in two ways: Edge Functions instrumentation and PostgreSQL monitoring.
+Obtrace provides a **managed Supabase agent** that connects to your Supabase account via OAuth and automatically monitors all your projects. No SDK installation or code changes required.
 
-## Edge Functions
+## Setup
 
-### Install
+### 1. Connect your Supabase account
 
-```bash
-npm install @obtrace/sdk
+Go to **Account > Supabase** in the Obtrace dashboard and click **Connect Supabase**. This starts an OAuth flow with the Supabase Management API.
+
+### 2. Select projects to monitor
+
+After connecting, click **Discover Projects** to see all Supabase projects in your organization. Enable monitoring for each project you want to observe.
+
+### 3. Choose what to collect
+
+For each monitored project, toggle the collectors you need:
+
+| Collector | Metrics |
+|-----------|---------|
+| **Database** | Active connections, query duration (P50/P95/P99), slow queries, lock contention, table sizes, index usage |
+| **Edge Functions** | Invocations, errors, latency per function |
+| **Auth** | Monthly active users, sign-ins, sign-ups |
+| **Storage** | Total size, object count |
+| **Realtime** | Active connections, message throughput |
+
+### 4. Auto-instrumentation (optional)
+
+Enable **Auto-instrument** to have Obtrace inject `OBTRACE_API_KEY`, `OBTRACE_INGEST_URL`, and `OBTRACE_PROJECT_ID` as secrets into your Supabase project. This lets Edge Functions that use the Obtrace SDK pick up credentials automatically without manual configuration.
+
+## How it works
+
+The Supabase agent runs inside Obtrace infrastructure and polls the Supabase Management API on a configurable interval (default: 15s). It:
+
+1. Reads your encrypted OAuth tokens from the database
+2. Calls the Management API for each monitored project
+3. Converts responses into OTLP metrics
+4. Sends metrics to the Obtrace ingest pipeline
+
+Your OAuth tokens are encrypted at rest with AES-256-GCM and automatically refreshed before expiry.
+
+## Metrics emitted
+
 ```
-
-### Set secrets
-
-In Supabase dashboard, go to **Project Settings > Edge Functions > Secrets** and add:
-
+supabase.project.health          — 1/0 gauge per project
+db.postgres.*                    — same metric names as DB Agent for dashboard compatibility
+supabase.edge_function.invocations
+supabase.edge_function.errors
+supabase.edge_function.latency_ms
+supabase.auth.monthly_active_users
+supabase.auth.signins
+supabase.auth.signups
+supabase.storage.size_bytes
+supabase.storage.object_count
+supabase.realtime.connections
+supabase.realtime.messages
 ```
-OBTRACE_API_KEY=obt_live_xxxxx
-OBTRACE_SERVICE_NAME=my-edge
-```
-
-### One-line auto-init
-
-Add a single import to each edge function. The SDK reads `OBTRACE_API_KEY` and `OBTRACE_SERVICE_NAME` from Deno env automatically:
-
-```ts
-// supabase/functions/my-function/index.ts
-import "@obtrace/sdk/supabase";
-
-Deno.serve(async (req) => {
-  // your function code — telemetry is captured automatically
-  return new Response("ok");
-});
-```
-
-### Shared init file (recommended for multiple functions)
-
-```ts
-// supabase/functions/_shared/obtrace.ts
-import "@obtrace/sdk/supabase";
-```
-
-Then import in each function:
-
-```ts
-// supabase/functions/process-sale/index.ts
-import "../_shared/obtrace.ts";
-
-Deno.serve(async (req) => {
-  // telemetry captured
-});
-```
-
-Each edge function must import the SDK explicitly. Creating the shared file without importing it does nothing.
-
-### Explicit init
-
-For full control over configuration:
-
-```ts
-import { initSupabaseSDK } from "@obtrace/sdk/supabase";
-
-const sdk = initSupabaseSDK({
-  apiKey: Deno.env.get("OBTRACE_API_KEY")!,
-  serviceName: "my-edge",
-});
-
-sdk.log("info", "function invoked");
-sdk.metric("edge.duration_ms", 42);
-```
-
-### Verify
-
-After deploying, check the Obtrace dashboard. You should see:
-
-- Traces from your edge function invocations
-- Logs from `console.*` and `sdk.log()` calls
-- Metrics from `sdk.metric()` calls
-
-## PostgreSQL Monitoring (DB Agent)
-
-The [Obtrace DB Agent](/docs/sdks/db-agent) connects to your Supabase database and monitors query performance, connection counts, lock contention, and slow queries.
-
-### Get your connection string
-
-In your Supabase dashboard:
-
-1. Go to **Settings > Database**
-2. Copy the **Connection string** (URI format)
-3. Use the **Session mode** connection string for monitoring
-
-### Deploy
-
-```bash
-docker run -d \
-  -e OBTRACE_API_KEY=obt_live_xxxxx \
-  -e DB_CONNECTIONS='[{"type":"postgres","dsn":"postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres","name":"supabase-db"}]' \
-  ghcr.io/obtraceai/db-agent
-```
-
-### What you get
-
-| Metric | Description |
-|--------|-------------|
-| Active connections | Current connection count by state |
-| Query duration | P50, P95, P99 latency per query pattern |
-| Slow queries | Queries exceeding configurable threshold |
-| Lock contention | Blocked queries waiting for locks |
-| Table sizes | Row counts and disk usage per table |
-| Index usage | Hit ratios and unused indexes |
 
 ## Multi-stack: React + Supabase
 
-If your project has a React/Vite frontend and Supabase Edge Functions, instrument both:
+If your project has a React/Vite frontend and Supabase backend:
 
 1. **Frontend**: Use [`@obtrace/browser`](/docs/sdks/browser) with a public key
-2. **Edge Functions**: Use `@obtrace/sdk/supabase` with a private key
-3. **Database**: Deploy the DB Agent for PostgreSQL metrics
+2. **Supabase**: Connect via the managed agent (this page)
 
-Each stack gets its own `serviceName` (e.g., `my-web` and `my-edge`) and appears as a separate service in the dashboard with correlated traces.
+Each appears as a separate service in the dashboard with correlated traces.
+
+## Disconnecting
+
+Go to **Account > Supabase**, click the trash icon next to a connection. All monitored projects for that connection are disabled automatically.

@@ -1,50 +1,35 @@
 ---
 title: Integração Supabase
-description: Uso do SDK em Edge Functions e frontend
+description: Observabilidade gerenciada para Supabase — conecte via OAuth, sem alteração de código
 ---
 
-## Instalação
+## Visão geral
 
-```bash
-npm install @obtrace/sdk-js
-```
+O Obtrace monitora projetos Supabase via um **agente gerenciado** que se conecta por OAuth. Nenhuma instalação de SDK necessária.
 
 ## Configuração
 
-Edge Function (secrets):
+1. Acesse **Conta > Supabase** no painel do Obtrace
+2. Clique em **Connect Supabase** para autenticar via OAuth
+3. Clique em **Discover Projects** para ver os projetos disponíveis
+4. Ative o monitoramento e escolha os coletores (Database, Edge Functions, Auth, Storage, Realtime)
 
-- `OBTRACE_API_KEY`
-- `OBTRACE_TENANT_ID`
-- `OBTRACE_PROJECT_ID`
-- `OBTRACE_ENV`
+Veja o [guia completo da plataforma](/docs/platforms/supabase) para detalhes.
 
-Frontend:
+## O que é coletado
 
-- `VITE_OBTRACE_API_KEY`
-- `VITE_OBTRACE_TENANT_ID`
-- `VITE_OBTRACE_PROJECT_ID`
+| Coletor | Métricas |
+|---------|----------|
+| Database | Conexões, latência de queries, queries lentas, locks, tamanhos de tabelas |
+| Edge Functions | Invocações, erros, latência por função |
+| Auth | MAU, sign-ins, sign-ups |
+| Storage | Tamanho, contagem de objetos |
+| Realtime | Conexões, mensagens |
 
-## Início rápido
+## Auto-instrumentação
 
-Em Deno (Edge Functions), use `ObtraceClient`:
+Ative o toggle **Auto-instrument** para injetar credenciais do Obtrace como secrets do projeto Supabase. Edge Functions que usam o SDK do Obtrace capturam as credenciais automaticamente.
 
-```ts
-import { ObtraceClient } from "@obtrace/sdk-js";
+## Desconectando
 
-const client = new ObtraceClient({
-  apiKey: Deno.env.get("OBTRACE_API_KEY")!,
-  serviceName: "supabase-edge",
-  appId: "supabase-edge"
-});
-```
-
-## Hardening de produção
-
-1. Mantenha chaves só em secrets da função.
-2. Rotacione por ambiente.
-3. Valide logs/replay após deploy.
-
-## Solução de problemas
-
-- Erro de runtime Deno: não use entrypoint Node.
-- Secrets ausentes: valide retorno de `Deno.env.get(...)`.
+Remova a conexão em **Conta > Supabase**. Todo monitoramento para imediatamente.

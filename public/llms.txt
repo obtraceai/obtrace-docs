@@ -1,0 +1,65 @@
+# Obtrace
+
+> Observability platform with AI-powered root cause analysis, autofix, and multi-language SDK support.
+
+## What is Obtrace
+
+Obtrace is a unified observability platform that collects logs, traces, and metrics from your applications, detects incidents automatically using AI, and can open pull requests with fixes. It supports Node.js, Python, Go, Java, .NET, PHP, Ruby, and browser applications.
+
+## Key Features
+
+- **Multi-language SDKs**: Node/Bun, Python, Go, Java, .NET, PHP, Ruby, Browser
+- **Platform integrations**: Supabase (managed agent), Vercel, Cloudflare Workers, Railway, Fly.io, Coolify, AWS Lambda, GCP Cloud Run, Azure Container Apps
+- **Managed agents**: Database Agent (Postgres, MySQL, MongoDB, Redis), Infrastructure Agent (host metrics), Supabase Agent (OAuth-based, monitors DB/Edge Fn/Auth/Storage/Realtime)
+- **AI capabilities**: Chat-to-query, root cause analysis, autofix code generation, incident detection
+- **Session Replay**: Record and replay user sessions with correlated telemetry
+- **Kubernetes**: Zero-code auto-instrumentation via obtrace-zero
+- **MCP Server**: AI assistant integration for Claude and Cursor
+
+## SDKs
+
+- Node/Bun: `npm i @obtrace/sdk` — https://docs.obtrace.ai/docs/sdks/node-bun
+- Browser: `npm i @obtrace/browser` — https://docs.obtrace.ai/docs/sdks/browser
+- Python: `pip install obtrace-sdk-python` — https://docs.obtrace.ai/docs/sdks/python
+- Go: `go get github.com/obtraceai/obtrace-sdk-go` — https://docs.obtrace.ai/docs/sdks/go
+- Java: Maven — https://docs.obtrace.ai/docs/sdks/java
+- .NET: `dotnet add package Obtrace.Sdk` — https://docs.obtrace.ai/docs/sdks/dotnet
+- PHP: `composer require obtrace/sdk` — https://docs.obtrace.ai/docs/sdks/php
+- Ruby: `bundle add obtrace` — https://docs.obtrace.ai/docs/sdks/ruby
+
+## Managed Agents
+
+- Database Agent: `docker pull ghcr.io/obtraceai/db-agent` — monitors Postgres, MySQL, MongoDB, Redis
+- Infrastructure Agent: `docker pull ghcr.io/obtraceai/infra-agent` — host/container metrics
+- Supabase Agent: connects via OAuth, no installation required — monitors DB, Edge Functions, Auth, Storage, Realtime
+
+## Platform Integrations
+
+- Supabase: Managed agent via OAuth — https://docs.obtrace.ai/docs/platforms/supabase
+- Vercel: SDK + env vars — https://docs.obtrace.ai/docs/platforms/vercel
+- Railway: SDK + env vars — https://docs.obtrace.ai/docs/platforms/railway
+- Cloudflare Workers: SDK — https://docs.obtrace.ai/docs/integrations/cloudflare
+- Fly.io: Secrets + OTLP — https://docs.obtrace.ai/docs/platforms/flyio
+- Coolify: Docker compose — https://docs.obtrace.ai/docs/platforms/coolify
+- Kubernetes: obtrace-zero — https://docs.obtrace.ai/docs/obtrace-zero
+
+## Ingestion
+
+- OTLP gRPC on port 4317
+- OTLP HTTP for telemetry
+- REST API for control plane
+
+## Documentation
+
+- Quickstart: https://docs.obtrace.ai/docs/quickstart
+- SDK Catalog: https://docs.obtrace.ai/docs/sdks/catalog
+- Platform Integrations: https://docs.obtrace.ai/docs/platforms
+- API Reference: https://docs.obtrace.ai/docs/api-reference/overview
+- MCP Server: https://docs.obtrace.ai/docs/mcp
+- Billing & Plans: https://docs.obtrace.ai/docs/features/billing
+
+## Links
+
+- Website: https://obtrace.ai
+- Documentation: https://docs.obtrace.ai
+- GitHub: https://github.com/obtraceai

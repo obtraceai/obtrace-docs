@@ -47,14 +47,14 @@ For full control over what gets captured, use an SDK directly:
 - [Next.js](/docs/projects/nextjs) — server + client in one setup
 
 **Platforms & Edge:**
-- [Supabase Edge Functions](/docs/platforms/supabase) · [Vercel](/docs/platforms/vercel) · [Cloudflare Workers](/docs/integrations/cloudflare) · [Railway](/docs/platforms/railway)
+- [Supabase (Managed Agent)](/docs/platforms/supabase) · [Vercel](/docs/platforms/vercel) · [Cloudflare Workers](/docs/integrations/cloudflare) · [Railway](/docs/platforms/railway)
 
 ### Multi-stack projects
 
-Obtrace auto-detects all stacks in your repository. If your project combines multiple runtimes (e.g. a React frontend with Supabase Edge Functions), you get a setup snippet for **each** stack. Instrument all of them for full end-to-end visibility.
+Obtrace auto-detects all stacks in your repository. If your project combines multiple runtimes, you get a setup snippet for **each** stack. Instrument all of them for full end-to-end visibility.
 
 Common combinations:
-- **React + Supabase** → Browser SDK + Supabase Edge Functions SDK
+- **React + Supabase** → Browser SDK + [Supabase Managed Agent](/docs/platforms/supabase)
 - **Next.js** → single Next.js SDK (covers server + client)
 - **Vite + Express** → Browser SDK + Node SDK
 - **React + Cloudflare Workers** → Browser SDK + Cloudflare SDK
