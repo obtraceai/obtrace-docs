@@ -6,6 +6,7 @@ import { baseOptions } from "../../../lib/layout.shared";
 import { DocsI18nProvider } from "../../components/docs-i18n-provider";
 import { isSupportedLocale } from "../../../lib/i18n";
 import { DocsAiLauncher } from "../../components/docs-ai-launcher";
+import { ChatwootWidget } from "../../components/chatwoot-widget";
 
 type Props = {
   children: ReactNode;
@@ -27,6 +28,7 @@ export default async function LocalizedDocsLayout({ children, params }: Props) {
         {children}
       </DocsLayout>
       <DocsAiLauncher locale={lang} label={lang === "pt-BR" ? "Pergunte à IA" : "Ask AI"} />
+      <ChatwootWidget locale={lang} />
     </DocsI18nProvider>
   );
 }
