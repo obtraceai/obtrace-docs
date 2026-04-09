@@ -30,6 +30,37 @@ See the [full platform guide](/docs/platforms/supabase) for details.
 
 Enable the **Auto-instrument** toggle to inject Obtrace credentials as Supabase project secrets. Edge Functions using the Obtrace SDK will pick them up automatically.
 
+## Trace Connectivity Patterns
+
+### Full trace propagation (Edge Functions)
+
+When your browser calls a Supabase Edge Function, the browser SDK injects a `traceparent` header. The Edge Function SDK extracts it and creates a child span in the same trace.
+
+```ts
+import { initSupabaseSDK, withEdgeFunctionTrace } from "@obtrace/supabase";
+
+const sdk = initSupabaseSDK();
+
+Deno.serve(withEdgeFunctionTrace(sdk, async (req) => {
+  const data = await fetch("https://your-backend.com/api/data", {
+    headers: req.headers,
+  });
+  return new Response(JSON.stringify(data), { status: 200 });
+}));
+```
+
+The resulting trace shows: **Browser span -> Edge Function span -> Backend span**, all sharing the same `traceId`.
+
+### Session correlation (PostgREST direct)
+
+When the browser calls Supabase PostgREST directly (e.g., `supabase.from("table").select()`), there is no Edge Function to propagate trace context. Obtrace correlates these traces by `session.id` and timestamp proximity.
+
+In the trace detail view, a **Related Traces** section shows other traces from the same session within a 5-second window.
+
+### Infrastructure monitoring (Managed agent)
+
+The managed Supabase agent collects infrastructure metrics (database health, connection counts, Edge Function stats) independently of trace propagation. These metrics appear in dashboards regardless of which trace pattern you use.
+
 ## Disconnecting
 
 Remove the connection from **Account > Supabase**. All monitoring stops immediately.
