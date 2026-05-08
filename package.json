@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.47",
+    "@ai-sdk/openai": "^3.0.63",
     "@ai-sdk/react": "^3.0.139",
     "@inkeep/ai-api": "^0.8.0",
     "ai": "^6.0.137",
